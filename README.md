@@ -78,6 +78,9 @@ presenter on Linux, macOS, and Windows. A separate integration job produces
 multi-shot runner baselines plus sharded metadata, then verifies that presenter
 retains the exact device and every coverage axis.
 
+For versioning, release checks, and the package-level Pub commands, see
+[PUBLISHING.md](PUBLISHING.md).
+
 Build the documentation locally with:
 
 ```shell
