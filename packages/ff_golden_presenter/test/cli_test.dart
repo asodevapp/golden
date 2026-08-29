@@ -30,7 +30,7 @@ void main() {
     );
 
     expect(code, 0);
-    expect(output.toString(), 'ff_golden_presenter 0.1.0\n');
+    expect(output.toString(), 'ff_golden_presenter 0.1.1\n');
   });
 
   test('generates a report end to end', () async {
@@ -121,6 +121,61 @@ void main() {
       await File(path.join(publication, 'index.html')).readAsString(),
       isNot(contains('aso.dev')),
     );
+  });
+
+  test('clean-failures previews and deletes only failure images', () async {
+    final temporaryDirectory = await Directory.systemTemp.createTemp(
+      'ff_golden_presenter_clean_failures_cli_',
+    );
+    addTearDown(() => temporaryDirectory.delete(recursive: true));
+    final failureImage = File(
+      path.join(
+        temporaryDirectory.path,
+        'screens/auth/failures/masterImage.png',
+      ),
+    );
+    await failureImage.create(recursive: true);
+    await failureImage.writeAsBytes([1, 2, 3]);
+    final goldenImage = File(
+      path.join(
+        temporaryDirectory.path,
+        'screens/auth/golden/login/failure.png',
+      ),
+    );
+    await goldenImage.create(recursive: true);
+    await goldenImage.writeAsBytes([4]);
+    final output = StringBuffer();
+
+    final previewCode = await runGoldenPresenter(
+      [
+        'clean-failures',
+        '--input',
+        path.join(temporaryDirectory.path, 'screens'),
+        '--dry-run',
+      ],
+      output: output,
+      errors: StringBuffer(),
+    );
+
+    expect(previewCode, 0);
+    expect(output.toString(), contains('Would delete 1 failure image (3 B)'));
+    expect(await failureImage.exists(), isTrue);
+
+    final cleanOutput = StringBuffer();
+    final cleanCode = await runGoldenPresenter(
+      [
+        'clean-failures',
+        '--input',
+        path.join(temporaryDirectory.path, 'screens'),
+      ],
+      output: cleanOutput,
+      errors: StringBuffer(),
+    );
+
+    expect(cleanCode, 0);
+    expect(cleanOutput.toString(), contains('Deleted 1 failure image (3 B)'));
+    expect(await failureImage.exists(), isFalse);
+    expect(await goldenImage.exists(), isTrue);
   });
 
   test('migrate supports preview, apply, and clean check modes', () async {

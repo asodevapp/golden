@@ -106,6 +106,7 @@ Run `dart run ff_golden_presenter --help` for the action list and `<action> --he
 | `report` | Generate only the HTML file from an existing image tree. |
 | `doctor` | Detect compatible tools and print a platform-specific install command. |
 | `migrate` | Preview/apply safe package renames and report manual migration work. |
+| `clean-failures` | Delete generated comparison images below `failures` directories. |
 
 The original report-only invocation remains compatible:
 
@@ -140,6 +141,26 @@ The main `build` options are:
 | `--[no-]support-attribution` | on | Show or remove the ASO.dev support attribution in the report footer. |
 
 `--clean` refuses dangerous targets such as the filesystem root, home, repository root, input directory, or an ancestor of the input. Existing output is otherwise left intact unless the flag is passed.
+
+### Cleaning failure images
+
+Flutter's local golden comparator writes diagnostic PNGs into `failures`
+directories. Preview and remove those generated images explicitly:
+
+```shell
+dart run ff_golden_presenter clean-failures \
+  --input test/screens \
+  --dry-run
+
+dart run ff_golden_presenter clean-failures \
+  --input test/screens
+```
+
+The command deletes only configured image extensions below directories named
+exactly `failures`. It does not follow symlinks, remove non-image diagnostics,
+or touch files elsewhere. Filesystem root and home-directory inputs are
+rejected. Pass `--extensions png,jpg,jpeg,webp` to change the default PNG-only
+selection.
 
 Published reports include a visible “Made by the ASO.dev team” footer by
 default. The link is marked as sponsored and includes a referral source. Projects
@@ -292,6 +313,8 @@ The templates target Flutter repositories and `test/screens` by default. For pur
 A project no longer needs to copy files, check `pngquant`, or globally activate the package itself. Replace a pipeline like `scripts/_build_golden.sh` with the project-local command:
 
 ```shell
+dart run ff_golden_presenter clean-failures --input test/screens
+
 dart run ff_golden_presenter build \
   --input test/screens \
   --output-directory goldens \

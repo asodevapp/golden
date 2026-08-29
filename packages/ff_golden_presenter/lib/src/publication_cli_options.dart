@@ -8,6 +8,70 @@ const publicationInputDefault = 'test/screens';
 const publicationOutputDefault = 'build/golden-report';
 const publicationExtensionsDefault = ['png', 'jpg', 'jpeg', 'webp', 'svg'];
 
+final class CleanFailuresCliOptions {
+  CleanFailuresCliOptions._({
+    required this.input,
+    required this.extensions,
+    required this.dryRun,
+    required this.showHelp,
+    required ArgParser parser,
+  }) : _parser = parser;
+
+  final String input;
+  final Set<String> extensions;
+  final bool dryRun;
+  final bool showHelp;
+  final ArgParser _parser;
+
+  static CleanFailuresCliOptions parse(List<String> arguments) {
+    final parser = ArgParser(usageLineLength: 100)
+      ..addOption(
+        'input',
+        abbr: 'i',
+        defaultsTo: publicationInputDefault,
+        valueHelp: 'directory',
+        help: 'Directory to scan recursively for failures directories.',
+      )
+      ..addMultiOption(
+        'extensions',
+        defaultsTo: const ['png'],
+        valueHelp: 'list',
+        help: 'Failure image extensions to delete (comma-separated).',
+      )
+      ..addFlag(
+        'dry-run',
+        negatable: false,
+        help: 'Show what would be deleted without changing any files.',
+      )
+      ..addFlag(
+        'help',
+        abbr: 'h',
+        negatable: false,
+        help: 'Print this usage information.',
+      );
+    final results = parser.parse(arguments);
+    _rejectRest(results);
+    return CleanFailuresCliOptions._(
+      input: results['input'] as String,
+      extensions: _parseExtensions(results),
+      dryRun: results['dry-run'] as bool,
+      showHelp: results['help'] as bool,
+      parser: parser,
+    );
+  }
+
+  String get usage => '''
+Delete generated golden comparison images below failures directories.
+
+Usage: ff_golden_presenter clean-failures [options]
+
+${_parser.usage}
+
+Example:
+  dart run ff_golden_presenter clean-failures --input test/screens --dry-run
+''';
+}
+
 final class CollectCliOptions {
   CollectCliOptions._({
     required this.input,

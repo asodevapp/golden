@@ -2,6 +2,7 @@
 library;
 
 export 'src/catalog_scanner.dart';
+export 'src/failure_artifact_cleaner.dart';
 export 'src/golden_image_factory.dart';
 export 'src/golden_presenter.dart';
 export 'src/html_report_renderer.dart';

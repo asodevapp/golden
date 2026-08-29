@@ -1,3 +1,8 @@
+## 0.1.1
+
+- Added a guarded `clean-failures` command with dry-run support for removing
+  generated golden comparison images without touching baseline images.
+
 ## 0.1.0
 
 - Renamed the package, public entrypoint, and executable to `ff_golden_presenter` for the Flutter Files infrastructure family.

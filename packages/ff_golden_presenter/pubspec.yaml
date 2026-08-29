@@ -1,6 +1,6 @@
 name: ff_golden_presenter
 description: Collect, optimize, and publish golden test images as a searchable HTML report.
-version: 0.1.0
+version: 0.1.1
 homepage: https://asodevapp.github.io/golden/
 repository: https://github.com/asodevapp/golden
 issue_tracker: https://github.com/asodevapp/golden/issues

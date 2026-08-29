@@ -4,6 +4,7 @@ import 'package:path/path.dart' as path;
 
 import 'catalog_scanner.dart';
 import 'cli_options.dart';
+import 'failure_artifact_cleaner.dart';
 import 'golden_image_factory.dart';
 import 'golden_presenter.dart';
 import 'html_report_renderer.dart';
@@ -24,7 +25,8 @@ const _actions = {
   'optimize',
   'build',
   'doctor',
-  'migrate'
+  'migrate',
+  'clean-failures',
 };
 
 Future<int> runGoldenPresenter(
@@ -60,8 +62,57 @@ Future<int> runGoldenPresenter(
     'build' => _runBuild(actionArguments, out, errorOutput),
     'doctor' => _runDoctor(actionArguments, out, errorOutput),
     'migrate' => _runMigrate(actionArguments, out, errorOutput),
+    'clean-failures' => _runCleanFailures(actionArguments, out, errorOutput),
     _ => throw StateError('Unreachable action: $first'),
   };
+}
+
+Future<int> _runCleanFailures(
+  List<String> arguments,
+  StringSink out,
+  StringSink errorOutput,
+) async {
+  late final CleanFailuresCliOptions options;
+  try {
+    options = CleanFailuresCliOptions.parse(arguments);
+  } on FormatException catch (error) {
+    errorOutput.writeln('Error: ${error.message}');
+    errorOutput.writeln(
+      CleanFailuresCliOptions.parse(const ['--help']).usage,
+    );
+    return 64;
+  }
+  if (options.showHelp) {
+    out.write(options.usage);
+    return 0;
+  }
+
+  final input = Directory(path.normalize(path.absolute(options.input)));
+  if (!await input.exists()) {
+    errorOutput.writeln(
+      'Error: input directory does not exist: ${input.path}',
+    );
+    return 66;
+  }
+  try {
+    final result = await FailureArtifactCleaner(
+      inputDirectory: input,
+      extensions: options.extensions,
+    ).clean(dryRun: options.dryRun);
+    final imageLabel =
+        result.fileCount == 1 ? 'failure image' : 'failure images';
+    out.writeln(
+      '${options.dryRun ? 'Would delete' : 'Deleted'} '
+      '${result.fileCount} $imageLabel (${_formatBytes(result.totalBytes)}) '
+      'from ${input.path}',
+    );
+    return 0;
+  } on FormatException catch (error) {
+    errorOutput.writeln('Error: ${error.message}');
+    return 64;
+  } on FileSystemException catch (error) {
+    return _reportFileSystemError(error, errorOutput);
+  }
 }
 
 Future<int> _runReport(
@@ -478,6 +529,8 @@ Actions:
   build     Collect, optimize, and generate index.html in one command.
   doctor    Check tools and show installation guidance for this platform.
   migrate   Audit or safely rename golden packages in an existing project.
+  clean-failures
+            Delete generated images below failures directories.
 
 Run ff_golden_presenter <action> --help for action-specific options.
 ''';
