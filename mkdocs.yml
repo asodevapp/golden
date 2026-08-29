@@ -1,0 +1,97 @@
+site_name: FF Golden
+site_description: Deterministic Flutter golden testing, scenario matrices, strict diagnostics, and portable visual reports.
+site_author: Flutter Files
+site_url: https://gorniv.github.io/golden/
+repo_url: https://github.com/Gorniv/golden
+repo_name: Gorniv/golden
+edit_uri: edit/master/docs/
+copyright: >-
+  FF Golden is part of Flutter Files and is developed with support from
+  <a href="https://aso.dev/?utm_source=ff_golden_docs&amp;utm_medium=referral"
+  rel="sponsored noopener">ASO.dev</a>.
+
+theme:
+  name: material
+  language: en
+  icon:
+    repo: fontawesome/brands/github
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep purple
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep purple
+      accent: cyan
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.tracking
+    - search.highlight
+    - search.share
+    - search.suggest
+    - content.action.edit
+    - content.code.copy
+    - content.code.annotate
+
+nav:
+  - Home: index.md
+  - Get started: getting-started.md
+  - Core concepts:
+      - Device fidelity: concepts/device-fidelity.md
+      - Matrices and sampling: concepts/matrices.md
+      - Comparison and baselines: concepts/comparison.md
+  - Guides:
+      - Stateful and multi-shot tests: guides/stateful-scenarios.md
+      - Deterministic rendering: guides/determinism.md
+      - CI and publication: guides/ci.md
+  - Presenter:
+      - Overview: presenter/index.md
+      - CLI reference: presenter/cli.md
+  - Migration: migration.md
+  - Troubleshooting: troubleshooting.md
+  - Reference:
+      - Configuration: reference/configuration.md
+      - API reference: reference/api.md
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+
+extra_css:
+  - assets/stylesheets/extra.css
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/Gorniv/golden
+      name: FF Golden on GitHub
+    - icon: simple/dart
+      link: https://pub.dev/packages/ff_golden
+      name: ff_golden on pub.dev
+
+site_dir: build/pages

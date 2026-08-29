@@ -1,5 +1,5 @@
 ---
-name: Deploy FF Golden demo to GitHub Pages
+name: Deploy FF Golden docs and demo to GitHub Pages
 
 on:  # yamllint disable-line rule:truthy
   workflow_dispatch:
@@ -12,7 +12,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: ff-golden-demo-pages
+  group: ff-golden-pages
   cancel-in-progress: true
 
 jobs:
@@ -24,12 +24,21 @@ jobs:
         with:
           channel: stable
           cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-docs.txt
       - run: flutter pub get
+      - name: Install documentation dependencies
+        run: python -m pip install --requirement requirements-docs.txt
+      - name: Build the FF Golden documentation
+        run: python -m mkdocs build --strict
       - name: Build the FF Golden Presenter demo
         run: >-
           flutter pub run ff_golden_presenter:ff_golden_presenter build
           --input example/goldens
-          --output-directory build/pages
+          --output-directory ../../build/pages/demo
           --profile none
           --clean
           --title "FF Golden — Flutter visual regression testing"
@@ -37,15 +46,16 @@ jobs:
       - name: Verify the publication artifact
         run: |
           test -f build/pages/index.html
-          grep -Fq 'href="https://aso.dev/' build/pages/index.html
-          grep -Fq 'rel="sponsored noopener"' build/pages/index.html
-        working-directory: packages/ff_golden_presenter
+          test -f build/pages/demo/index.html
+          grep -Fq 'FF Golden' build/pages/index.html
+          grep -Fq 'href="https://aso.dev/' build/pages/demo/index.html
+          grep -Fq 'rel="sponsored noopener"' build/pages/demo/index.html
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
-          path: packages/ff_golden_presenter/build/pages
+          path: build/pages
 
   deploy:
     needs: build

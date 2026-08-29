@@ -27,6 +27,7 @@
 - Aligned the Flutter minimum with the Dart 3.6 requirement and documented the
   end-to-end automated migration workflow.
 - Added an end-to-end multi-shot runner-to-presenter CI fixture.
+- Added the hosted FF Golden guide and package API documentation links.
 - Licensed the package under MIT.
 
 ## 0.3.0

@@ -1,0 +1,96 @@
+:root {
+  --ff-gradient-start: #5b21b6;
+  --ff-gradient-middle: #4f46e5;
+  --ff-gradient-end: #0891b2;
+}
+
+.md-typeset .ff-hero {
+  background:
+    radial-gradient(circle at 84% 8%, rgb(103 232 249 / 32%), transparent 28%),
+    linear-gradient(135deg, var(--ff-gradient-start), var(--ff-gradient-middle) 56%, var(--ff-gradient-end));
+  border-radius: 1.25rem;
+  color: #fff;
+  margin: 1rem 0 2rem;
+  overflow: hidden;
+  padding: clamp(2rem, 6vw, 4.5rem);
+  position: relative;
+}
+
+.md-typeset .ff-hero h1 {
+  color: #fff;
+  font-size: clamp(2.25rem, 7vw, 4.5rem);
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 0.98;
+  margin: 0 0 1rem;
+  max-width: 12ch;
+}
+
+.md-typeset .ff-hero p {
+  color: rgb(255 255 255 / 88%);
+  font-size: 1.05rem;
+  max-width: 42rem;
+}
+
+.md-typeset .ff-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.md-typeset .ff-actions .md-button {
+  border-color: rgb(255 255 255 / 74%);
+  color: #fff;
+}
+
+.md-typeset .ff-actions .md-button--primary {
+  background: #fff;
+  border-color: #fff;
+  color: #312e81;
+}
+
+.md-typeset .ff-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(13.5rem, 1fr));
+  margin: 1.5rem 0 2rem;
+}
+
+.md-typeset .ff-card {
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 0.85rem;
+  padding: 1.1rem 1.2rem;
+}
+
+.md-typeset .ff-card h3 {
+  margin-top: 0;
+}
+
+.md-typeset .ff-card p:last-child {
+  margin-bottom: 0;
+}
+
+[data-md-color-scheme="slate"] .md-typeset .ff-card {
+  background: rgb(255 255 255 / 2%);
+}
+
+.md-typeset .ff-boundary {
+  align-items: stretch;
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 1.5rem 0;
+}
+
+.md-typeset .ff-boundary > div {
+  background: var(--md-code-bg-color);
+  border-radius: 0.75rem;
+  padding: 1rem 1.1rem;
+}
+
+@media screen and (max-width: 44rem) {
+  .md-typeset .ff-boundary {
+    grid-template-columns: 1fr;
+  }
+}

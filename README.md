@@ -11,8 +11,9 @@ an independently versioned, publishable package.
 | [`ff_golden`](packages/ff_golden) | Flutter golden execution, device fidelity, scenario matrices, comparison, and diagnostics. |
 | [`ff_golden_presenter`](packages/ff_golden_presenter) | Project-local CLI for collecting, optimizing, browsing, and publishing golden artifacts. |
 
-Explore the generated report in the
-[live FF Golden demo](https://gorniv.github.io/golden/).
+Read the [FF Golden documentation](https://gorniv.github.io/golden/) or explore
+the generated report in the
+[live FF Golden demo](https://gorniv.github.io/golden/demo/).
 
 ## Codex skill
 
@@ -76,6 +77,17 @@ The checked-in GitHub Actions workflow performs these checks and exercises the
 presenter on Linux, macOS, and Windows. A separate integration job produces
 multi-shot runner baselines plus sharded metadata, then verifies that presenter
 retains the exact device and every matrix axis.
+
+Build the documentation locally with:
+
+```shell
+python3 -m pip install -r requirements-docs.txt
+python3 -m mkdocs build --strict
+python3 -m mkdocs serve
+```
+
+GitHub Pages publishes this guide at the site root and the generated presenter
+report below `/demo/` as one static artifact.
 
 ## One-command demo
 

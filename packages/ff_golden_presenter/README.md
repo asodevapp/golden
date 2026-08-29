@@ -214,7 +214,7 @@ must contain a capture group.
 
 The repository contains a deterministic catalog under [`example/goldens`](example/goldens). Regenerate the checked-in [`example/report.html`](example/report.html):
 
-Open the [live FF Golden demo](https://gorniv.github.io/golden/), rebuilt and
+Open the [live FF Golden demo](https://gorniv.github.io/golden/demo/), rebuilt and
 deployed to GitHub Pages from the `master` branch.
 
 ```shell

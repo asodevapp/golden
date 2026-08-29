@@ -24,6 +24,8 @@
 - Added transparent sponsored ASO.dev support attribution with a
   `--no-support-attribution` opt-out for report and build commands.
 - Added a repository-owned GitHub Pages deployment for the live demo.
+- Added the hosted FF Golden guide and moved the live report below `/demo/` in
+  the shared documentation site.
 
 ## 0.0.3
 

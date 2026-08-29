@@ -4,7 +4,7 @@ version: 0.1.0
 homepage: https://gorniv.github.io/golden/
 repository: https://github.com/Gorniv/golden
 issue_tracker: https://github.com/Gorniv/golden/issues
-documentation: https://github.com/Gorniv/golden/tree/master/packages/ff_golden_presenter#readme
+documentation: https://gorniv.github.io/golden/presenter/
 topics:
   - cli
   - docker
