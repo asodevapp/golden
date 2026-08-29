@@ -28,7 +28,7 @@ stable machine-readable run metadata alongside the golden artifacts.
 Add the package as a development dependency:
 
 ```shell
-flutter pub add --dev ff_golden
+flutter pub add --dev 'ff_golden:^1.0.0-dev.1'
 ```
 
 Then import the primary library:
