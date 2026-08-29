@@ -1,3 +1,11 @@
+## 1.0.0
+
+- Declared the current runner API stable after long-term production use of the
+  underlying golden-test workflow.
+- Stabilized the existing legacy compatibility layer, coverage API, device
+  fidelity, strict diagnostics, and presenter manifest contract without
+  behavioral changes from `1.0.0-dev.1`.
+
 ## 1.0.0-dev.1
 
 - Renamed the package from `golden` to `ff_golden`.

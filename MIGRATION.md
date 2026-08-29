@@ -25,7 +25,7 @@ Replace the old development dependencies with the two published packages:
 
 ```yaml
 dev_dependencies:
-  ff_golden: ^1.0.0-dev.1
+  ff_golden: ^1.0.0
   ff_golden_presenter: ^1.0.0
 ```
 

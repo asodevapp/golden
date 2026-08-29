@@ -60,7 +60,7 @@ be opened locally, attached to CI, or published to Pages.
 Add the runner as a development dependency:
 
 ```shell
-flutter pub add --dev 'ff_golden:^1.0.0-dev.1'
+flutter pub add --dev 'ff_golden:^1.0.0'
 ```
 
 Create a deterministic scenario:
