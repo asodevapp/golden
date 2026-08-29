@@ -10,7 +10,7 @@
 - Added safe staging, concurrent PNG optimization profiles, backend detection, and explicit cross-platform tool installation.
 - Added a multi-stage, health-checked, unprivileged nginx container and a one-command Docker Compose demo.
 - Added copy-ready GitHub Pages, GitHub Container Registry, GitLab Pages, and GitLab Container Registry templates.
-- Moved into the `Gorniv/golden` Pub workspace as the companion publication package for `ff_golden`.
+- Moved into the `asodevapp/golden` Pub workspace as the companion publication package for `ff_golden`.
 - Added a safe `migrate` preview/apply/check command and a coordinated migration guide.
 - Extended migration to public `GoldenDevice`/`GoldenTheme` names and import
   ordering while reporting geometry and deprecated `.size` usage for review.

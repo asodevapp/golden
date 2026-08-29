@@ -4,7 +4,7 @@
   <rect x="155" y="120" width="102" height="102" rx="32" fill="#dff8ef"/>
   <path d="M178 173l18 18 40-51" fill="none" stroke="#188366" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
   <text x="206" y="286" text-anchor="middle" font-family="Arial,sans-serif" font-size="31" font-weight="700" fill="#151a24">Willkommen</text>
-  <text x="206" y="322" text-anchor="middle" font-family="Arial,sans-serif" font-size="15" fill="#667085">Melde dich bei Northstar an</text>
+  <text x="206" y="322" text-anchor="middle" font-family="Arial,sans-serif" font-size="15" fill="#667085">Melde dich bei ASO.dev an</text>
   <text x="38" y="383" font-family="Arial,sans-serif" font-size="12" font-weight="700" fill="#667085">E-MAIL-ADRESSE</text>
   <rect x="38" y="397" width="336" height="62" rx="12" fill="#fff" stroke="#bbc5d3"/>
   <text x="56" y="435" font-family="Arial,sans-serif" font-size="16" fill="#151a24">alex@example.com</text>

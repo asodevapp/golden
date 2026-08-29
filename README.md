@@ -11,9 +11,9 @@ an independently versioned, publishable package.
 | [`ff_golden`](packages/ff_golden) | Flutter golden execution, device fidelity, scenario matrices, comparison, and diagnostics. |
 | [`ff_golden_presenter`](packages/ff_golden_presenter) | Project-local CLI for collecting, optimizing, browsing, and publishing golden artifacts. |
 
-Read the [FF Golden documentation](https://gorniv.github.io/golden/) or explore
+Read the [FF Golden documentation](https://asodevapp.github.io/golden/) or explore
 the generated report in the
-[live FF Golden demo](https://gorniv.github.io/golden/demo/).
+[live FF Golden demo](https://asodevapp.github.io/golden/demo/).
 
 ## Codex skill
 

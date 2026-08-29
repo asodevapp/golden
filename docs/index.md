@@ -13,8 +13,8 @@ settings. Review every capture in a portable, searchable report.
 
 <div class="ff-actions" markdown>
 [Get started](getting-started.md){ .md-button .md-button--primary }
-[Open the live report](https://gorniv.github.io/golden/demo/){ .md-button }
-[View on GitHub](https://github.com/Gorniv/golden){ .md-button }
+[Open the live report](https://asodevapp.github.io/golden/demo/){ .md-button }
+[View on GitHub](https://github.com/asodevapp/golden){ .md-button }
 </div>
 
 </div>
@@ -136,7 +136,7 @@ the runner's result and preserves the original golden files.
 - Use [stateful and multi-shot scenarios](guides/stateful-scenarios.md) for real
   user workflows.
 - Read [Migration](migration.md) before renaming an existing `golden` suite.
-- Open the [live FF Golden Presenter demo](https://gorniv.github.io/golden/demo/)
+- Open the [live FF Golden Presenter demo](https://asodevapp.github.io/golden/demo/)
   to explore the final review surface.
 
 ## Requirements

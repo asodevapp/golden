@@ -1,9 +1,9 @@
 site_name: FF Golden
 site_description: Deterministic Flutter golden testing, scenario matrices, strict diagnostics, and portable visual reports.
 site_author: Flutter Files
-site_url: https://gorniv.github.io/golden/
-repo_url: https://github.com/Gorniv/golden
-repo_name: Gorniv/golden
+site_url: https://asodevapp.github.io/golden/
+repo_url: https://github.com/asodevapp/golden
+repo_name: asodevapp/golden
 edit_uri: edit/master/docs/
 copyright: >-
   FF Golden is part of Flutter Files and is developed with support from
@@ -88,7 +88,7 @@ extra_css:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/Gorniv/golden
+      link: https://github.com/asodevapp/golden
       name: FF Golden on GitHub
     - icon: simple/dart
       link: https://pub.dev/packages/ff_golden

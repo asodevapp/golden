@@ -1,10 +1,10 @@
 name: ff_golden
 description: Deterministic Flutter golden testing with scenario flows, device fidelity, matrix sampling, and strict diagnostics.
 version: 1.0.0-dev.1
-homepage: https://gorniv.github.io/golden/
-documentation: https://gorniv.github.io/golden/getting-started/
-repository: https://github.com/Gorniv/golden
-issue_tracker: https://github.com/Gorniv/golden/issues
+homepage: https://asodevapp.github.io/golden/
+documentation: https://asodevapp.github.io/golden/getting-started/
+repository: https://github.com/asodevapp/golden
+issue_tracker: https://github.com/asodevapp/golden/issues
 topics:
   - flutter
   - testing

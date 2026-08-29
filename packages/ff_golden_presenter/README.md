@@ -141,10 +141,13 @@ The main `build` options are:
 
 `--clean` refuses dangerous targets such as the filesystem root, home, repository root, input directory, or an ancestor of the input. Existing output is otherwise left intact unless the flag is passed.
 
-Published reports include a visible “Made with support from ASO.dev” footer by
+Published reports include a visible “Made by the ASO.dev team” footer by
 default. The link is marked as sponsored and includes a referral source. Projects
 that require an unbranded report can pass `--no-support-attribution`; the
 FF Golden Presenter generator credit remains intact.
+
+The generated `<head>` also includes description, Open Graph, and Twitter card
+metadata derived from the report title and catalog size.
 
 ### Optimization profiles
 
@@ -214,7 +217,7 @@ must contain a capture group.
 
 The repository contains a deterministic catalog under [`example/goldens`](example/goldens). Regenerate the checked-in [`example/report.html`](example/report.html):
 
-Open the [live FF Golden demo](https://gorniv.github.io/golden/demo/), rebuilt and
+Open the [live FF Golden demo](https://asodevapp.github.io/golden/demo/), rebuilt and
 deployed to GitHub Pages from the `master` branch.
 
 ```shell

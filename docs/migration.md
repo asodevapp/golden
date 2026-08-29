@@ -130,5 +130,5 @@ directory, not only `index.html`.
 - [ ] The complete presenter directory opens from the CI artifact.
 
 The repository also keeps the
-[full migration source](https://github.com/Gorniv/golden/blob/master/MIGRATION.md)
+[full migration source](https://github.com/asodevapp/golden/blob/master/MIGRATION.md)
 next to the packages for review during offline checkout work.

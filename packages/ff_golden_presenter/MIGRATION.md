@@ -1,7 +1,7 @@
 # Migrating from golden_presenter to ff_golden_presenter
 
 For the coordinated runner migration, baseline review, CI, and rollback, use the
-[complete Flutter Files migration guide](https://github.com/Gorniv/golden/blob/master/MIGRATION.md).
+[complete Flutter Files migration guide](https://github.com/asodevapp/golden/blob/master/MIGRATION.md).
 
 ## Dependency
 

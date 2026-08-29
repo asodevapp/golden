@@ -2,7 +2,7 @@
 
 For dependency bootstrap, presenter migration, CI, rollback, and the automated
 audit command, use the
-[complete Flutter Files migration guide](https://github.com/Gorniv/golden/blob/master/MIGRATION.md).
+[complete Flutter Files migration guide](https://github.com/asodevapp/golden/blob/master/MIGRATION.md).
 
 Version `1.0.0-dev.1` intentionally regenerates some baselines because the old
 device model mixed physical and logical pixels. Perform the migration in a

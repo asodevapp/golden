@@ -228,7 +228,7 @@ Upload the complete output directory, not only `index.html`:
 
 ## Completion checklist
 
-- Both dependencies resolve from one pinned `Gorniv/golden` revision.
+- Both dependencies resolve from one pinned `asodevapp/golden` revision.
 - No project source imports `package:golden/` or `package:golden_presenter/`.
 - Every custom device uses verified logical geometry and platform metadata.
 - Every `postPumping` callback was classified as pre-capture stabilization or

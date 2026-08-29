@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://gorniv.github.io/golden/sitemap.xml
+Sitemap: https://asodevapp.github.io/golden/sitemap.xml

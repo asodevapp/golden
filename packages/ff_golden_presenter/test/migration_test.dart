@@ -103,6 +103,10 @@ import 'package:golden/golden.dart';
       result.safeChanges.map((finding) => finding.message),
       contains('add git.path: packages/ff_golden_presenter'),
     );
+    expect(
+      result.safeChanges.map((finding) => finding.message),
+      contains('update the golden monorepository URL'),
+    );
     expect(await pubspec.readAsString(), originalPubspec);
     expect(await goldenTest.readAsString(), originalTest);
   });
@@ -122,7 +126,7 @@ import 'package:golden/golden.dart';
     expect(await pubspec.readAsString(), contains('  ff_golden_presenter:'));
     expect(
       await pubspec.readAsString(),
-      contains('https://github.com/Gorniv/golden.git'),
+      contains('https://github.com/asodevapp/golden.git'),
     );
     expect(
       await pubspec.readAsString(),

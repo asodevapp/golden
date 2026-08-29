@@ -129,4 +129,4 @@ Open an issue with:
 - changed-pixel count or failure artifacts;
 - the smallest reproducible matrix and configuration.
 
-[Report an FF Golden issue](https://github.com/Gorniv/golden/issues){ .md-button }
+[Report an FF Golden issue](https://github.com/asodevapp/golden/issues){ .md-button }

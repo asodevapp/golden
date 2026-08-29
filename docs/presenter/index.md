@@ -10,7 +10,7 @@ portable HTML report. The generated page has no runtime dependencies and uses
 relative image URLs, so the whole output directory can be opened locally,
 attached to CI, published to Pages, or served by a container.
 
-[Open the live report](https://gorniv.github.io/golden/demo/){ .md-button .md-button--primary }
+[Open the live report](https://asodevapp.github.io/golden/demo/){ .md-button .md-button--primary }
 
 ## Install project-locally
 

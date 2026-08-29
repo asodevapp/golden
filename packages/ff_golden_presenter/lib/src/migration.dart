@@ -219,7 +219,8 @@ final class FfGoldenProjectMigrator {
     );
     add(
       RegExp(r'https://github\.com/Gorniv/golden_presenter(?:\.git)?'),
-      'use the Gorniv/golden repository and packages/ff_golden_presenter path',
+      'use the asodevapp/golden repository and '
+      'packages/ff_golden_presenter path',
     );
 
     add(
@@ -324,7 +325,7 @@ final class FfGoldenProjectMigrator {
           if (line.trim().isNotEmpty && _indentation(line) <= gitIndent) break;
           if (RegExp(r'^\s*path\s*:').hasMatch(line)) hasPath = true;
           if (RegExp(
-            r'^\s*url\s*:\s*https://github\.com/Gorniv/golden(?:\.git)?\s*(?:#.*)?$',
+            r'^\s*url\s*:\s*https://github\.com/asodevapp/golden(?:\.git)?\s*(?:#.*)?$',
           ).hasMatch(line)) {
             urlLine = cursor;
           }
@@ -440,9 +441,19 @@ const _generalRules = <_MigrationRule>[
     message: 'replace the golden_presenter package import',
   ),
   _MigrationRule(
+    pattern: r'https://github\.com/Gorniv/golden\.git(?=[\s\x27\x22/]|$)',
+    replacement: 'https://github.com/asodevapp/golden.git',
+    message: 'update the golden monorepository URL',
+  ),
+  _MigrationRule(
+    pattern: r'https://github\.com/Gorniv/golden(?=[\s\x27\x22/]|$)',
+    replacement: 'https://github.com/asodevapp/golden',
+    message: 'update the golden monorepository URL',
+  ),
+  _MigrationRule(
     pattern:
         r'https://github\.com/Gorniv/golden_presenter(?:\.git)?(?=[\s\x27\x22/]|$)',
-    replacement: 'https://github.com/Gorniv/golden.git',
+    replacement: 'https://github.com/asodevapp/golden.git',
     message: 'move the presenter dependency to the golden monorepository',
   ),
   _MigrationRule(

@@ -4,7 +4,7 @@
   <text x="28" y="94" font-family="Arial,sans-serif" font-size="17" fill="#141821">‹</text>
   <text x="195" y="94" text-anchor="middle" font-family="Arial,sans-serif" font-size="18" font-weight="700" fill="#141821">Order summary</text>
   <rect x="24" y="128" width="342" height="155" rx="20" fill="#18202b"/>
-  <text x="44" y="161" font-family="Arial,sans-serif" font-size="12" font-weight="700" fill="#8ee3c5">NORTHSTAR ONE</text>
+  <text x="44" y="161" font-family="Arial,sans-serif" font-size="12" font-weight="700" fill="#8ee3c5">ASO.DEV PRO</text>
   <text x="44" y="204" font-family="Arial,sans-serif" font-size="30" font-weight="700" fill="#fff">$48.00</text>
   <text x="44" y="232" font-family="Arial,sans-serif" font-size="13" fill="#aeb7c6">Annual plan · renews Aug 22, 2027</text>
   <circle cx="322" cy="183" r="26" fill="#8ee3c5"/>
@@ -17,7 +17,7 @@
   <text x="111" y="401" font-family="Arial,sans-serif" font-size="12" fill="#7b8594">Expires 12/29</text>
   <text x="24" y="478" font-family="Arial,sans-serif" font-size="13" font-weight="700" fill="#687386">PRICE DETAILS</text>
   <rect x="24" y="494" width="342" height="176" rx="16" fill="#fff"/>
-  <text x="44" y="535" font-family="Arial,sans-serif" font-size="14" fill="#687386">Northstar One</text>
+  <text x="44" y="535" font-family="Arial,sans-serif" font-size="14" fill="#687386">ASO.dev Pro</text>
   <text x="346" y="535" text-anchor="end" font-family="Arial,sans-serif" font-size="14" fill="#141821">$52.00</text>
   <text x="44" y="575" font-family="Arial,sans-serif" font-size="14" fill="#687386">Annual discount</text>
   <text x="346" y="575" text-anchor="end" font-family="Arial,sans-serif" font-size="14" fill="#188366">−$8.00</text>

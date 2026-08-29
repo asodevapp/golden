@@ -88,9 +88,9 @@ Presenter output is a static, relative-URL directory and can be uploaded with
 the official Pages artifact flow. A copy-ready application template is
 available in the repository:
 
-- [GitHub Pages workflow](https://github.com/Gorniv/golden/blob/master/packages/ff_golden_presenter/example/ci/github-pages.yml)
-- [GitLab Pages workflow](https://github.com/Gorniv/golden/blob/master/packages/ff_golden_presenter/example/ci/gitlab-pages.yml)
-- [Container publication](https://github.com/Gorniv/golden/tree/master/packages/ff_golden_presenter/example/ci)
+- [GitHub Pages workflow](https://github.com/asodevapp/golden/blob/master/packages/ff_golden_presenter/example/ci/github-pages.yml)
+- [GitLab Pages workflow](https://github.com/asodevapp/golden/blob/master/packages/ff_golden_presenter/example/ci/gitlab-pages.yml)
+- [Container publication](https://github.com/asodevapp/golden/tree/master/packages/ff_golden_presenter/example/ci)
 
 Upload the complete directory, not only `index.html`, because report image URLs
 are relative to the publication root.

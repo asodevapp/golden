@@ -1,10 +1,10 @@
 name: ff_golden_presenter
 description: Collect, optimize, and publish golden test images as a searchable HTML report.
 version: 0.1.0
-homepage: https://gorniv.github.io/golden/
-repository: https://github.com/Gorniv/golden
-issue_tracker: https://github.com/Gorniv/golden/issues
-documentation: https://gorniv.github.io/golden/presenter/
+homepage: https://asodevapp.github.io/golden/
+repository: https://github.com/asodevapp/golden
+issue_tracker: https://github.com/asodevapp/golden/issues
+documentation: https://asodevapp.github.io/golden/presenter/
 topics:
   - cli
   - docker
