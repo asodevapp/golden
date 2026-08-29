@@ -12,42 +12,59 @@
   color: #fff;
   margin: 1rem 0 2rem;
   overflow: hidden;
-  padding: clamp(2rem, 6vw, 4.5rem);
+  padding: clamp(2.5rem, 5vw, 4rem);
   position: relative;
 }
 
 .md-typeset .ff-hero h1 {
   color: #fff;
-  font-size: clamp(2.25rem, 7vw, 4.5rem);
+  font-size: clamp(2.6rem, 5vw, 3.75rem);
   font-weight: 800;
   letter-spacing: -0.045em;
-  line-height: 0.98;
+  line-height: 1;
   margin: 0 0 1rem;
-  max-width: 12ch;
+  max-width: none;
 }
 
-.md-typeset .ff-hero p {
+.md-typeset .ff-hero > p {
   color: rgb(255 255 255 / 88%);
   font-size: 1.05rem;
   max-width: 42rem;
 }
 
 .md-typeset .ff-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
   margin-top: 1.5rem;
+}
+
+.md-typeset .ff-actions p {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.35fr);
+  margin: 0;
+  max-width: none;
 }
 
 .md-typeset .ff-actions .md-button {
   border-color: rgb(255 255 255 / 74%);
   color: #fff;
+  margin: 0;
+  padding-inline: 0.8rem;
+  text-align: center;
+  width: 100%;
 }
 
 .md-typeset .ff-actions .md-button--primary {
   background: #fff;
   border-color: #fff;
   color: #312e81;
+}
+
+.md-typeset .ff-actions .md-button:nth-child(3) {
+  grid-column: 1 / -1;
+}
+
+.md-typeset .ff-hero > h1 .headerlink {
+  display: none;
 }
 
 .md-typeset .ff-grid {
@@ -89,7 +106,47 @@
   padding: 1rem 1.1rem;
 }
 
+@media screen and (max-width: 60rem) {
+  .md-typeset .ff-hero {
+    padding: clamp(2rem, 6vw, 3.25rem);
+  }
+
+  .md-typeset .ff-hero h1 {
+    font-size: clamp(2.5rem, 7vw, 3.75rem);
+    line-height: 1.02;
+    max-width: none;
+  }
+}
+
 @media screen and (max-width: 44rem) {
+  .md-typeset .ff-hero {
+    border-radius: 1rem;
+    margin: 0.75rem 0 1.5rem;
+    padding: 1.5rem;
+  }
+
+  .md-typeset .ff-hero h1 {
+    font-size: clamp(2.15rem, 11vw, 3rem);
+    letter-spacing: -0.035em;
+  }
+
+  .md-typeset .ff-hero > p {
+    font-size: 0.95rem;
+    line-height: 1.55;
+  }
+
+  .md-typeset .ff-actions {
+    margin-top: 1.25rem;
+  }
+
+  .md-typeset .ff-actions p {
+    grid-template-columns: 1fr;
+  }
+
+  .md-typeset .ff-actions .md-button:nth-child(3) {
+    grid-column: auto;
+  }
+
   .md-typeset .ff-boundary {
     grid-template-columns: 1fr;
   }
