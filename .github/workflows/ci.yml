@@ -86,11 +86,11 @@ jobs:
         working-directory: packages/ff_golden
       - name: Verify authoritative multi-shot matrix metadata
         run: |
-          rg --fixed-strings 'data-capture="empty"' build/presenter-integration/index.html
-          rg --fixed-strings 'data-device="iPadPro12.9"' build/presenter-integration/index.html
-          rg --fixed-strings 'data-text-scale="1.5"' build/presenter-integration/index.html
-          rg --fixed-strings 'data-platform="macOS"' build/presenter-integration/index.html
-          rg --fixed-strings 'data-contrast="high"' build/presenter-integration/index.html
+          grep -Fq 'data-capture="empty"' build/presenter-integration/index.html
+          grep -Fq 'data-device="iPadPro12.9"' build/presenter-integration/index.html
+          grep -Fq 'data-text-scale="1.5"' build/presenter-integration/index.html
+          grep -Fq 'data-platform="macOS"' build/presenter-integration/index.html
+          grep -Fq 'data-contrast="high"' build/presenter-integration/index.html
         working-directory: packages/ff_golden
 
   container:

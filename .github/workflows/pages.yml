@@ -37,8 +37,8 @@ jobs:
       - name: Verify the publication artifact
         run: |
           test -f build/pages/index.html
-          rg --fixed-strings 'href="https://aso.dev/' build/pages/index.html
-          rg --fixed-strings 'rel="sponsored noopener"' build/pages/index.html
+          grep -Fq 'href="https://aso.dev/' build/pages/index.html
+          grep -Fq 'rel="sponsored noopener"' build/pages/index.html
         working-directory: packages/ff_golden_presenter
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5

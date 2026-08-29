@@ -88,7 +88,9 @@ final class FfGoldenProjectMigrator {
       if (await entity.length() > 2 * 1024 * 1024) continue;
       scannedFiles++;
 
-      final relativePath = path.relative(entity.path, from: root);
+      final relativePath = path.posix.joinAll(
+        path.split(path.relative(entity.path, from: root)),
+      );
       final original = await entity.readAsString();
       var migrated = original;
       for (final rule in _rulesFor(entity.path)) {
