@@ -28,7 +28,7 @@ stable machine-readable run metadata alongside the golden artifacts.
 Add the package as a development dependency:
 
 ```shell
-flutter pub add --dev 'ff_golden:^1.0.0'
+flutter pub add --dev 'ff_golden:^1.1.0'
 ```
 
 Then import the primary library:
@@ -168,6 +168,11 @@ testFfGoldens(
 `context.pumpUntilFound(...)` advances bounded virtual time and fails with the
 active variant in its diagnostic instead of waiting indefinitely.
 
+Use `context.pumpUntil(...)` for application state, `pumpUntilGone(...)` for a
+completed loading surface, `pumpFrames(...)` for an intentional fixed-frame
+contract, and `elapse(...)` for a known timer or animation checkpoint. The same
+helpers are available from legacy `GoldenTesterBase` subclasses.
+
 For compile-time-checked state tables, reuse one coverage definition with
 `testFfGoldenScenarios<T>`:
 
@@ -225,6 +230,22 @@ wrapper: (child, variant) => MyApp(
 
 The variant is also available to `build`, so DI overrides and state fixtures can
 be selected without global mutable configuration.
+
+Typed scenarios can install per-case fixtures before the widget is built and
+release them after capture or failure:
+
+```dart
+GoldenScenario<ProfileFixture>(
+  name: 'profile/loaded',
+  state: fixture,
+  prepare: (_, fixture) => fixture.install(),
+  dispose: (_, fixture) => fixture.uninstall(),
+)
+```
+
+Keep fakes application-local and prefer a controlled `Completer` over nested
+fake-async zones or real delays. See the
+[fixtures and async guide](https://asodevapp.github.io/golden/guides/fixtures-and-async/).
 
 ## Reports and ff_golden_presenter
 

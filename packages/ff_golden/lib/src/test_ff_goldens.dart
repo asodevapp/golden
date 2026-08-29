@@ -13,18 +13,24 @@ import 'coverage.dart';
 import 'naming.dart';
 import 'report.dart';
 import 'stale.dart';
+import 'test_driver.dart';
 import 'test_view.dart';
 import 'variant.dart';
 
 typedef GoldenWidgetBuilder = Widget Function(GoldenVariant variant);
 typedef GoldenAppBuilder = Widget Function(Widget child, GoldenVariant variant);
 typedef GoldenInteraction = FutureOr<void> Function(GoldenTestContext context);
+typedef GoldenLifecycle = FutureOr<void> Function(GoldenTestContext context);
 typedef GoldenPump = Future<void> Function(WidgetTester tester);
 typedef GoldenScenarioWidgetBuilder<T> = Widget Function(
   GoldenVariant variant,
   T state,
 );
 typedef GoldenScenarioInteraction<T> = FutureOr<void> Function(
+  GoldenTestContext context,
+  T state,
+);
+typedef GoldenScenarioLifecycle<T> = FutureOr<void> Function(
   GoldenTestContext context,
   T state,
 );
@@ -35,12 +41,20 @@ class GoldenScenario<T> {
     required this.name,
     required this.state,
     this.interact,
+    this.prepare,
+    this.dispose,
   });
 
   /// Stable path segment and human-readable state name.
   final String name;
   final T state;
   final GoldenScenarioInteraction<T>? interact;
+
+  /// Installs data fixtures or dependency overrides before [state] is built.
+  final GoldenScenarioLifecycle<T>? prepare;
+
+  /// Releases resources installed by [prepare] after capture or failure.
+  final GoldenScenarioLifecycle<T>? dispose;
 }
 
 @immutable
@@ -100,6 +114,11 @@ class GoldenTestContext {
 
   List<GoldenCapture> get captures => List.unmodifiable(_captures);
 
+  GoldenTestDriver get driver => GoldenTestDriver(
+        tester: tester,
+        context: 'scenario $scenario, variant ${variant.label}',
+      );
+
   String path({String? testName}) => configuration.pathStrategy.build(
         scenario: scenario,
         variant: variant,
@@ -125,23 +144,41 @@ class GoldenTestContext {
     );
   }
 
+  Future<void> pumpFrames(
+    int count, {
+    Duration step = const Duration(milliseconds: 16),
+  }) =>
+      driver.pumpFrames(count, step: step);
+
+  Future<void> elapse(Duration duration) => driver.elapse(duration);
+
+  Future<void> pumpUntil(
+    GoldenWaitCondition condition, {
+    Duration timeout = const Duration(seconds: 5),
+    Duration step = const Duration(milliseconds: 16),
+    String description = 'condition',
+  }) =>
+      driver.pumpUntil(
+        condition,
+        timeout: timeout,
+        step: step,
+        description: description,
+      );
+
   /// Pumps in bounded virtual-time steps until [finder] appears.
   Future<void> pumpUntilFound(
     Finder finder, {
     Duration timeout = const Duration(seconds: 5),
     Duration step = const Duration(milliseconds: 16),
-  }) async {
-    var elapsed = Duration.zero;
-    while (finder.evaluate().isEmpty && elapsed < timeout) {
-      await tester.pump(step);
-      elapsed += step;
-    }
-    if (finder.evaluate().isEmpty) {
-      throw TestFailure(
-        'ff_golden did not find $finder within $timeout for ${variant.label}.',
-      );
-    }
-  }
+  }) =>
+      driver.pumpUntilFound(finder, timeout: timeout, step: step);
+
+  Future<void> pumpUntilGone(
+    Finder finder, {
+    Duration timeout = const Duration(seconds: 5),
+    Duration step = const Duration(milliseconds: 16),
+  }) =>
+      driver.pumpUntilGone(finder, timeout: timeout, step: step);
 }
 
 @isTestGroup
@@ -152,6 +189,8 @@ void testFfGoldens(
   GoldenCoverage? coverage,
   GoldenAppBuilder? wrapper,
   GoldenInteraction? interact,
+  GoldenLifecycle? prepare,
+  GoldenLifecycle? dispose,
   GoldenPump pump = _pumpAndSettle,
   GoldenRunConfiguration configuration = const GoldenRunConfiguration(),
   FutureOr<void> Function()? before,
@@ -223,9 +262,16 @@ void testFfGoldens(
         StackTrace? failureStack;
         String? failurePhase;
         var phase = 'setup';
+        var fixtureStarted = prepare == null;
 
         try {
           await before?.call();
+          phase = 'fixture setup';
+          if (prepare != null) {
+            fixtureStarted = true;
+            await prepare(context);
+          }
+          phase = 'build';
           await errorCapture.run(() async {
             final child = build(goldenVariant);
             final app = wrapper?.call(child, goldenVariant) ??
@@ -252,14 +298,24 @@ void testFfGoldens(
           failurePhase = phase;
         } finally {
           try {
+            phase = 'fixture teardown';
+            if (fixtureStarted) await dispose?.call(context);
+          } catch (error, stackTrace) {
+            failure ??= error;
+            failureStack ??= stackTrace;
+            failurePhase ??= phase;
+          }
+          try {
             phase = 'teardown';
             await after?.call();
           } catch (error, stackTrace) {
             failure ??= error;
             failureStack ??= stackTrace;
             failurePhase ??= phase;
-          } finally {
+          }
+          try {
             view.reset();
+          } finally {
             debugDisableShadows = previousDebugDisableShadows;
           }
           stopwatch.stop();
@@ -340,6 +396,12 @@ void testFfGoldenScenarios<T>(
       interact: scenarioCase.interact == null
           ? null
           : (context) => scenarioCase.interact!(context, scenarioCase.state),
+      prepare: scenarioCase.prepare == null
+          ? null
+          : (context) => scenarioCase.prepare!(context, scenarioCase.state),
+      dispose: scenarioCase.dispose == null
+          ? null
+          : (context) => scenarioCase.dispose!(context, scenarioCase.state),
       pump: pump,
       configuration: configuration,
       before: before,

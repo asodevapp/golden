@@ -43,6 +43,19 @@ await context.pumpUntilFound(
 the active variant in its diagnostic instead of leaving a real timer or
 unbounded settle operation pending.
 
+For a BLoC, notifier, or repository state that has no unique widget yet, wait
+for a descriptive predicate:
+
+```dart
+await context.pumpUntil(
+  () => bloc.state.hasData && !bloc.state.isLoading,
+  description: 'profile bloc to finish loading',
+);
+```
+
+Use `pumpUntilGone` for a loading surface, `pumpFrames` only for an intentional
+frame-count contract, and `elapse` for a fixed timer or animation checkpoint.
+
 ## Capture multiple checkpoints
 
 Disable the automatic capture when a workflow needs several named moments:
@@ -100,14 +113,18 @@ because they are part of the baseline path and report identity.
 fixtures passed through `build` or the application wrapper; use hooks for
 resources that genuinely need per-case lifecycle.
 
+Typed scenarios also provide `prepare` and `dispose`. They receive the active
+`GoldenTestContext` and typed state, so each case can install and restore its
+own fake repository or DI override without a shared mutable mode flag.
+
 The execution order is:
 
 1. apply the variant test view;
-2. run `before`;
+2. run `before`, then the scenario fixture `prepare`;
 3. build and pump the wrapped widget;
 4. run `interact` and the configured pump;
 5. capture automatically, unless disabled;
-6. run `after`;
+6. run the scenario fixture `dispose`, then `after`;
 7. restore Flutter view and shadow settings.
 
 Failures record the active phase in the run manifest for presenter and CI.

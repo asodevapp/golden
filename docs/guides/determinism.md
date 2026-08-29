@@ -40,6 +40,11 @@ await context.tester.pump(const Duration(milliseconds: 300));
 Use `context.pumpUntilFound` for a bounded condition. Avoid real sleeps,
 uncontrolled retry loops, and background timers that survive the test.
 
+For non-widget state, use `context.pumpUntil` with a descriptive predicate.
+`testWidgets` already owns Flutter's fake-async zone, so do not start a nested
+`FakeAsync` or discard the returned future. Use a controlled `Completer` in a
+local fake repository when the scenario must decide when async data arrives.
+
 ## Animations and shadows
 
 `freezeAnimations` defaults to `true` by placing the captured application below

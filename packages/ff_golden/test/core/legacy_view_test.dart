@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ff_golden/ff_golden.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -80,6 +82,29 @@ void main() {
       goldenTester.capturedPath,
       'golden/scenario name/device name[dark](zh_Hans).png',
     );
+  });
+
+  testWidgets('legacy GoldenTester exposes bounded virtual-time waits',
+      (tester) async {
+    final goldenTester = _RecordingGoldenTester(<String>[]);
+    var ready = false;
+
+    await goldenTester.builder(
+      tester,
+      GoldenDevice.iPhone11,
+      const Locale('en'),
+      GoldenTheme.defaultTheme,
+      scenarioName: 'async',
+      scenario: (legacy) async {
+        Timer(const Duration(milliseconds: 32), () => ready = true);
+        await legacy.pumpUntil(
+          () => ready,
+          description: 'legacy fixture to load',
+        );
+      },
+    );
+
+    expect(ready, isTrue);
   });
 }
 

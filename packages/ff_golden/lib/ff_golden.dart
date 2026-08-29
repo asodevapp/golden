@@ -8,6 +8,7 @@ export 'src/naming.dart';
 export 'src/report.dart';
 export 'src/stale.dart';
 export 'src/test_device_goldens.dart';
+export 'src/test_driver.dart';
 export 'src/test_ff_goldens.dart';
 export 'src/theme.dart';
 export 'src/variant.dart';

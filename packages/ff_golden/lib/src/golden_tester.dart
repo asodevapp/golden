@@ -5,6 +5,7 @@ import 'capture.dart';
 import 'comparator.dart';
 import 'device.dart';
 import 'naming.dart';
+import 'test_driver.dart';
 import 'theme.dart';
 import 'variant.dart';
 
@@ -55,10 +56,50 @@ abstract class GoldenTesterBase {
   late WidgetTester tester;
   late GoldenVariant variant;
 
+  GoldenTestDriver get driver => GoldenTestDriver(
+        tester: tester,
+        context: 'scenario $scenarioName, variant ${variant.label}',
+      );
+
   GoldenDevice get device => variant.device;
   Locale get locale => variant.locale;
   GoldenTheme get theme => variant.theme;
   String get folder => pathStrategy.folder;
+
+  Future<void> pumpFrames(
+    int count, {
+    Duration step = const Duration(milliseconds: 16),
+  }) =>
+      driver.pumpFrames(count, step: step);
+
+  Future<void> elapse(Duration duration) => driver.elapse(duration);
+
+  Future<void> pumpUntil(
+    GoldenWaitCondition condition, {
+    Duration timeout = const Duration(seconds: 5),
+    Duration step = const Duration(milliseconds: 16),
+    String description = 'condition',
+  }) =>
+      driver.pumpUntil(
+        condition,
+        timeout: timeout,
+        step: step,
+        description: description,
+      );
+
+  Future<void> pumpUntilFound(
+    Finder finder, {
+    Duration timeout = const Duration(seconds: 5),
+    Duration step = const Duration(milliseconds: 16),
+  }) =>
+      driver.pumpUntilFound(finder, timeout: timeout, step: step);
+
+  Future<void> pumpUntilGone(
+    Finder finder, {
+    Duration timeout = const Duration(seconds: 5),
+    Duration step = const Duration(milliseconds: 16),
+  }) =>
+      driver.pumpUntilGone(finder, timeout: timeout, step: step);
 
   @mustCallSuper
   Future<void> setScenario({

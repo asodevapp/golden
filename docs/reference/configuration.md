@@ -87,4 +87,21 @@ test controls, and additional tags. It creates one `testWidgets` case per
 selected variant.
 
 `testFfGoldenScenarios<T>` registers a typed state table against the same
-coverage and configuration.
+coverage and configuration. Each `GoldenScenario<T>` can install a typed
+fixture with `prepare` and release it with `dispose`.
+
+## `GoldenTestDriver`
+
+`GoldenTestContext` and legacy `GoldenTesterBase` expose the same bounded
+virtual-time operations:
+
+| Method | Purpose |
+| --- | --- |
+| `pumpUntil` | Wait for an arbitrary observable condition |
+| `pumpUntilFound` | Wait for a finder to match at least one widget |
+| `pumpUntilGone` | Wait for a finder to stop matching widgets |
+| `pumpFrames` | Advance an intentional fixed number of frames |
+| `elapse` | Advance one known virtual-time duration |
+
+All predicate and finder waits have finite timeouts and include scenario and
+variant context in timeout diagnostics.

@@ -51,6 +51,7 @@ nav:
       - Comparison and baselines: concepts/comparison.md
   - Guides:
       - Stateful and multi-shot tests: guides/stateful-scenarios.md
+      - Fixtures and asynchronous state: guides/fixtures-and-async.md
       - Deterministic rendering: guides/determinism.md
       - CI and publication: guides/ci.md
   - Presenter:

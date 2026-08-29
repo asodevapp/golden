@@ -15,13 +15,13 @@ application dependencies.
 === "Runner only"
 
     ```shell
-    flutter pub add --dev 'ff_golden:^1.0.0'
+    flutter pub add --dev 'ff_golden:^1.1.0'
     ```
 
 === "Runner and presenter"
 
     ```shell
-    flutter pub add --dev 'ff_golden:^1.0.0'
+    flutter pub add --dev 'ff_golden:^1.1.0'
     flutter pub add --dev ff_golden_presenter
     ```
 
@@ -146,4 +146,6 @@ than reading mutable global state.
   are independent.
 - Choose a [coverage sampling strategy](concepts/coverage.md).
 - Model real workflows with [stateful and multi-shot tests](guides/stateful-scenarios.md).
+- Control repositories and loading states with
+  [typed fixtures and bounded async waits](guides/fixtures-and-async.md).
 - Add the suite to [CI and publication](guides/ci.md).

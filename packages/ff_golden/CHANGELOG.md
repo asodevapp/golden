@@ -1,3 +1,10 @@
+## 1.1.0
+
+- Added bounded virtual-time helpers for predicate, finder, fixed-frame, and
+  fixed-duration waits in both the coverage and legacy APIs.
+- Added typed per-scenario `prepare` and `dispose` fixture lifecycle callbacks.
+- Added controlled async fake examples and deterministic fixture guidance.
+
 ## 1.0.0
 
 - Declared the current runner API stable after long-term production use of the
