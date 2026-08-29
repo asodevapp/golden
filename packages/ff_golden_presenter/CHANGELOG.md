@@ -1,3 +1,11 @@
+## 1.0.0
+
+- Declared the presenter workflow stable after long-term production use of the
+  underlying golden-test publication approach.
+- Stabilized the existing CLI, public Dart API, report format, optimization
+  pipeline, migration tooling, and failure-artifact cleanup without behavioral
+  changes from `0.1.1`.
+
 ## 0.1.1
 
 - Added a guarded `clean-failures` command with dry-run support for removing

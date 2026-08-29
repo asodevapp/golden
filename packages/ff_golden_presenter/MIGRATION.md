@@ -9,7 +9,7 @@ Replace the old standalone package with the published package:
 
 ```yaml
 dev_dependencies:
-  ff_golden_presenter: ^0.1.0
+  ff_golden_presenter: ^1.0.0
 ```
 
 For an unreleased repository revision, pin the Git dependency to a commit and

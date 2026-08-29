@@ -28,7 +28,7 @@ Save the existing failure list if the suite is not green.
 ```yaml
 dev_dependencies:
   ff_golden: ^1.0.0-dev.1
-  ff_golden_presenter: ^0.1.0
+  ff_golden_presenter: ^1.0.0
 ```
 
 ```shell

@@ -29,5 +29,5 @@ dependencies:
   path: ^1.9.1
 
 dev_dependencies:
-  ff_golden_presenter: ^0.1.0
+  ff_golden_presenter: ^1.0.0
   flutter_lints: ^5.0.0
