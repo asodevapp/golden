@@ -21,8 +21,8 @@
 #.vscode/
 
 # Flutter/Dart/Pub related
-# Libraries should not include pubspec.lock, per https://dart.dev/guides/libraries/private-files#pubspeclock.
-/pubspec.lock
+# The root pubspec.lock is intentionally committed as the shared workspace
+# resolution used by local development and CI.
 **/doc/api/
 .dart_tool/
 .packages

@@ -1,0 +1,10 @@
+.dart_tool/
+.git/
+.github/
+.idea/
+.vscode/
+build/
+coverage/
+example/report.html
+*.log
+*.iml

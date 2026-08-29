@@ -1,0 +1,12 @@
+---
+services:
+  golden-report:
+    build:
+      context: packages/ff_golden_presenter
+      args:
+        GOLDEN_INPUT: example/goldens
+        REPORT_TITLE: FF Golden Presenter demo
+        OPTIMIZATION_PROFILE: none
+    ports:
+      - "8080:8080"
+    restart: unless-stopped

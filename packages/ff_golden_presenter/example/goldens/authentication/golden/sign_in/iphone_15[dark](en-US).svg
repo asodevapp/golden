@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="390" height="844" viewBox="0 0 390 844">
+  <defs>
+    <radialGradient id="bg" cx="20%" cy="0%" r="120%">
+      <stop stop-color="#213b39"/>
+      <stop offset="0.5" stop-color="#121720"/>
+      <stop offset="1" stop-color="#090c12"/>
+    </radialGradient>
+  </defs>
+  <rect width="390" height="844" rx="42" fill="url(#bg)"/>
+  <rect x="139" y="15" width="112" height="30" rx="15" fill="#020409"/>
+  <circle cx="195" cy="190" r="42" fill="#8ee3c5"/>
+  <path d="M175 194l14 14 29-35" fill="none" stroke="#10151c" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="195" y="279" text-anchor="middle" font-family="Arial,sans-serif" font-size="32" font-weight="700" fill="#f5f7fa">Welcome back</text>
+  <text x="195" y="313" text-anchor="middle" font-family="Arial,sans-serif" font-size="15" fill="#9ca7ba">Sign in to continue to Northstar</text>
+  <rect x="34" y="362" width="322" height="62" rx="15" fill="#171d28" stroke="#344052"/>
+  <text x="54" y="389" font-family="Arial,sans-serif" font-size="11" font-weight="700" fill="#8f9aaf">EMAIL</text>
+  <text x="54" y="411" font-family="Arial,sans-serif" font-size="15" fill="#f5f7fa">alex@example.com</text>
+  <rect x="34" y="438" width="322" height="62" rx="15" fill="#171d28" stroke="#344052"/>
+  <text x="54" y="465" font-family="Arial,sans-serif" font-size="11" font-weight="700" fill="#8f9aaf">PASSWORD</text>
+  <text x="54" y="488" font-family="Arial,sans-serif" font-size="20" letter-spacing="4" fill="#f5f7fa">••••••••</text>
+  <text x="350" y="529" text-anchor="end" font-family="Arial,sans-serif" font-size="14" font-weight="700" fill="#8ee3c5">Forgot password?</text>
+  <rect x="34" y="564" width="322" height="58" rx="16" fill="#8ee3c5"/>
+  <text x="195" y="600" text-anchor="middle" font-family="Arial,sans-serif" font-size="16" font-weight="700" fill="#10151c">Sign in</text>
+  <line x1="34" y1="666" x2="150" y2="666" stroke="#344052"/>
+  <text x="195" y="671" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#8f9aaf">OR</text>
+  <line x1="240" y1="666" x2="356" y2="666" stroke="#344052"/>
+  <rect x="34" y="693" width="322" height="54" rx="15" fill="#171d28" stroke="#344052"/>
+  <text x="195" y="727" text-anchor="middle" font-family="Arial,sans-serif" font-size="15" font-weight="700" fill="#f5f7fa">Continue with Apple</text>
+  <rect x="137" y="819" width="116" height="5" rx="2.5" fill="#f5f7fa"/>
+</svg>

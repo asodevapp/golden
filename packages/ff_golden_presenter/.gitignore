@@ -1,0 +1,11 @@
+# Files and directories created by pub.
+.dart_tool/
+.packages
+
+# Conventional directory for build output.
+build/
+
+/golden-report.html
+/output.html
+/structure.html
+ff_golden_presenter.exe

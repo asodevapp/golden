@@ -1,0 +1,43 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "ff_golden_presenter",
+            "request": "launch",
+            "type": "dart",
+            "program": "packages/ff_golden_presenter/bin/ff_golden_presenter.dart",
+            "cwd": "${workspaceFolder}/packages/ff_golden_presenter",
+            "args": [
+                "report",
+                "--input",
+                "example/goldens",
+                "--output",
+                "example/report.html",
+                "--title",
+                "FF Golden Presenter demo"
+            ],
+        },
+        {
+            "name": "ff_golden_presenter: build demo",
+            "request": "launch",
+            "type": "dart",
+            "program": "packages/ff_golden_presenter/bin/ff_golden_presenter.dart",
+            "cwd": "${workspaceFolder}/packages/ff_golden_presenter",
+            "args": [
+                "build",
+                "--input",
+                "example/goldens",
+                "--output-directory",
+                "build/demo",
+                "--profile",
+                "none",
+                "--clean",
+                "--title",
+                "FF Golden Presenter demo"
+            ],
+        }
+    ]
+}

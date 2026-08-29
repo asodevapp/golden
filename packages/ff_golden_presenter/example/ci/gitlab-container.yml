@@ -1,0 +1,37 @@
+---
+stages:
+  - publish
+
+variables:
+  DOCKER_HOST: tcp://docker:2376
+  DOCKER_TLS_CERTDIR: "/certs"
+  REPORT_IMAGE: "$CI_REGISTRY_IMAGE/golden-report"
+
+publish-golden-container:
+  stage: publish
+  image: docker:cli
+  services:
+    - name: docker:dind
+      alias: docker
+  before_script:
+    - >-
+      echo "$CI_REGISTRY_PASSWORD" |
+      docker login "$CI_REGISTRY"
+      --username "$CI_REGISTRY_USER"
+      --password-stdin
+  script:
+    - |
+      docker build --pull \
+        --build-arg SDK_IMAGE=ghcr.io/cirruslabs/flutter:stable \
+        --build-arg "PUB_GET_COMMAND=flutter pub get" \
+        --build-arg GOLDEN_INPUT=test/screens \
+        --build-arg "REPORT_TITLE=Golden report — $CI_COMMIT_SHORT_SHA" \
+        --build-arg OPTIMIZATION_PROFILE=balanced \
+        --build-arg INSTALL_TOOLS=true \
+        --tag "$REPORT_IMAGE:$CI_COMMIT_SHA" \
+        .
+    - docker push "$REPORT_IMAGE:$CI_COMMIT_SHA"
+    - docker tag "$REPORT_IMAGE:$CI_COMMIT_SHA" "$REPORT_IMAGE:latest"
+    - docker push "$REPORT_IMAGE:latest"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'

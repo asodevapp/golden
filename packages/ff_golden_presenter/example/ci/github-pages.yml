@@ -1,0 +1,57 @@
+---
+name: Publish golden report to GitHub Pages
+
+on:  # yamllint disable-line rule:truthy
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: golden-report-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Run golden tests and write ff_golden.run shards
+        run: flutter test --tags ff_golden
+      - name: Prepare image optimizer
+        run: |
+          sudo apt-get update
+          dart run ff_golden_presenter doctor --profile balanced --install-tools
+      - name: Build golden publication
+        run: >-
+          dart run ff_golden_presenter build
+          --input test/screens
+          --manifest build/ff_golden
+          --output-directory build/golden-report
+          --profile balanced
+          --clean
+          --title "Golden report — ${{ github.sha }}"
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: build/golden-report
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

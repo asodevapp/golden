@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="412" height="915" viewBox="0 0 412 915">
+  <rect width="412" height="915" rx="36" fill="#f5f7fb"/>
+  <circle cx="206" cy="27" r="6" fill="#151a24"/>
+  <rect x="155" y="120" width="102" height="102" rx="32" fill="#dff8ef"/>
+  <path d="M178 173l18 18 40-51" fill="none" stroke="#188366" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="206" y="286" text-anchor="middle" font-family="Arial,sans-serif" font-size="31" font-weight="700" fill="#151a24">Willkommen</text>
+  <text x="206" y="322" text-anchor="middle" font-family="Arial,sans-serif" font-size="15" fill="#667085">Melde dich bei Northstar an</text>
+  <text x="38" y="383" font-family="Arial,sans-serif" font-size="12" font-weight="700" fill="#667085">E-MAIL-ADRESSE</text>
+  <rect x="38" y="397" width="336" height="62" rx="12" fill="#fff" stroke="#bbc5d3"/>
+  <text x="56" y="435" font-family="Arial,sans-serif" font-size="16" fill="#151a24">alex@example.com</text>
+  <text x="38" y="492" font-family="Arial,sans-serif" font-size="12" font-weight="700" fill="#667085">PASSWORT</text>
+  <rect x="38" y="506" width="336" height="62" rx="12" fill="#fff" stroke="#bbc5d3"/>
+  <text x="56" y="546" font-family="Arial,sans-serif" font-size="20" letter-spacing="4" fill="#151a24">••••••••</text>
+  <text x="372" y="603" text-anchor="end" font-family="Arial,sans-serif" font-size="14" font-weight="700" fill="#188366">Passwort vergessen?</text>
+  <rect x="38" y="635" width="336" height="60" rx="14" fill="#188366"/>
+  <text x="206" y="673" text-anchor="middle" font-family="Arial,sans-serif" font-size="16" font-weight="700" fill="#fff">Anmelden</text>
+  <rect x="38" y="723" width="336" height="56" rx="14" fill="#fff" stroke="#bbc5d3"/>
+  <text x="206" y="758" text-anchor="middle" font-family="Arial,sans-serif" font-size="15" font-weight="700" fill="#151a24">Mit Google fortfahren</text>
+  <text x="206" y="831" text-anchor="middle" font-family="Arial,sans-serif" font-size="14" fill="#667085">Noch kein Konto? <tspan fill="#188366" font-weight="700">Registrieren</tspan></text>
+  <rect x="144" y="890" width="124" height="5" rx="2.5" fill="#151a24"/>
+</svg>

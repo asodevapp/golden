@@ -1,0 +1,120 @@
+---
+name: CI
+
+on:  # yamllint disable-line rule:truthy
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  ff-golden:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: dart format --output=none --set-exit-if-changed lib test example
+        working-directory: packages/ff_golden
+      - run: flutter analyze
+        working-directory: packages/ff_golden
+      - run: flutter test
+        working-directory: packages/ff_golden
+
+  presenter:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: dart format --output=none --set-exit-if-changed .
+        working-directory: packages/ff_golden_presenter
+      - run: dart analyze --fatal-infos
+        working-directory: packages/ff_golden_presenter
+      - run: flutter test
+        working-directory: packages/ff_golden_presenter
+      - name: Regenerate the deterministic demo
+        run: >-
+          flutter pub run ff_golden_presenter:ff_golden_presenter report
+          --input example/goldens
+          --output example/report.html
+          --title "FF Golden Presenter demo"
+        working-directory: packages/ff_golden_presenter
+      - name: Verify generated demo is current
+        run: git diff --exit-code -- example/report.html
+        working-directory: packages/ff_golden_presenter
+      - name: Verify the publication pipeline
+        run: >-
+          flutter pub run ff_golden_presenter:ff_golden_presenter build
+          --input example/goldens
+          --output-directory build/demo
+          --profile none
+          --clean
+          --title "FF Golden Presenter demo"
+        working-directory: packages/ff_golden_presenter
+
+  runner-presenter-integration:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Produce runner images and an ff_golden.run shard
+        run: flutter test test/integration/presenter_integration_test.dart
+        working-directory: packages/ff_golden
+      - name: Build the report from runner images and metadata
+        run: >-
+          flutter pub run ff_golden_presenter:ff_golden_presenter build
+          --input test/integration
+          --manifest build/ff_golden
+          --output-directory build/presenter-integration
+          --profile none
+          --clean
+          --title "Runner presenter integration"
+        working-directory: packages/ff_golden
+      - name: Verify authoritative multi-shot matrix metadata
+        run: |
+          rg --fixed-strings 'data-capture="empty"' build/presenter-integration/index.html
+          rg --fixed-strings 'data-device="iPadPro12.9"' build/presenter-integration/index.html
+          rg --fixed-strings 'data-text-scale="1.5"' build/presenter-integration/index.html
+          rg --fixed-strings 'data-platform="macOS"' build/presenter-integration/index.html
+          rg --fixed-strings 'data-contrast="high"' build/presenter-integration/index.html
+        working-directory: packages/ff_golden
+
+  container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build the publication image
+        run: >-
+          docker build
+          --tag ff-golden-presenter-smoke
+          packages/ff_golden_presenter
+      - name: Start the publication image
+        run: >-
+          docker run --detach
+          --name ff-golden-presenter-smoke
+          ff-golden-presenter-smoke
+      - name: Verify nginx and its health endpoint
+        run: |
+          sleep 2
+          docker exec ff-golden-presenter-smoke \
+            wget -q -O - http://127.0.0.1:8080/healthz
+          docker exec ff-golden-presenter-smoke \
+            wget -q -O /dev/null http://127.0.0.1:8080/index.html
+      - name: Stop the publication image
+        if: always()
+        continue-on-error: true
+        run: docker rm --force ff-golden-presenter-smoke

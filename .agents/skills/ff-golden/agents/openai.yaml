@@ -1,0 +1,4 @@
+interface:
+  display_name: "ff_golden"
+  short_description: "Build and migrate Flutter golden tests"
+  default_prompt: "Use $ff-golden to build or migrate a deterministic Flutter golden test suite and verify its baselines."

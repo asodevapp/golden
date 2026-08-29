@@ -1,0 +1,29 @@
+name: ff_golden_presenter
+description: Collect, optimize, and publish golden test images as a searchable HTML report.
+version: 0.1.0
+homepage: https://gorniv.github.io/golden/
+repository: https://github.com/Gorniv/golden
+issue_tracker: https://github.com/Gorniv/golden/issues
+documentation: https://github.com/Gorniv/golden/tree/master/packages/ff_golden_presenter#readme
+topics:
+  - cli
+  - docker
+  - golden-tests
+  - html
+  - image-optimization
+
+executables:
+  ff_golden_presenter:
+
+environment:
+  sdk: ^3.6.0
+
+resolution: workspace
+
+dependencies:
+  args: ^2.7.0
+  path: ^1.9.1
+
+dev_dependencies:
+  lints: ^5.1.1
+  test: ^1.25.15

@@ -1,0 +1,33 @@
+---
+stages:
+  - deploy
+
+variables:
+  PUB_CACHE: "$CI_PROJECT_DIR/.pub-cache"
+
+golden-pages:
+  stage: deploy
+  image: ghcr.io/cirruslabs/flutter:stable
+  cache:
+    key: pub-cache
+    paths:
+      - .pub-cache/
+  before_script:
+    - flutter pub get
+  script:
+    - flutter test --tags ff_golden
+    - apt-get update
+    - dart run ff_golden_presenter doctor --profile balanced --install-tools
+    - >-
+      dart run ff_golden_presenter build
+      --input test/screens
+      --manifest build/ff_golden
+      --output-directory public
+      --profile balanced
+      --clean
+      --title "Golden report — $CI_COMMIT_SHORT_SHA"
+  pages: true
+  artifacts:
+    expire_in: 1 week
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
