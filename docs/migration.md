@@ -5,7 +5,7 @@ description: Safely rename packages, preserve compatibility suites, convert phys
 
 # Migrate from `golden` and `golden_presenter`
 
-Treat the package rename, a matrix-API rewrite, and visual baseline changes as
+Treat the package rename, a coverage-API rewrite, and visual baseline changes as
 separate reviewable operations. Existing `GoldenTester` and
 `testDeviceGoldens` suites remain available so a dependency rename does not
 need to rewrite the entire harness.
@@ -65,7 +65,7 @@ Use the new primary import:
 import 'package:ff_golden/ff_golden.dart';
 ```
 
-Move to `testFfGoldens` and `GoldenMatrix` in a later intentional rewrite when
+Move to `testFfGoldens` and `GoldenCoverage` in a later intentional rewrite when
 you want complete variant environments, sanitized paths, structured reports,
 sampling, overflow diagnostics, and stale detection.
 

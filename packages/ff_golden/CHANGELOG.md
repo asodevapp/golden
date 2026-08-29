@@ -2,9 +2,11 @@
 
 - Renamed the package from `golden` to `ff_golden`.
 - Added `testFfGoldens` and a complete `GoldenVariant` test environment.
-- Added typed `GoldenScenario<T>` state tables over a shared matrix.
+- Named the new suite configuration `GoldenCoverage` with the `coverage:`
+  parameter, plus matching rule, plan, and budget-exception types.
+- Added typed `GoldenScenario<T>` state tables over shared coverage.
 - Corrected device presets to distinguish logical and physical pixels.
-- Added matrix constraints and full, smoke, pairwise, and priority sampling.
+- Added coverage constraints and full, smoke, pairwise, and priority sampling.
 - Added deterministic path generation with BCP-47 locales and collision checks.
 - Added strict overflow and stale baseline diagnostics.
 - Added explicit pixel and percentage tolerance policies.
@@ -23,7 +25,7 @@
 - Preserved legacy `GoldenTester.postPumping` capture order; `beforeCapture` is
   now an explicit opt-in for advancing a frame before comparison.
 - Preserved legacy `GoldenTester` path names and `Locale.toString()` suffixes;
-  sanitized BCP-47 paths remain exclusive to the new matrix API.
+  sanitized BCP-47 paths remain exclusive to the new coverage API.
 - Aligned the Flutter minimum with the Dart 3.6 requirement and documented the
   end-to-end automated migration workflow.
 - Added an end-to-end multi-shot runner-to-presenter CI fixture.

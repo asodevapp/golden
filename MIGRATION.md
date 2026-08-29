@@ -96,7 +96,7 @@ import 'package:ff_golden/ff_golden.dart';
 The migrator replaces unambiguous `Device` and `NamedTheme` references with
 `GoldenDevice` and `GoldenTheme`. `GoldenTester` and `testDeviceGoldens` remain
 as compatibility APIs for incremental migration. New suites should use
-`testFfGoldens` and `GoldenMatrix`.
+`testFfGoldens` and `GoldenCoverage`.
 
 Private imports such as `package:golden/src/device.dart` have no automatic
 equivalent. Replace them with the public `ff_golden.dart` entrypoint.
@@ -137,11 +137,11 @@ test, and device names are not sanitized, and locale suffixes continue to use
 `Locale.toString()` (for example, `zh_Hans`). BCP-47 suffixes and sanitized
 paths apply only to new `testFfGoldens` suites.
 
-### Prefer the matrix API for new or rewritten suites
+### Prefer the coverage API for new or rewritten suites
 
 Compatibility suites can continue to call `testDeviceGoldens`. When rewriting a
 suite, migrate behavior into `testFfGoldens` with an explicit `scenario`,
-`GoldenMatrix`, `build`, and optional `interact`. Do this separately from the
+`GoldenCoverage`, `build`, and optional `interact`. Do this separately from the
 package rename when a small, reviewable migration is more important than using
 all new features immediately.
 

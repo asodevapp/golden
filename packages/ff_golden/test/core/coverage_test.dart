@@ -8,8 +8,8 @@ void main() {
     GoldenTheme(name: 'dark', data: ThemeData.dark()),
   ];
 
-  test('full matrix expands independent axes', () {
-    final plan = GoldenMatrix(
+  test('full coverage expands independent axes', () {
+    final plan = GoldenCoverage(
       devices: const [GoldenDevice.iPhone11, GoldenDevice.iPad],
       locales: const [Locale('en'), Locale('ar')],
       themes: themes,
@@ -25,11 +25,11 @@ void main() {
   });
 
   test('rules remove invalid combinations before sampling', () {
-    final plan = GoldenMatrix(
+    final plan = GoldenCoverage(
       locales: const [Locale('en'), Locale('ar')],
       themes: themes,
       rules: [
-        GoldenMatrixRule.excludeWhen(
+        GoldenCoverageRule.excludeWhen(
           'no dark Arabic',
           (variant) =>
               variant.locale.languageCode == 'ar' &&
@@ -44,14 +44,14 @@ void main() {
   });
 
   test('smoke sampling keeps every axis value represented', () {
-    final full = GoldenMatrix(
+    final full = GoldenCoverage(
       devices: const [GoldenDevice.iPhone11, GoldenDevice.iPad],
       locales: const [Locale('en'), Locale('ar')],
       themes: themes,
       textScales: const [1, 1.5],
       highContrasts: const [false, true],
     ).plan();
-    final smoke = GoldenMatrix(
+    final smoke = GoldenCoverage(
       devices: const [GoldenDevice.iPhone11, GoldenDevice.iPad],
       locales: const [Locale('en'), Locale('ar')],
       themes: themes,
@@ -70,13 +70,13 @@ void main() {
   });
 
   test('pairwise sampling covers every feasible value pair', () {
-    final full = GoldenMatrix(
+    final full = GoldenCoverage(
       devices: const [GoldenDevice.iPhone11, GoldenDevice.iPad],
       locales: const [Locale('en'), Locale('ar')],
       themes: themes,
       textScales: const [1, 1.5],
     ).plan();
-    final pairwise = GoldenMatrix(
+    final pairwise = GoldenCoverage(
       devices: const [GoldenDevice.iPhone11, GoldenDevice.iPad],
       locales: const [Locale('en'), Locale('ar')],
       themes: themes,
@@ -90,19 +90,19 @@ void main() {
 
   test('coverage-preserving strategies reject an insufficient budget', () {
     expect(
-      () => GoldenMatrix(
+      () => GoldenCoverage(
         devices: const [GoldenDevice.iPhone11, GoldenDevice.iPad],
         locales: const [Locale('en'), Locale('ar')],
         themes: themes,
         sampling: GoldenSampling.pairwise,
         maxCombinations: 1,
       ).plan(),
-      throwsA(isA<GoldenMatrixBudgetExceeded>()),
+      throwsA(isA<GoldenCoverageBudgetExceeded>()),
     );
   });
 
   test('priority sampling uses maxCombinations as a hard cap', () {
-    final plan = GoldenMatrix(
+    final plan = GoldenCoverage(
       devices: const [GoldenDevice.iPhone11, GoldenDevice.iPad],
       locales: const [Locale('en'), Locale('ar')],
       themes: themes,

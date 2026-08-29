@@ -1,6 +1,6 @@
 ---
 name: ff-golden
-description: Build, migrate, review, or debug Flutter golden test suites with ff_golden and ff_golden_presenter. Use when choosing the legacy or matrix API, defining devices/themes/locales and deterministic scenarios, preserving or updating PNG baselines, diagnosing pixel diffs and stale files, or producing local and CI reports.
+description: Build, migrate, review, or debug Flutter golden test suites with ff_golden and ff_golden_presenter. Use when choosing the legacy or coverage API, defining devices/themes/locales and deterministic scenarios, preserving or updating PNG baselines, diagnosing pixel diffs and stale files, or producing local and CI reports.
 ---
 
 # Work with ff_golden
@@ -26,13 +26,13 @@ Keep existing suites on `testDeviceGoldens` + `GoldenTester` during a package-na
 
 Do not accept baseline churn caused only by violating those invariants.
 
-Use `testFfGoldens`, `GoldenScenario`, `GoldenMatrix`, and `GoldenRunConfiguration` for new suites. This API intentionally supplies the complete variant environment, sanitized collision-safe paths, BCP-47 locale tags, structured reports, overflow diagnostics, sampling, and stale detection.
+Use `testFfGoldens`, `GoldenScenario`, `GoldenCoverage`, and `GoldenRunConfiguration` for new suites. This API intentionally supplies the complete variant environment, sanitized collision-safe paths, BCP-47 locale tags, structured reports, overflow diagnostics, sampling, and stale detection.
 
 ## Build a Deterministic Suite
 
 - Express device geometry in logical pixels and set DPR separately. Use `.logicalSize` or `.physicalSize` explicitly; do not rely on deprecated `.size` in new code.
 - Model user-visible scenarios with fixed data, stable clocks/IDs, deterministic ordering, and bounded interaction.
-- Select full, smoke, pairwise, or priority sampling from the coverage requirement. Do not reduce a matrix merely to make the test faster when it drops a meaningful axis value.
+- Select full, smoke, pairwise, or priority sampling from the coverage requirement. Do not reduce coverage merely to make the test faster when it drops a meaningful axis value.
 - Load application fonts and replace network, filesystem, timers, streams, platform services, and persistent state that can vary between runs.
 - Use strict comparison by default. Add tolerance only for a justified rendering boundary and keep it below the smallest real regression the suite must detect.
 - Keep capture scale explicit when it differs from native DPR. Never infer physical geometry by multiplying an already physical legacy size again.
@@ -75,4 +75,4 @@ dart analyze
 dart test
 ```
 
-For a consumer migration, also run the exact focused golden commands without updating, `migrate --check`, analyzer checks, and `git diff --check`. Report which API was used, matrix/sampling, baseline changes, images reviewed, exact commands, presenter output, and any intentionally deferred migration. Do not claim compatibility from package tests alone; verify at least one representative consumer baseline when a consumer project is in scope.
+For a consumer migration, also run the exact focused golden commands without updating, `migrate --check`, analyzer checks, and `git diff --check`. Report which API was used, coverage/sampling, baseline changes, images reviewed, exact commands, presenter output, and any intentionally deferred migration. Do not claim compatibility from package tests alone; verify at least one representative consumer baseline when a consumer project is in scope.

@@ -1,11 +1,11 @@
 ---
-title: Matrices and sampling
+title: Coverage and sampling
 description: Define feasible Flutter golden variants and select full, smoke, pairwise, or risk-priority coverage without silently weakening the test plan.
 ---
 
-# Matrices and sampling
+# Coverage and sampling
 
-`GoldenMatrix` expands the environment axes, removes impossible combinations,
+`GoldenCoverage` expands the environment axes, removes impossible combinations,
 then applies a deterministic sampling strategy. The resulting variant plan is
 known before any Flutter test is registered.
 
@@ -33,14 +33,14 @@ device's value.
 | `priority` | Sort by a risk function | Applies `maxCombinations` as a hard cap |
 
 `full`, `smoke`, and `pairwise` never silently weaken their coverage promise.
-They throw `GoldenMatrixBudgetExceeded` with the required count. Increase the
+They throw `GoldenCoverageBudgetExceeded` with the required count. Increase the
 budget, reduce the declared axes, add a feasibility rule, or intentionally use
 `priority`.
 
-## A pairwise matrix
+## Pairwise coverage
 
 ```dart
-final accountMatrix = GoldenMatrix(
+final accountCoverage = GoldenCoverage(
   devices: const [
     GoldenDevice.iPhone11,
     GoldenDevice.iPad,
@@ -63,7 +63,7 @@ substitute for explicitly enumerating a small set of high-value product states.
 
 ```dart
 rules: [
-  GoldenMatrixRule.excludeWhen(
+  GoldenCoverageRule.excludeWhen(
     'Cupertino screen is iOS-only',
     (variant) => variant.platform != TargetPlatform.iOS,
   ),
@@ -77,7 +77,7 @@ product constraint, not merely the boolean expression.
 ## Risk-priority sampling
 
 ```dart
-GoldenMatrix(
+GoldenCoverage(
   // axes omitted
   sampling: GoldenSampling.priority,
   maxCombinations: 12,
@@ -99,7 +99,7 @@ those combinations still matter.
 ## Inspect the plan
 
 ```dart
-final plan = accountMatrix.plan();
+final plan = accountCoverage.plan();
 
 print(plan.rawCount);
 print(plan.excludedCount);

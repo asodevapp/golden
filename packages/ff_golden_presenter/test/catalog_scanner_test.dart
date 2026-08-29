@@ -62,7 +62,8 @@ void main() {
     expect(catalog.scenarios.single.images.single.device, 'tablet');
   });
 
-  test('keeps dotted devices and parses every filename matrix axis', () async {
+  test('keeps dotted devices and parses every filename coverage axis',
+      () async {
     await _touch(
       temporaryDirectory,
       'golden/details/'

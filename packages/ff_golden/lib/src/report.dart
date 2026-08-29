@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as path;
 
-import 'matrix.dart';
+import 'coverage.dart';
 import 'variant.dart';
 
 enum GoldenResultStatus { passed, failed }
@@ -19,7 +19,7 @@ class GoldenSuitePlan {
 
   final String description;
   final String scenario;
-  final GoldenMatrixPlan plan;
+  final GoldenCoveragePlan plan;
   final List<String> goldenPaths;
 
   Map<String, Object?> toJson() => {

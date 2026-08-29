@@ -53,7 +53,7 @@ locale, state, or naming convention.
 
 ## Naming is deterministic
 
-New matrix suites use sanitized, collision-checked paths:
+New coverage suites use sanitized, collision-checked paths:
 
 ```text
 golden/<scenario>/[capture.]device[theme](locale){text-scale}{direction}{platform}{brightness}{contrast}.png

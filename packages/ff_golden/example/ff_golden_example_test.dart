@@ -6,7 +6,7 @@ void main() {
   testFfGoldens(
     'counter after one tap',
     scenario: 'counter/incremented',
-    matrix: GoldenMatrix(
+    coverage: GoldenCoverage(
       devices: const [GoldenDevice.iPhone11, GoldenDevice.iPad],
       locales: const [Locale('en'), Locale('ar')],
       themes: [GoldenTheme.light, GoldenTheme.dark],

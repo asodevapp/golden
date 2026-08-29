@@ -1,6 +1,6 @@
 ---
 title: Troubleshooting
-description: Diagnose unexpected Flutter golden diffs, stale baselines, matrix budget failures, missing presenter metadata, overflow, and optimizer setup problems.
+description: Diagnose unexpected Flutter golden diffs, stale baselines, coverage budget failures, missing presenter metadata, overflow, and optimizer setup problems.
 ---
 
 # Troubleshooting
@@ -34,7 +34,7 @@ explicit `captureScale: 1` while preserving device DPR.
 Do not reduce `devicePixelRatio`; that changes the environment observed by the
 application.
 
-## `GoldenMatrixBudgetExceeded`
+## `GoldenCoverageBudgetExceeded`
 
 The selected `full`, `smoke`, or `pairwise` contract needs more combinations
 than `maxCombinations` allows. The exception reports the required count.
@@ -76,7 +76,7 @@ diagnostic failure even if it exists in the current baseline. Fix the layout or
 explicitly scope `failOnOverflow: false` only when clipping is the intended
 contract.
 
-## Presenter shows images but no matrix metadata
+## Presenter shows images but no coverage metadata
 
 Check that:
 
@@ -127,6 +127,6 @@ Open an issue with:
 - failing variant label and manifest shard;
 - old/new PNG dimensions;
 - changed-pixel count or failure artifacts;
-- the smallest reproducible matrix and configuration.
+- the smallest reproducible coverage and configuration.
 
 [Report an FF Golden issue](https://github.com/asodevapp/golden/issues){ .md-button }

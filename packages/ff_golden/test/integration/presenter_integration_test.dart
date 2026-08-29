@@ -11,7 +11,7 @@ void main() {
   testFfGoldens(
     'presenter consumes every runner axis and named capture',
     scenario: 'presenter/multi-shot',
-    matrix: GoldenMatrix(
+    coverage: GoldenCoverage(
       devices: const [GoldenDevice.iPadPro129],
       locales: const [Locale('ar')],
       themes: [GoldenTheme.dark],

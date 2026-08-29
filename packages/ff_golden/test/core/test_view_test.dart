@@ -5,7 +5,7 @@ void main() {
   testFfGoldens(
     'new runner applies the complete variant',
     scenario: 'variant-surface',
-    matrix: GoldenMatrix(
+    coverage: GoldenCoverage(
       devices: const [
         GoldenDevice(
           name: 'probe',

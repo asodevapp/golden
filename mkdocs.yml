@@ -1,5 +1,5 @@
 site_name: FF Golden
-site_description: Deterministic Flutter golden testing, scenario matrices, strict diagnostics, and portable visual reports.
+site_description: Deterministic Flutter golden testing, scenario coverage, strict diagnostics, and portable visual reports.
 site_author: Flutter Files
 site_url: https://asodevapp.github.io/golden/
 repo_url: https://github.com/asodevapp/golden
@@ -47,7 +47,7 @@ nav:
   - Get started: getting-started.md
   - Core concepts:
       - Device fidelity: concepts/device-fidelity.md
-      - Matrices and sampling: concepts/matrices.md
+      - Coverage and sampling: concepts/coverage.md
       - Comparison and baselines: concepts/comparison.md
   - Guides:
       - Stateful and multi-shot tests: guides/stateful-scenarios.md

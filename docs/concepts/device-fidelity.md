@@ -23,13 +23,13 @@ logical resolution, but the application still observes the original DPR.
 
 !!! warning "Do not set DPR to 1 as a performance shortcut"
     DPR can influence asset selection, painting, pixel snapping, and application
-    code. Reduce the matrix with an explicit sampling policy or set
+    code. Reduce the coverage set with an explicit sampling policy or set
     `captureScale` only when raster fidelity is outside the test contract.
 
 ## Use a built-in device
 
 ```dart
-matrix: GoldenMatrix(
+coverage: GoldenCoverage(
   devices: const [
     GoldenDevice.iPhone11,
     GoldenDevice.iPhone15Pro,
@@ -58,13 +58,13 @@ const checkoutPhone = GoldenDevice(
 Keep all geometry in logical pixels. `physicalSize` is derived as
 `logicalSize × devicePixelRatio`.
 
-## Device defaults and matrix overrides
+## Device defaults and coverage overrides
 
 A device supplies defaults for platform, brightness, contrast, and text scale.
-Independent matrix axes override them for a selected variant:
+Independent coverage axes override them for a selected variant:
 
 ```dart
-GoldenMatrix(
+GoldenCoverage(
   devices: const [GoldenDevice.iPhone15Pro],
   platforms: const [TargetPlatform.iOS, TargetPlatform.android],
   brightnesses: const [Brightness.light, Brightness.dark],
@@ -74,7 +74,7 @@ GoldenMatrix(
 ```
 
 Use a platform override only when the product intentionally supports that
-combination. Otherwise prefer separate device definitions or a matrix rule.
+combination. Otherwise prefer separate device definitions or a coverage rule.
 
 ## Capture at a different scale
 

@@ -70,7 +70,7 @@ flutter test --update-goldens
 flutter test --tags golden
 ```
 
-New matrix-suite baselines can change substantially because Flutter receives
+New coverage-suite baselines can change substantially because Flutter receives
 the intended logical viewport and DPR. Treat these as reviewed suite upgrades,
 not as part of the package-name rename.
 
@@ -81,7 +81,7 @@ only the reported stale files.
 ## 5. Move new suites to testFfGoldens
 
 `GoldenTester` and `testDeviceGoldens` remain for incremental migration. New
-tests should use `testFfGoldens`, `GoldenMatrix`, and `GoldenRunConfiguration` to
+tests should use `testFfGoldens`, `GoldenCoverage`, and `GoldenRunConfiguration` to
 gain sampling, collision checks, overflow failures, stale detection, and JSON
 reporting.
 

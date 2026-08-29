@@ -19,7 +19,7 @@ final List<GoldenTheme> defaultThemes = [GoldenTheme.defaultTheme];
 
 /// Compatibility API for existing scenario-based suites.
 ///
-/// New suites should prefer [testFfGoldens], which adds matrix sampling,
+/// New suites should prefer [testFfGoldens], which adds coverage sampling,
 /// collision checks, automatic capture, and stale detection.
 @isTestGroup
 void testDeviceGoldens(

@@ -1,11 +1,11 @@
 ---
 title: Get started
-description: Install ff_golden, load application fonts, create a first deterministic matrix test, and build a searchable report.
+description: Install ff_golden, load application fonts, create deterministic golden coverage, and build a searchable report.
 ---
 
 # Get started
 
-This guide creates a first matrix-based golden suite and an optional local
+This guide creates a first coverage-based golden suite and an optional local
 review report. Keep `ff_golden` and `ff_golden_presenter` in
 `dev_dependencies`; they are test and publication infrastructure, not runtime
 application dependencies.
@@ -68,7 +68,7 @@ void main() {
   testFfGoldens(
     'counter after one tap',
     scenario: 'counter/incremented',
-    matrix: GoldenMatrix(
+    coverage: GoldenCoverage(
       devices: const [GoldenDevice.iPhone11, GoldenDevice.iPad],
       locales: const [Locale('en'), Locale('ar')],
       themes: [GoldenTheme.light, GoldenTheme.dark],
@@ -144,6 +144,6 @@ than reading mutable global state.
 
 - Learn why [logical size, DPR, and capture scale](concepts/device-fidelity.md)
   are independent.
-- Choose a [matrix sampling strategy](concepts/matrices.md).
+- Choose a [coverage sampling strategy](concepts/coverage.md).
 - Model real workflows with [stateful and multi-shot tests](guides/stateful-scenarios.md).
 - Add the suite to [CI and publication](guides/ci.md).

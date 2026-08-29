@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test('default axes keep migration-friendly compact paths', () {
-    final variant = GoldenMatrix(
+    final variant = GoldenCoverage(
       locales: const [Locale('en')],
     ).plan().variants.single;
 
@@ -42,7 +42,7 @@ void main() {
 
   test('case-insensitive collisions are rejected before tests register', () {
     final variant =
-        GoldenMatrix(locales: const [Locale('en')]).plan().variants.single;
+        GoldenCoverage(locales: const [Locale('en')]).plan().variants.single;
 
     expect(
       () => const GoldenPathStrategy().validate(

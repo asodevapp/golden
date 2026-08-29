@@ -84,7 +84,7 @@ jobs:
           --clean
           --title "Runner presenter integration"
         working-directory: packages/ff_golden
-      - name: Verify authoritative multi-shot matrix metadata
+      - name: Verify authoritative multi-shot coverage metadata
         run: |
           grep -Fq 'data-capture="empty"' build/presenter-integration/index.html
           grep -Fq 'data-device="iPadPro12.9"' build/presenter-integration/index.html

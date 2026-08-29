@@ -89,7 +89,7 @@ final class HtmlReportRenderer {
       </button>
     </div>
     <h1>${_escape(title)}</h1>
-    <p class="hero__description">Browse every captured state, then narrow the catalog by scenario, capture, device, matrix axis, or run status.</p>
+    <p class="hero__description">Browse every captured state, then narrow the catalog by scenario, capture, device, environment axis, or run status.</p>
     <dl class="summary" aria-label="Report summary">
       ${_stat('Images', catalog.imageCount)}
       ${_stat('Scenarios', catalog.scenarios.length)}

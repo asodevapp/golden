@@ -33,7 +33,7 @@ and high contrast to the Flutter test view.
 </div>
 
 <div class="ff-card" markdown>
-### Controlled matrices
+### Controlled coverage
 
 Cover devices and environment axes with full, smoke, pairwise, or risk-priority
 sampling. Insufficient coverage fails instead of silently dropping cases.
@@ -74,7 +74,7 @@ void main() {
   testFfGoldens(
     'sign in validation',
     scenario: 'authentication/invalid-email',
-    matrix: GoldenMatrix(
+    coverage: GoldenCoverage(
       devices: const [
         GoldenDevice.iPhone11,
         GoldenDevice.iPad,
@@ -129,7 +129,7 @@ the runner's result and preserves the original golden files.
 
 ## Choose your next step
 
-- Follow [Get started](getting-started.md) to add fonts, a first matrix, and a
+- Follow [Get started](getting-started.md) to add fonts, initial coverage, and a
   local report.
 - Understand [device fidelity](concepts/device-fidelity.md) before defining
   custom presets or changing capture scale.

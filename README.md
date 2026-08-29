@@ -8,7 +8,7 @@ an independently versioned, publishable package.
 
 | Package | Responsibility |
 | --- | --- |
-| [`ff_golden`](packages/ff_golden) | Flutter golden execution, device fidelity, scenario matrices, comparison, and diagnostics. |
+| [`ff_golden`](packages/ff_golden) | Flutter golden execution, device fidelity, scenario coverage, comparison, and diagnostics. |
 | [`ff_golden_presenter`](packages/ff_golden_presenter) | Project-local CLI for collecting, optimizing, browsing, and publishing golden artifacts. |
 
 Read the [FF Golden documentation](https://asodevapp.github.io/golden/) or explore
@@ -17,7 +17,7 @@ the generated report in the
 
 ## Codex skill
 
-This repository includes the repo-local [`$ff-golden`](.agents/skills/ff-golden/SKILL.md) skill for building new matrix suites, preserving legacy baselines during migration, diagnosing pixel diffs, and producing presenter reports. Codex can discover it automatically while working in this checkout, or it can be invoked explicitly as `$ff-golden`.
+This repository includes the repo-local [`$ff-golden`](.agents/skills/ff-golden/SKILL.md) skill for building new coverage suites, preserving legacy baselines during migration, diagnosing pixel diffs, and producing presenter reports. Codex can discover it automatically while working in this checkout, or it can be invoked explicitly as `$ff-golden`.
 
 The boundary is intentional: test execution stays Flutter-focused, while HTML,
 image optimization, Docker, and CI publication stay in the presenter package.
@@ -76,7 +76,7 @@ flutter test
 The checked-in GitHub Actions workflow performs these checks and exercises the
 presenter on Linux, macOS, and Windows. A separate integration job produces
 multi-shot runner baselines plus sharded metadata, then verifies that presenter
-retains the exact device and every matrix axis.
+retains the exact device and every coverage axis.
 
 Build the documentation locally with:
 

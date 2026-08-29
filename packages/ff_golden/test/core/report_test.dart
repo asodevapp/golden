@@ -14,7 +14,7 @@ void main() {
       testFile: Uri.file('/project/test/screens/login_test.dart'),
       projectDirectory: Directory('/project'),
     );
-    final plan = GoldenMatrix().plan();
+    final plan = GoldenCoverage().plan();
     final variant = plan.variants.single;
 
     reporter.registerPlan(

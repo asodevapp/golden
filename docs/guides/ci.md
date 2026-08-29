@@ -59,7 +59,7 @@ test step still determines the job result.
 When manifests exist, presenter uses them as the authoritative source for:
 
 - capture and dotted device names;
-- every matrix axis;
+- every coverage axis;
 - pass or fail status;
 - duration and failure phase;
 - overflow count, error, and standard Flutter diff artifacts.

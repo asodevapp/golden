@@ -17,11 +17,11 @@ typedef GoldenVariantPriority = int Function(GoldenVariant variant);
 enum _GoldenRuleKind { require, exclude }
 
 @immutable
-class GoldenMatrixRule {
-  const GoldenMatrixRule.require(this.name, this.predicate)
+class GoldenCoverageRule {
+  const GoldenCoverageRule.require(this.name, this.predicate)
       : _kind = _GoldenRuleKind.require;
 
-  const GoldenMatrixRule.excludeWhen(this.name, this.predicate)
+  const GoldenCoverageRule.excludeWhen(this.name, this.predicate)
       : _kind = _GoldenRuleKind.exclude;
 
   final String name;
@@ -35,8 +35,8 @@ class GoldenMatrixRule {
 }
 
 @immutable
-class GoldenMatrixPlan {
-  const GoldenMatrixPlan({
+class GoldenCoveragePlan {
+  const GoldenCoveragePlan({
     required this.rawCount,
     required this.excludedCount,
     required this.sampling,
@@ -52,12 +52,12 @@ class GoldenMatrixPlan {
 
   @override
   String toString() =>
-      'GoldenMatrixPlan(raw: $rawCount, excluded: $excludedCount, '
+      'GoldenCoveragePlan(raw: $rawCount, excluded: $excludedCount, '
       'selected: $selectedCount, sampling: ${sampling.name})';
 }
 
-class GoldenMatrixBudgetExceeded implements Exception {
-  const GoldenMatrixBudgetExceeded({
+class GoldenCoverageBudgetExceeded implements Exception {
+  const GoldenCoverageBudgetExceeded({
     required this.strategy,
     required this.requiredCount,
     required this.maxCombinations,
@@ -69,13 +69,13 @@ class GoldenMatrixBudgetExceeded implements Exception {
 
   @override
   String toString() =>
-      'GoldenMatrixBudgetExceeded: ${strategy.name} needs $requiredCount '
+      'GoldenCoverageBudgetExceeded: ${strategy.name} needs $requiredCount '
       'combinations, but maxCombinations is $maxCombinations. Increase the '
       'budget or use GoldenSampling.priority for a hard cap.';
 }
 
-class GoldenMatrix {
-  GoldenMatrix({
+class GoldenCoverage {
+  GoldenCoverage({
     Iterable<GoldenDevice>? devices,
     Iterable<Locale>? locales,
     Iterable<GoldenTheme>? themes,
@@ -84,7 +84,7 @@ class GoldenMatrix {
     Iterable<TargetPlatform>? platforms,
     Iterable<Brightness>? brightnesses,
     Iterable<bool>? highContrasts,
-    Iterable<GoldenMatrixRule> rules = const [],
+    Iterable<GoldenCoverageRule> rules = const [],
     this.sampling = GoldenSampling.full,
     this.maxCombinations = 256,
     this.priority,
@@ -116,12 +116,12 @@ class GoldenMatrix {
   final List<TargetPlatform>? platforms;
   final List<Brightness>? brightnesses;
   final List<bool>? highContrasts;
-  final List<GoldenMatrixRule> rules;
+  final List<GoldenCoverageRule> rules;
   final GoldenSampling sampling;
   final int maxCombinations;
   final GoldenVariantPriority? priority;
 
-  GoldenMatrixPlan plan() {
+  GoldenCoveragePlan plan() {
     final raw = _cartesianProduct();
     final feasible = raw
         .where((variant) => rules.every((rule) => rule.allows(variant)))
@@ -139,14 +139,14 @@ class GoldenMatrix {
         sampled.removeRange(maxCombinations, sampled.length);
       }
     } else if (sampled.length > maxCombinations) {
-      throw GoldenMatrixBudgetExceeded(
+      throw GoldenCoverageBudgetExceeded(
         strategy: sampling,
         requiredCount: sampled.length,
         maxCombinations: maxCombinations,
       );
     }
 
-    return GoldenMatrixPlan(
+    return GoldenCoveragePlan(
       rawCount: raw.length,
       excludedCount: raw.length - feasible.length,
       sampling: sampling,
@@ -280,7 +280,7 @@ class GoldenMatrix {
         locales.isEmpty ||
         themes.isEmpty ||
         directions.isEmpty) {
-      throw ArgumentError('Golden matrix axes must not be empty.');
+      throw ArgumentError('Golden coverage axes must not be empty.');
     }
     if (maxCombinations <= 0) {
       throw ArgumentError.value(

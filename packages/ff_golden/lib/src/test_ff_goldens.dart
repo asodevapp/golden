@@ -9,7 +9,7 @@ import 'package:meta/meta.dart';
 import 'capture.dart';
 import 'comparator.dart';
 import 'error_capture.dart';
-import 'matrix.dart';
+import 'coverage.dart';
 import 'naming.dart';
 import 'report.dart';
 import 'stale.dart';
@@ -149,7 +149,7 @@ void testFfGoldens(
   String description, {
   required String scenario,
   required GoldenWidgetBuilder build,
-  GoldenMatrix? matrix,
+  GoldenCoverage? coverage,
   GoldenAppBuilder? wrapper,
   GoldenInteraction? interact,
   GoldenPump pump = _pumpAndSettle,
@@ -162,7 +162,7 @@ void testFfGoldens(
   TestVariant<Object?> variant = const DefaultTestVariant(),
   Iterable<String> tags = const [],
 }) {
-  final plan = (matrix ?? GoldenMatrix()).plan();
+  final plan = (coverage ?? GoldenCoverage()).plan();
   final plannedPaths = plan.variants
       .map(
         (variant) => configuration.pathStrategy.build(
@@ -293,7 +293,7 @@ void testFfGoldens(
   }
 }
 
-/// Registers a typed set of states against one shared golden matrix.
+/// Registers a typed set of states against one shared golden coverage plan.
 ///
 /// This keeps loading, loaded, empty, and error cases compile-time checked
 /// without duplicating the device and comparison configuration.
@@ -302,7 +302,7 @@ void testFfGoldenScenarios<T>(
   String description, {
   required Iterable<GoldenScenario<T>> scenarios,
   required GoldenScenarioWidgetBuilder<T> build,
-  GoldenMatrix? matrix,
+  GoldenCoverage? coverage,
   GoldenAppBuilder? wrapper,
   GoldenPump pump = _pumpAndSettle,
   GoldenRunConfiguration configuration = const GoldenRunConfiguration(),
@@ -335,7 +335,7 @@ void testFfGoldenScenarios<T>(
       '$description — ${scenarioCase.name}',
       scenario: scenarioCase.name,
       build: (goldenVariant) => build(goldenVariant, scenarioCase.state),
-      matrix: matrix,
+      coverage: coverage,
       wrapper: wrapper,
       interact: scenarioCase.interact == null
           ? null

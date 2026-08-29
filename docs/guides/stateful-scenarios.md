@@ -1,6 +1,6 @@
 ---
 title: Stateful and multi-shot tests
-description: Drive deterministic Flutter interactions, wait with bounded virtual time, capture named checkpoints, and reuse typed state tables across a golden matrix.
+description: Drive deterministic Flutter interactions, wait with bounded virtual time, capture named checkpoints, and reuse typed state tables across shared golden coverage.
 ---
 
 # Stateful and multi-shot tests
@@ -73,7 +73,7 @@ dots that legitimately belong to a device name.
 
 ## Reuse a typed state table
 
-For loading, loaded, empty, and error states that share one matrix:
+For loading, loaded, empty, and error states that share one coverage definition:
 
 ```dart
 enum ProfileState { loading, loaded, empty, error }
@@ -86,7 +86,7 @@ testFfGoldenScenarios<ProfileState>(
     GoldenScenario(name: 'profile/empty', state: ProfileState.empty),
     GoldenScenario(name: 'profile/error', state: ProfileState.error),
   ],
-  matrix: profileMatrix,
+  coverage: profileCoverage,
   build: (variant, state) => ProfilePage(initialState: state),
 );
 ```

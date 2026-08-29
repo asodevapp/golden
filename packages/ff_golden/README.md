@@ -2,7 +2,7 @@
 
 Deterministic visual regression testing for the Flutter Files toolchain.
 
-`ff_golden` runs one scenario against a controlled matrix of devices, themes,
+`ff_golden` runs one scenario against controlled coverage of devices, themes,
 locales, text scales, directions, platforms, brightness modes, and accessibility
 settings. It keeps every combination as an isolated Flutter test and emits
 stable machine-readable run metadata alongside the golden artifacts.
@@ -12,7 +12,7 @@ stable machine-readable run metadata alongside the golden artifacts.
 - Accurate device geometry: logical size, physical size, device pixel ratio,
   safe areas, target platform, brightness, and high contrast are applied to the
   Flutter test view.
-- Declarative matrices with constraints and deterministic `full`, `smoke`,
+- Declarative coverage with constraints and deterministic `full`, `smoke`,
   `pairwise`, or risk-based `priority` sampling.
 - Stateful scenarios: interact with the widget, wait with bounded virtual time,
   and capture one or several named moments.
@@ -71,7 +71,7 @@ void main() {
   testFfGoldens(
     'login with an invalid email',
     scenario: 'login/invalid-email',
-    matrix: GoldenMatrix(
+    coverage: GoldenCoverage(
       devices: const [
         GoldenDevice.iPhone11,
         GoldenDevice.iPad,
@@ -83,7 +83,7 @@ void main() {
       sampling: GoldenSampling.pairwise,
       maxCombinations: 24,
       rules: [
-        GoldenMatrixRule.excludeWhen(
+        GoldenCoverageRule.excludeWhen(
           'dark theme owns brightness',
           (variant) =>
               variant.theme.name == 'dark' &&
@@ -130,9 +130,9 @@ density-specific regressions. Prefer `GoldenSampling.smoke`, `pairwise`, or
 `priority` to reduce the number of tests; set `captureScale: 1` only when raster
 fidelity is not part of the contract.
 
-## Matrix strategies
+## Coverage strategies
 
-`GoldenMatrix.plan()` expands the Cartesian product, applies every rule, and
+`GoldenCoverage.plan()` expands the Cartesian product, applies every rule, and
 then samples the feasible variants:
 
 - `full` keeps all feasible combinations.
@@ -142,8 +142,8 @@ then samples the feasible variants:
   `maxCombinations` as a hard cap.
 
 For the first three strategies, an insufficient budget throws
-`GoldenMatrixBudgetExceeded`; coverage is never silently weakened. Use
-`GoldenMatrixRule.require` or `excludeWhen` to model impossible combinations.
+`GoldenCoverageBudgetExceeded`; coverage is never silently weakened. Use
+`GoldenCoverageRule.require` or `excludeWhen` to model impossible combinations.
 
 ## Stateful and multi-shot scenarios
 
@@ -168,7 +168,7 @@ testFfGoldens(
 `context.pumpUntilFound(...)` advances bounded virtual time and fails with the
 active variant in its diagnostic instead of waiting indefinitely.
 
-For compile-time-checked state tables, reuse one matrix with
+For compile-time-checked state tables, reuse one coverage definition with
 `testFfGoldenScenarios<T>`:
 
 ```dart
@@ -180,7 +180,7 @@ testFfGoldenScenarios<AsyncState>(
     GoldenScenario(name: 'profile/error', state: AsyncState.error),
   ],
   build: (variant, state) => ProfilePage(initialState: state),
-  matrix: profileMatrix,
+  coverage: profileCoverage,
 );
 ```
 
@@ -232,7 +232,7 @@ Share one `JsonGoldenReporter` instance across every scenario in a test file.
 Give each file a stable, project-unique `shardName`. At the end of the suite it
 writes one schema-v2 `ff_golden.run` shard into the output directory with:
 
-- planned, excluded, and selected matrix counts;
+- planned, excluded, and selected combination counts;
 - complete variant metadata;
 - pass/fail status, duration, overflow count, and failure phase;
 - captured golden paths and the standard Flutter diff artifact names.
@@ -261,7 +261,7 @@ dart run ff_golden_presenter build \
 ```
 
 Presenter merges schema-v1/v2 shards and uses them as the authoritative source
-for multi-shot capture names, dotted device names, every matrix axis, run
+for multi-shot capture names, dotted device names, every coverage axis, run
 status, duration, and failure diagnostics. Images without a matching manifest
 remain available through filename parsing.
 

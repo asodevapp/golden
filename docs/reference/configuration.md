@@ -1,6 +1,6 @@
 ---
 title: Configuration reference
-description: Quick reference for GoldenRunConfiguration, GoldenMatrix, GoldenDevice, GoldenPathStrategy, and JSON reporting options.
+description: Quick reference for GoldenRunConfiguration, GoldenCoverage, GoldenDevice, GoldenPathStrategy, and JSON reporting options.
 ---
 
 # Configuration reference
@@ -23,7 +23,7 @@ reference for constructor signatures and complete type documentation.
 | `autoCapture` | `true` | Capture once after interaction and pump |
 | `reporter` | `null` | Optional machine-readable result reporter |
 
-## `GoldenMatrix`
+## `GoldenCoverage`
 
 | Field | Default | Meaning |
 | --- | --- | --- |
@@ -51,7 +51,7 @@ reference for constructor signatures and complete type documentation.
 | `safeArea` | zero | Logical safe-area insets |
 | `brightness` | light | Default environment brightness |
 | `highContrast` | `false` | Default high-contrast value |
-| `textScale` | `1` | Legacy device default; prefer matrix text scales |
+| `textScale` | `1` | Legacy device default; prefer coverage text scales |
 
 `physicalSize` is derived. The deprecated `.size` getter returns physical size
 for compatibility and should not be used in new code.
@@ -81,10 +81,10 @@ within a file so every registered scenario contributes to one schema-v2 shard.
 
 ## Test registration
 
-`testFfGoldens` accepts the scenario, builder, optional matrix, application
+`testFfGoldens` accepts the scenario, builder, optional coverage, application
 wrapper, interaction, pump, configuration, per-case hooks, standard Flutter
 test controls, and additional tags. It creates one `testWidgets` case per
 selected variant.
 
 `testFfGoldenScenarios<T>` registers a typed state table against the same
-matrix and configuration.
+coverage and configuration.

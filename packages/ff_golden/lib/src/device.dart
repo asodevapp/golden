@@ -27,7 +27,7 @@ class GoldenDevice {
   final Brightness brightness;
   final bool highContrast;
 
-  /// Legacy per-device default. Prefer the independent `textScales` matrix
+  /// Legacy per-device default. Prefer the independent `textScales` coverage
   /// axis for new tests.
   final double textScale;
 
