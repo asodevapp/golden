@@ -5,6 +5,8 @@ description: Collect Flutter golden images, merge ff_golden run manifests, optim
 
 # FF Golden Presenter
 
+Package: [`ff_golden_presenter` on pub.dev](https://pub.dev/packages/ff_golden_presenter)
+
 FF Golden Presenter turns Flutter and Dart golden images into a searchable,
 portable HTML report. The generated page has no runtime dependencies and uses
 relative image URLs, so the whole output directory can be opened locally,

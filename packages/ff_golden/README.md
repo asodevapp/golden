@@ -2,6 +2,10 @@
 
 Deterministic visual regression testing for the Flutter Files toolchain.
 
+[`ff_golden` on pub.dev](https://pub.dev/packages/ff_golden) ·
+[Documentation](https://asodevapp.github.io/golden/) ·
+[GitHub](https://github.com/asodevapp/golden)
+
 `ff_golden` runs one scenario against controlled coverage of devices, themes,
 locales, text scales, directions, platforms, brightness modes, and accessibility
 settings. It keeps every combination as an isolated Flutter test and emits

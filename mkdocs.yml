@@ -95,5 +95,8 @@ extra:
     - icon: simple/dart
       link: https://pub.dev/packages/ff_golden
       name: ff_golden on pub.dev
+    - icon: simple/dart
+      link: https://pub.dev/packages/ff_golden_presenter
+      name: ff_golden_presenter on pub.dev
 
 site_dir: build/pages

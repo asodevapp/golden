@@ -23,6 +23,10 @@ FF Golden is the visual-testing stack for Flutter Files. It combines a strict
 Flutter runner with a project-local publication tool without moving correctness
 decisions into the report layer.
 
+Published packages: [`ff_golden`](https://pub.dev/packages/ff_golden) for test
+execution and [`ff_golden_presenter`](https://pub.dev/packages/ff_golden_presenter)
+for reports and publication.
+
 <div class="ff-grid" markdown>
 
 <div class="ff-card" markdown>

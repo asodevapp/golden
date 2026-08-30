@@ -6,10 +6,10 @@ an independently versioned, publishable package.
 
 ## Packages
 
-| Package | Responsibility |
-| --- | --- |
-| [`ff_golden`](packages/ff_golden) | Flutter golden execution, device fidelity, scenario coverage, comparison, and diagnostics. |
-| [`ff_golden_presenter`](packages/ff_golden_presenter) | Project-local CLI for collecting, optimizing, browsing, and publishing golden artifacts. |
+| Package | Source | Responsibility |
+| --- | --- | --- |
+| [`ff_golden`](https://pub.dev/packages/ff_golden) | [`packages/ff_golden`](packages/ff_golden) | Flutter golden execution, device fidelity, scenario coverage, comparison, and diagnostics. |
+| [`ff_golden_presenter`](https://pub.dev/packages/ff_golden_presenter) | [`packages/ff_golden_presenter`](packages/ff_golden_presenter) | Project-local CLI for collecting, optimizing, browsing, and publishing golden artifacts. |
 
 Read the [FF Golden documentation](https://asodevapp.github.io/golden/) or explore
 the generated report in the

@@ -28,6 +28,9 @@ application dependencies.
 Commit both `pubspec.yaml` and `pubspec.lock` so local development and CI use
 the same toolchain.
 
+Package pages: [`ff_golden`](https://pub.dev/packages/ff_golden) and
+[`ff_golden_presenter`](https://pub.dev/packages/ff_golden_presenter).
+
 ## 2. Load the application fonts
 
 Create `test/flutter_test_config.dart`:
