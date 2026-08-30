@@ -29,4 +29,4 @@ Alternatively, build and serve the demo through the production container:
 docker compose up --build
 ```
 
-Open <http://localhost:8080>. Copy-ready GitHub and GitLab publication workflows are available in [`ci/`](ci/).
+Open `http://localhost:8080`. Copy-ready GitHub and GitLab publication workflows are available in [`ci/`](ci/).

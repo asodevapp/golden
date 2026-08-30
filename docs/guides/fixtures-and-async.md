@@ -101,6 +101,6 @@ Advance virtual time with FF Golden's pump helpers. Use
 and replace that I/O with a local fixture whenever possible.
 
 The repository's
-[complete example](https://github.com/asodevapp/golden/blob/master/packages/ff_golden/example/ff_golden_example_test.dart)
+[complete example](https://github.com/asodevapp/golden/blob/master/packages/ff_golden/example/example.dart)
 contains loading, loaded, and error captures driven by a controlled fake
 repository.

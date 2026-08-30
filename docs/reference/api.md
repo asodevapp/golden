@@ -50,6 +50,6 @@ ignored by Git. Serve that directory over HTTP for working search.
 ## Source and examples
 
 - [Runner public exports](https://github.com/asodevapp/golden/blob/master/packages/ff_golden/lib/ff_golden.dart)
-- [Runner example](https://github.com/asodevapp/golden/blob/master/packages/ff_golden/example/ff_golden_example_test.dart)
+- [Runner example](https://github.com/asodevapp/golden/blob/master/packages/ff_golden/example/example.dart)
 - [Presenter public exports](https://github.com/asodevapp/golden/blob/master/packages/ff_golden_presenter/lib/ff_golden_presenter.dart)
 - [Presenter demo sources](https://github.com/asodevapp/golden/tree/master/packages/ff_golden_presenter/example)

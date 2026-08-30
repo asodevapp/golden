@@ -67,7 +67,7 @@ The equivalent manual dependency is:
 
 ```yaml
 dev_dependencies:
-  ff_golden_presenter: ^1.0.0
+  ff_golden_presenter: ^1.0.1
 ```
 
 For an unreleased repository revision, use the package Git source and
@@ -270,7 +270,7 @@ Run the demo locally with one command:
 docker compose up --build
 ```
 
-Open <http://localhost:8080>. The image also exposes `/healthz` for container health checks.
+Open `http://localhost:8080`. The image also exposes `/healthz` for container health checks.
 
 For a Flutter project, copy `Dockerfile`, `.dockerignore`, and `docker/nginx.conf`, then build with project-specific arguments:
 

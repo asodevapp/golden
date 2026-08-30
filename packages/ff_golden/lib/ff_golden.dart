@@ -1,3 +1,6 @@
+/// Deterministic Flutter golden tests with controlled device and state coverage.
+library;
+
 export 'src/capture.dart' show expectFfGolden;
 export 'src/comparator.dart';
 export 'src/coverage.dart';

@@ -8,6 +8,7 @@ import 'run_manifest.dart';
 
 /// Scans an input tree and groups images by their logical golden scenario.
 final class GoldenCatalogScanner {
+  /// Creates a scanner for one source image tree.
   GoldenCatalogScanner({
     required Directory inputDirectory,
     required GoldenImageFactory imageFactory,
@@ -25,9 +26,14 @@ final class GoldenCatalogScanner {
   final Directory _inputDirectory;
   final GoldenImageFactory _imageFactory;
   final GoldenRunIndex _runIndex;
+
+  /// Directory segment that identifies a golden baseline subtree.
   final String goldenDirectoryName;
+
+  /// Lowercase image extensions included in the catalog.
   final Set<String> extensions;
 
+  /// Scans the source tree and returns deterministically ordered scenarios.
   Future<GoldenCatalog> scan() async {
     final inputPath = path.normalize(path.absolute(_inputDirectory.path));
     final files = <File>[];

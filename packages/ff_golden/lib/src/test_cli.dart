@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as path;
 
-const ffGoldenVersion = '1.2.0';
+const ffGoldenVersion = '1.2.1';
 
 /// Starts a child process and returns its exit code.
 typedef GoldenProcessRunner = Future<int> Function(

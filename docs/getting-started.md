@@ -15,13 +15,13 @@ application dependencies.
 === "Runner only"
 
     ```shell
-    flutter pub add --dev 'ff_golden:^1.2.0'
+    flutter pub add --dev 'ff_golden:^1.2.1'
     ```
 
 === "Runner and presenter"
 
     ```shell
-    flutter pub add --dev 'ff_golden:^1.2.0'
+    flutter pub add --dev 'ff_golden:^1.2.1'
     flutter pub add --dev ff_golden_presenter
     ```
 
@@ -91,7 +91,7 @@ Give every test file a stable, project-unique `shardName`. The runner completes
 the reporter after that file's suite and writes one manifest shard.
 
 The repository contains a complete
-[counter example](https://github.com/asodevapp/golden/blob/master/packages/ff_golden/example/ff_golden_example_test.dart).
+[counter example](https://github.com/asodevapp/golden/blob/master/packages/ff_golden/example/example.dart).
 
 ## 4. Generate and verify the baselines
 

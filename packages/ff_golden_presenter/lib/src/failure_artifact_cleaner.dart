@@ -4,12 +4,16 @@ import 'package:path/path.dart' as path;
 
 /// The result of scanning for or deleting golden comparison failure images.
 final class FailureArtifactCleanupResult {
+  /// Creates a cleanup summary.
   const FailureArtifactCleanupResult({
     required this.fileCount,
     required this.totalBytes,
   });
 
+  /// Number of matching failure images.
   final int fileCount;
+
+  /// Combined byte size of the matching images.
   final int totalBytes;
 }
 
@@ -19,6 +23,7 @@ final class FailureArtifactCleanupResult {
 /// `masterImage.png`, `testImage.png`, `isolatedDiff.png`, and
 /// `maskedDiff.png` into these directories. Symlinks are never followed.
 final class FailureArtifactCleaner {
+  /// Creates a guarded cleaner rooted at [inputDirectory].
   FailureArtifactCleaner({
     required Directory inputDirectory,
     Set<String> extensions = const {'png'},
@@ -31,9 +36,13 @@ final class FailureArtifactCleaner {
               .where((extension) => extension.isNotEmpty),
         );
 
+  /// Normalized root searched for `failures` directories.
   final Directory inputDirectory;
+
+  /// Lowercase image extensions eligible for deletion.
   final Set<String> extensions;
 
+  /// Finds failure images and deletes them unless [dryRun] is true.
   Future<FailureArtifactCleanupResult> clean({bool dryRun = false}) async {
     await _validateInput();
     if (extensions.isEmpty) {

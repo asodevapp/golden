@@ -1,3 +1,10 @@
+## 1.2.1
+
+- Added API documentation for the primary device, theme, variant, and
+  comparison surfaces.
+- Published the runnable coverage example at the conventional
+  `example/example.dart` path used by pub.dev.
+
 ## 1.2.0
 
 - Added `ff_golden test`, `verify`, and `update` commands with golden-test file

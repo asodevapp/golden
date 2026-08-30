@@ -1,8 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+/// The maximum accepted pixel difference for one golden comparison.
 @immutable
 class GoldenTolerance {
+  /// Creates a tolerance with fractional and absolute changed-pixel limits.
   const GoldenTolerance({
     this.maxDiffRate = 0,
     this.maxDifferentPixels = 0,
@@ -15,10 +17,13 @@ class GoldenTolerance {
   /// Absolute changed-pixel budget.
   final int maxDifferentPixels;
 
+  /// A pixel-perfect comparison policy.
   static const strict = GoldenTolerance();
 
+  /// Whether this policy rejects every changed pixel.
   bool get isStrict => maxDiffRate == 0 && maxDifferentPixels == 0;
 
+  /// Returns whether [result] satisfies this policy.
   bool allows(ComparisonResult result) {
     if (result.passed) return true;
     if (result.diffPercent <= maxDiffRate) return true;
@@ -32,12 +37,17 @@ class GoldenTolerance {
   }
 }
 
+/// A Flutter local-file comparator that applies a [GoldenTolerance].
 class FfGoldenFileComparator extends LocalFileComparator {
+  /// Creates a comparator rooted at [testFile].
   FfGoldenFileComparator(super.testFile,
       {this.tolerance = GoldenTolerance.strict});
 
+  /// The policy applied to every comparison.
   final GoldenTolerance tolerance;
 
+  /// Compares [imageBytes] with [golden] and writes Flutter failure artifacts
+  /// when the configured tolerance is exceeded.
   @override
   Future<bool> compare(Uint8List imageBytes, Uri golden) async {
     final result = await GoldenFileComparator.compareLists(
@@ -60,6 +70,7 @@ class FfGoldenFileComparator extends LocalFileComparator {
   }
 }
 
+/// Runs [body] with [tolerance] installed on Flutter's local comparator.
 Future<T> withFfGoldenTolerance<T>(
   GoldenTolerance tolerance,
   Future<T> Function() body,

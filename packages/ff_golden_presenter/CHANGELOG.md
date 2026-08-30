@@ -1,3 +1,10 @@
+## 1.0.1
+
+- Completed dartdoc coverage for the public cleanup and catalog-scanning
+  surfaces used by project tooling.
+- Kept the local Docker URL as code in the README so package links satisfy
+  pub.dev's secure-link convention.
+
 ## 1.0.0
 
 - Declared the presenter workflow stable after long-term production use of the

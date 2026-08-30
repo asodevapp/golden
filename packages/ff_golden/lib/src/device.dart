@@ -7,6 +7,7 @@ import 'package:flutter/widgets.dart';
 /// logical geometry and density as the target device.
 @immutable
 class GoldenDevice {
+  /// Creates a device preset from logical geometry and rendering properties.
   const GoldenDevice({
     required this.name,
     required this.logicalSize,
@@ -19,28 +20,45 @@ class GoldenDevice {
   })  : assert(devicePixelRatio > 0),
         assert(textScale > 0);
 
+  /// Stable name used in test labels and golden filenames.
   final String name;
+
+  /// Layout size exposed to Flutter in logical pixels.
   final Size logicalSize;
+
+  /// Ratio between physical and logical pixels.
   final double devicePixelRatio;
+
+  /// Target platform behavior applied while rendering the test.
   final TargetPlatform platform;
+
+  /// Insets exposed through `MediaQuery.padding`.
   final EdgeInsets safeArea;
+
+  /// Device brightness used when no coverage override is supplied.
   final Brightness brightness;
+
+  /// Whether high-contrast rendering is enabled by default.
   final bool highContrast;
 
   /// Legacy per-device default. Prefer the independent `textScales` coverage
   /// axis for new tests.
   final double textScale;
 
+  /// Raster size obtained from [logicalSize] and [devicePixelRatio].
   Size get physicalSize => Size(
         logicalSize.width * devicePixelRatio,
         logicalSize.height * devicePixelRatio,
       );
 
+  /// The legacy physical-pixel size accessor.
   @Deprecated('Use logicalSize or physicalSize explicitly.')
   Size get size => physicalSize;
 
+  /// Whether [logicalSize] is wider than it is tall.
   bool get isLandscape => logicalSize.width > logicalSize.height;
 
+  /// Returns a copy with the supplied rendering properties replaced.
   GoldenDevice copyWith({
     String? name,
     Size? logicalSize,
@@ -62,6 +80,7 @@ class GoldenDevice {
         textScale: textScale ?? this.textScale,
       );
 
+  /// Returns a landscape copy with rotated logical size and safe-area insets.
   GoldenDevice landscape({String? name}) => copyWith(
         name: name ?? '${this.name}_Landscape',
         logicalSize: Size(logicalSize.height, logicalSize.width),
@@ -73,6 +92,7 @@ class GoldenDevice {
         ),
       );
 
+  /// Returns a copy with theme-related device defaults replaced.
   GoldenDevice toTheme({
     String? name,
     Brightness? brightness,
@@ -246,5 +266,6 @@ class GoldenDevice {
       'GoldenDevice($name, ${logicalSize.width}x${logicalSize.height} @ ${devicePixelRatio}x, ${platform.name})';
 }
 
+/// Deprecated compatibility name for [GoldenDevice].
 @Deprecated('Use GoldenDevice. The alias will be removed in ff_golden 2.0.')
 typedef Device = GoldenDevice;
