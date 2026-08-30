@@ -1,3 +1,10 @@
+## 1.0.3
+
+- Grouped scenarios by their first path segment with hierarchical navigation
+  and filter-aware group counts.
+- Replaced lightbox font glyphs with centered SVG controls and refined the
+  responsive and print layouts for grouped reports.
+
 ## 1.0.2
 
 - Linked the companion `ff_golden` runner directly from the package README
