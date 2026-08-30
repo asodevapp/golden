@@ -160,49 +160,107 @@ final class HtmlReportRenderer {
     if (catalog.scenarios.isEmpty) {
       return '';
     }
-    final links = StringBuffer();
-    for (var index = 0; index < catalog.scenarios.length; index++) {
-      final scenario = catalog.scenarios[index];
-      links.writeln('''
-<a href="#scenario-$index" data-scenario-link="scenario-$index">
-  <span>${_escape(scenario.breadcrumb)}</span>
-  <strong>${scenario.images.length}</strong>
+    final groups = StringBuffer();
+    final scenarioGroups = _groupScenarios(catalog);
+    for (var groupIndex = 0; groupIndex < scenarioGroups.length; groupIndex++) {
+      final group = scenarioGroups[groupIndex];
+      final links = StringBuffer();
+      for (final entry in group.entries) {
+        links.writeln('''
+<a class="scenario-nav__item" href="#scenario-${entry.index}" data-scenario-link="scenario-${entry.index}">
+  <span>${_escape(entry.name)}</span>
+  <strong>${entry.scenario.images.length}</strong>
 </a>''');
+      }
+      groups.writeln('''
+<div class="scenario-nav__group" data-scenario-nav-group="scenario-group-$groupIndex">
+  <a class="scenario-nav__group-link" href="#scenario-group-$groupIndex">
+    <span>${_escape(group.name)}</span>
+    <strong data-nav-group-count>${group.imageCount}</strong>
+  </a>
+  <div class="scenario-nav__items">
+    $links
+  </div>
+</div>''');
     }
     return '''
 <nav class="scenario-nav" aria-label="Scenarios">
   <p class="scenario-nav__title">Scenarios</p>
-  $links
+  <div class="scenario-nav__groups">
+    $groups
+  </div>
 </nav>''';
   }
 
   String _renderScenarios(GoldenCatalog catalog) {
-    final scenarios = StringBuffer();
+    final groups = StringBuffer();
     var imageIndex = 0;
-    for (var scenarioIndex = 0;
-        scenarioIndex < catalog.scenarios.length;
-        scenarioIndex++) {
-      final scenario = catalog.scenarios[scenarioIndex];
-      final cards = StringBuffer();
-      for (final image in scenario.images) {
-        cards.writeln(_renderImageCard(scenario, image, imageIndex));
-        imageIndex++;
-      }
-      scenarios.writeln('''
-<section class="scenario" id="scenario-$scenarioIndex" data-scenario>
+    final scenarioGroups = _groupScenarios(catalog);
+    for (var groupIndex = 0; groupIndex < scenarioGroups.length; groupIndex++) {
+      final group = scenarioGroups[groupIndex];
+      final scenarios = StringBuffer();
+      for (var entryIndex = 0;
+          entryIndex < group.entries.length;
+          entryIndex++) {
+        final entry = group.entries[entryIndex];
+        final cards = StringBuffer();
+        for (final image in entry.scenario.images) {
+          cards.writeln(
+            _renderImageCard(entry.scenario, image, imageIndex),
+          );
+          imageIndex++;
+        }
+        final imageCount = entry.scenario.images.length;
+        scenarios.writeln('''
+<section class="scenario" id="scenario-${entry.index}" data-scenario>
   <header class="scenario__header">
     <div>
-      <p class="eyebrow">Scenario ${(scenarioIndex + 1).toString().padLeft(2, '0')}</p>
-      <h2>${_escape(scenario.breadcrumb)}</h2>
+      <p class="eyebrow">Scenario ${(entryIndex + 1).toString().padLeft(2, '0')}</p>
+      <h3>${_escape(entry.name)}</h3>
     </div>
-    <span class="scenario__count" data-scenario-count>${scenario.images.length} images</span>
+    <span class="scenario__count" data-scenario-count>$imageCount ${imageCount == 1 ? 'image' : 'images'}</span>
   </header>
   <div class="gallery">
     $cards
   </div>
 </section>''');
+      }
+      final scenarioCount = group.entries.length;
+      final imageCount = group.imageCount;
+      groups.writeln('''
+<section class="scenario-group" id="scenario-group-$groupIndex" data-scenario-group aria-labelledby="scenario-group-$groupIndex-title">
+  <header class="scenario-group__header">
+    <div>
+      <p class="eyebrow">Scenario group ${(groupIndex + 1).toString().padLeft(2, '0')}</p>
+      <h2 id="scenario-group-$groupIndex-title">${_escape(group.name)}</h2>
+    </div>
+    <span class="scenario-group__count" data-scenario-group-count>$imageCount ${imageCount == 1 ? 'image' : 'images'} · $scenarioCount ${scenarioCount == 1 ? 'scenario' : 'scenarios'}</span>
+  </header>
+  <div class="scenario-group__content">
+    $scenarios
+  </div>
+</section>''');
     }
-    return scenarios.toString();
+    return groups.toString();
+  }
+
+  List<_ScenarioGroup> _groupScenarios(GoldenCatalog catalog) {
+    final groups = <String, _ScenarioGroup>{};
+    for (var index = 0; index < catalog.scenarios.length; index++) {
+      final scenario = catalog.scenarios[index];
+      final hasGroup = scenario.pathSegments.length > 1;
+      final groupName = hasGroup ? scenario.pathSegments.first : 'Ungrouped';
+      final scenarioName =
+          hasGroup ? scenario.pathSegments.skip(1).join(' / ') : scenario.name;
+      final group = groups.putIfAbsent(
+        groupName,
+        () => _ScenarioGroup(name: groupName),
+      );
+      group.entries.add(
+        _ScenarioEntry(index: index, name: scenarioName, scenario: scenario),
+      );
+    }
+    return groups.values.toList(growable: false);
   }
 
   String _renderImageCard(
@@ -325,13 +383,49 @@ final class HtmlReportRenderer {
   }
 }
 
+final class _ScenarioGroup {
+  _ScenarioGroup({required this.name});
+
+  final String name;
+  final List<_ScenarioEntry> entries = [];
+
+  int get imageCount => entries.fold(
+        0,
+        (total, entry) => total + entry.scenario.images.length,
+      );
+}
+
+final class _ScenarioEntry {
+  const _ScenarioEntry({
+    required this.index,
+    required this.name,
+    required this.scenario,
+  });
+
+  final int index;
+  final String name;
+  final GoldenScenario scenario;
+}
+
 const _lightbox = '''
 <dialog class="lightbox" id="lightbox">
   <div class="lightbox__surface">
-    <button class="lightbox__close" type="button" id="lightbox-close" aria-label="Close image">×</button>
-    <button class="lightbox__nav lightbox__nav--previous" type="button" id="lightbox-previous" aria-label="Previous image">‹</button>
+    <button class="lightbox__close" type="button" id="lightbox-close" aria-label="Close image">
+      <svg class="lightbox__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M6 6l12 12M18 6 6 18"></path>
+      </svg>
+    </button>
+    <button class="lightbox__nav lightbox__nav--previous" type="button" id="lightbox-previous" aria-label="Previous image">
+      <svg class="lightbox__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="m15 5-7 7 7 7"></path>
+      </svg>
+    </button>
     <img id="lightbox-image" alt="Selected golden image">
-    <button class="lightbox__nav lightbox__nav--next" type="button" id="lightbox-next" aria-label="Next image">›</button>
+    <button class="lightbox__nav lightbox__nav--next" type="button" id="lightbox-next" aria-label="Next image">
+      <svg class="lightbox__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="m9 5 7 7-7 7"></path>
+      </svg>
+    </button>
     <p id="lightbox-caption"></p>
   </div>
 </dialog>''';
@@ -463,16 +557,29 @@ const _styles = r'''
     .result-count { margin: 0 0 12px 4px; color: var(--muted); white-space: nowrap; font-size: 13px; }
     .result-count strong { color: var(--text); }
 
-    .report-shell { width: min(1440px, calc(100% - 48px)); margin: 0 auto; padding: 36px 0 72px; display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 40px; align-items: start; }
-    .scenario-nav { position: sticky; top: 96px; display: grid; gap: 4px; max-height: calc(100vh - 120px); overflow: auto; padding-right: 8px; }
+    .report-shell { width: min(1440px, calc(100% - 48px)); margin: 0 auto; padding: 36px 0 72px; display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 40px; align-items: start; }
+    .scenario-nav { position: sticky; top: 96px; display: grid; gap: 4px; max-height: calc(100vh - 120px); overflow: auto; padding: 0 8px 16px 0; }
     .scenario-nav__title { margin: 0 0 10px; color: var(--muted); font-size: 12px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
-    .scenario-nav a { display: flex; justify-content: space-between; gap: 12px; padding: 9px 10px; border-radius: 9px; color: var(--muted); text-decoration: none; font-size: 13px; line-height: 1.35; }
-    .scenario-nav a:hover { background: var(--panel); color: var(--text); }
+    .scenario-nav__groups { display: grid; gap: 18px; }
+    .scenario-nav__group { display: grid; gap: 5px; min-width: 0; }
+    .scenario-nav a { display: flex; min-width: 0; justify-content: space-between; align-items: baseline; gap: 12px; border-radius: 9px; color: var(--muted); text-decoration: none; line-height: 1.35; }
+    .scenario-nav a span { min-width: 0; overflow-wrap: anywhere; }
+    .scenario-nav .scenario-nav__group-link { padding: 7px 10px; color: var(--text); font-size: 12px; font-weight: 800; letter-spacing: .055em; text-transform: uppercase; }
+    .scenario-nav .scenario-nav__group-link:hover { background: var(--accent-soft); color: var(--accent); }
+    .scenario-nav__items { display: grid; gap: 2px; margin-left: 11px; padding-left: 10px; border-left: 1px solid var(--border); }
+    .scenario-nav__item { padding: 8px 9px; font-size: 13px; }
+    .scenario-nav__item:hover { background: var(--panel); color: var(--text); }
     .scenario-nav strong { color: var(--accent); font-variant-numeric: tabular-nums; }
-    .scenario-list { display: grid; gap: 64px; min-width: 0; }
+    .scenario-nav__group-link strong { min-width: 24px; padding: 2px 7px; border-radius: 999px; background: var(--accent-soft); text-align: center; font-size: 10px; }
+    .scenario-list { display: grid; gap: 88px; min-width: 0; }
+    .scenario-group { min-width: 0; scroll-margin-top: 100px; }
+    .scenario-group__header { display: flex; justify-content: space-between; align-items: end; gap: 24px; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+    .scenario-group h2 { margin: 0; font-size: clamp(30px, 5vw, 52px); letter-spacing: -.045em; overflow-wrap: anywhere; }
+    .scenario-group__count { flex: none; padding: 7px 10px; border: 1px solid var(--border); border-radius: 999px; color: var(--muted); font-size: 12px; }
+    .scenario-group__content { display: grid; gap: 52px; margin-left: 6px; padding-left: 24px; border-left: 2px solid var(--accent-soft); }
     .scenario { scroll-margin-top: 100px; }
     .scenario__header { display: flex; justify-content: space-between; align-items: end; gap: 24px; margin-bottom: 18px; }
-    .scenario h2 { margin: 0; font-size: clamp(24px, 4vw, 40px); letter-spacing: -.035em; overflow-wrap: anywhere; }
+    .scenario h3 { margin: 0; font-size: clamp(22px, 3.5vw, 34px); letter-spacing: -.03em; overflow-wrap: anywhere; }
     .scenario__count { flex: none; padding: 7px 10px; border: 1px solid var(--border); border-radius: 999px; color: var(--muted); font-size: 12px; }
     .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; }
 
@@ -504,9 +611,10 @@ const _styles = r'''
     .lightbox::backdrop { background: rgba(5, 7, 10, .94); }
     .lightbox__surface { position: relative; display: grid; width: 100%; height: 100%; grid-template-columns: 70px minmax(0, 1fr) 70px; grid-template-rows: minmax(0, 1fr) auto; place-items: center; padding: 32px; }
     .lightbox img { grid-column: 2; width: 100%; height: 100%; object-fit: contain; }
-    .lightbox__close, .lightbox__nav { border: 1px solid #293142; border-radius: 999px; background: rgba(19, 23, 34, .85); color: #f3f5f9; }
-    .lightbox__close { position: absolute; top: 20px; right: 20px; z-index: 2; width: 44px; height: 44px; font-size: 26px; }
-    .lightbox__nav { width: 48px; height: 48px; font-size: 34px; line-height: 1; }
+    .lightbox__close, .lightbox__nav { display: grid; place-items: center; padding: 0; border: 1px solid #293142; border-radius: 999px; background: rgba(19, 23, 34, .85); color: #f3f5f9; }
+    .lightbox__close { position: absolute; top: 20px; right: 20px; z-index: 2; width: 44px; height: 44px; }
+    .lightbox__nav { width: 48px; height: 48px; }
+    .lightbox__icon { display: block; width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2.25; stroke-linecap: round; stroke-linejoin: round; }
     .lightbox__nav--previous { grid-column: 1; grid-row: 1; }
     .lightbox__nav--next { grid-column: 3; grid-row: 1; }
     #lightbox-caption { grid-column: 1 / -1; margin: 18px 0 0; color: #96a0b5; font-size: 13px; }
@@ -520,9 +628,13 @@ const _styles = r'''
       .search-field { grid-column: 1 / -1; }
       .result-count { justify-self: end; }
       .report-shell { grid-template-columns: 1fr; }
-      .scenario-nav { position: static; display: flex; max-height: none; overflow-x: auto; padding: 0 0 8px; }
+      .scenario-nav { position: static; max-height: none; overflow: visible; padding: 0; }
       .scenario-nav__title { display: none; }
-      .scenario-nav a { flex: 0 0 auto; border: 1px solid var(--border); }
+      .scenario-nav__groups { display: flex; gap: 10px; overflow-x: auto; padding: 0 0 8px; }
+      .scenario-nav__group { flex: 0 0 auto; gap: 6px; padding: 8px; border: 1px solid var(--border); border-radius: 14px; background: var(--panel); }
+      .scenario-nav__group-link { padding: 4px 7px; }
+      .scenario-nav__items { display: flex; gap: 5px; margin: 0; padding: 0; border: 0; }
+      .scenario-nav__item { flex: 0 0 auto; padding: 7px 9px; border: 1px solid var(--border); background: var(--panel-soft); }
     }
     @media (max-width: 640px) {
       .hero__content, .controls__content, .report-shell { width: min(100% - 28px, 1440px); }
@@ -534,7 +646,8 @@ const _styles = r'''
       .controls__content { grid-template-columns: 1fr 1fr; }
       .search-field { grid-column: 1 / -1; }
       .result-count { justify-self: start; margin-left: 0; }
-      .scenario__header { align-items: start; flex-direction: column; gap: 12px; }
+      .scenario-group__header, .scenario__header { align-items: start; flex-direction: column; gap: 12px; }
+      .scenario-group__content { margin-left: 3px; padding-left: 14px; }
       .gallery { grid-template-columns: 1fr; }
       .image-button { height: 360px; }
       .lightbox__surface { grid-template-columns: 48px minmax(0, 1fr) 48px; padding: 18px 8px; }
@@ -544,7 +657,10 @@ const _styles = r'''
       .controls, .scenario-nav, .image-button__hint, .lightbox, footer { display: none; }
       body, .hero, .golden-card { background: #fff; color: #111; }
       .report-shell { display: block; width: 100%; }
-      .scenario { break-before: page; }
+      .scenario-group { break-before: page; }
+      .scenario-group__header, .scenario__header { break-after: avoid; }
+      .scenario { break-before: auto; }
+      .scenario + .scenario { break-before: page; }
       .golden-card { break-inside: avoid; box-shadow: none; }
     }
   </style>''';
@@ -554,6 +670,7 @@ const _scripts = r'''
   (() => {
     const cards = Array.from(document.querySelectorAll('[data-golden-card]'));
     const scenarios = Array.from(document.querySelectorAll('[data-scenario]'));
+    const scenarioGroups = Array.from(document.querySelectorAll('[data-scenario-group]'));
     const search = document.getElementById('search');
     const filters = [
       ['capture', document.getElementById('capture-filter')],
@@ -602,6 +719,28 @@ const _scripts = r'''
           scenarioCount + (scenarioCount === 1 ? ' image' : ' images');
         const link = document.querySelector('[data-scenario-link="' + scenario.id + '"]');
         if (link) link.hidden = scenarioCount === 0;
+      });
+
+      scenarioGroups.forEach((group) => {
+        const groupScenarios = Array.from(group.querySelectorAll('[data-scenario]'));
+        const visibleScenarios = groupScenarios.filter((scenario) => !scenario.hidden);
+        const groupCount = visibleScenarios.reduce(
+          (total, scenario) =>
+            total + scenario.querySelectorAll('[data-golden-card]:not([hidden])').length,
+          0,
+        );
+        group.hidden = groupCount === 0;
+        group.querySelector('[data-scenario-group-count]').textContent =
+          groupCount + (groupCount === 1 ? ' image' : ' images') +
+          ' · ' + visibleScenarios.length +
+          (visibleScenarios.length === 1 ? ' scenario' : ' scenarios');
+        const navGroup = document.querySelector(
+          '[data-scenario-nav-group="' + group.id + '"]',
+        );
+        if (navGroup) {
+          navGroup.hidden = groupCount === 0;
+          navGroup.querySelector('[data-nav-group-count]').textContent = String(groupCount);
+        }
       });
 
       visibleCount.textContent = String(count);

@@ -144,4 +144,75 @@ void main() {
     expect(result.html, contains('No images were found'));
     expect(result.html, contains('<dd>0</dd>'));
   });
+
+  test('groups scenarios by their first path segment', () {
+    final catalog = GoldenCatalog(
+      scenarios: [
+        GoldenScenario(
+          pathSegments: const ['app_info', 'init'],
+          images: [_image('init')],
+        ),
+        GoldenScenario(
+          pathSegments: const ['app_info', 'loaded'],
+          images: [_image('loaded')],
+        ),
+        GoldenScenario(
+          pathSegments: const ['settings', 'language', 'loaded'],
+          images: [_image('language')],
+        ),
+        GoldenScenario(
+          pathSegments: const ['Root'],
+          images: [_image('root')],
+        ),
+      ],
+    );
+
+    final result = HtmlReportRenderer(
+      outputPath: '/project/report.html',
+    ).render(catalog);
+
+    expect(
+      result.html,
+      contains('data-scenario-nav-group="scenario-group-0"'),
+    );
+    expect(
+      result.html,
+      contains('<h2 id="scenario-group-0-title">app_info</h2>'),
+    );
+    expect(result.html, contains('<h3>init</h3>'));
+    expect(result.html, contains('<h3>loaded</h3>'));
+    expect(result.html, contains('<h3>language &#47; loaded</h3>'));
+    expect(result.html, contains('2 images · 2 scenarios'));
+    expect(result.html, contains('Ungrouped'));
+    expect(result.html, contains('group.hidden = groupCount === 0;'));
+  });
+
+  test('renders centered lightbox controls without font glyphs', () {
+    final result = HtmlReportRenderer(
+      outputPath: '/project/report.html',
+    ).render(GoldenCatalog(scenarios: const []));
+
+    expect(
+      RegExp(r'class="lightbox__icon"').allMatches(result.html),
+      hasLength(3),
+    );
+    expect(
+      result.html,
+      contains(
+        '.lightbox__close, .lightbox__nav { display: grid; place-items: center; padding: 0;',
+      ),
+    );
+    expect(result.html, isNot(contains('>×</button>')));
+    expect(result.html, isNot(contains('>‹</button>')));
+    expect(result.html, isNot(contains('>›</button>')));
+  });
+}
+
+GoldenImage _image(String name) {
+  return GoldenImage(
+    fileName: '$name.png',
+    path: '/project/$name.png',
+    device: 'desktop',
+    extension: 'png',
+  );
 }
