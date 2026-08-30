@@ -27,6 +27,7 @@ final class GoldenPublicationOptions {
     required this.themePattern,
     required this.manifestPaths,
     this.supportAttribution = true,
+    this.customization = GoldenReportCustomization.empty,
     required this.profile,
     required this.backend,
     required this.jobs,
@@ -46,6 +47,7 @@ final class GoldenPublicationOptions {
   final String themePattern;
   final List<String> manifestPaths;
   final bool supportAttribution;
+  final GoldenReportCustomization customization;
   final ImageOptimizationProfile profile;
   final ImageOptimizerBackend backend;
   final int jobs;
@@ -176,6 +178,7 @@ final class GoldenPublicationPipeline {
         outputPath: reportPath,
         title: _options.title,
         showSupportAttribution: _options.supportAttribution,
+        customization: _options.customization,
       ),
       writer: HtmlReportWriter(outputPath: reportPath),
     );

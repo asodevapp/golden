@@ -10,11 +10,13 @@ final class HtmlReportRenderer {
     required this.outputPath,
     this.title = 'Golden test report',
     this.showSupportAttribution = true,
+    this.customization = GoldenReportCustomization.empty,
   });
 
   final String outputPath;
   final String title;
   final bool showSupportAttribution;
+  final GoldenReportCustomization customization;
 
   GoldenPresenterResult render(GoldenCatalog catalog) {
     final socialDescription =
@@ -51,8 +53,10 @@ final class HtmlReportRenderer {
         '  <meta name="twitter:description" content="${_escapeAttribute(socialDescription)}">',
       )
       ..writeln('  <title>${_escape(title)}</title>')
+      ..write(_renderFavicon())
       ..writeln(_initialThemeScript)
       ..writeln(_styles)
+      ..write(_renderCustomizationStyles())
       ..writeln('</head>')
       ..writeln('<body>')
       ..writeln(_renderHero(catalog))
@@ -78,15 +82,25 @@ final class HtmlReportRenderer {
   }
 
   String _renderHero(GoldenCatalog catalog) {
+    final hasHeaderLinks = customization.headerLinks.isNotEmpty;
+    final topLineClass = hasHeaderLinks
+        ? 'hero__topline hero__topline--with-links'
+        : 'hero__topline';
+    final actionsClass = hasHeaderLinks
+        ? 'hero__actions hero__actions--with-links'
+        : 'hero__actions';
     return '''
 <header class="hero">
   <div class="hero__content">
-    <div class="hero__topline">
+    <div class="$topLineClass">
       <p class="eyebrow">Visual test catalog</p>
-      <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch color theme">
-        <span class="theme-toggle__icon" id="theme-toggle-icon" aria-hidden="true">◐</span>
-        <span id="theme-toggle-label">Change theme</span>
-      </button>
+      <div class="$actionsClass">
+        ${_renderHeaderLinks()}
+        <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch color theme">
+          <span class="theme-toggle__icon" id="theme-toggle-icon" aria-hidden="true">◐</span>
+          <span id="theme-toggle-label">Change theme</span>
+        </button>
+      </div>
     </div>
     <h1>${_escape(title)}</h1>
     <p class="hero__description">Browse every captured state, then narrow the catalog by scenario, capture, device, environment axis, or run status.</p>
@@ -99,6 +113,43 @@ final class HtmlReportRenderer {
     </dl>
   </div>
 </header>''';
+  }
+
+  String _renderFavicon() {
+    final href = customization.faviconHref;
+    if (href == null) {
+      return '';
+    }
+    return '  <link rel="icon" href="${_escapeAttribute(href)}">\n';
+  }
+
+  String _renderCustomizationStyles() {
+    final color = customization.primaryColor;
+    if (color == null) {
+      return '';
+    }
+    return '''
+  <style id="report-customization">
+    :root, :root[data-theme="light"] {
+      --accent: $color;
+      --accent-strong: color-mix(in srgb, $color 82%, #000);
+      --accent-soft: color-mix(in srgb, $color 12%, transparent);
+      --accent-glow: color-mix(in srgb, $color 20%, transparent);
+    }
+  </style>
+''';
+  }
+
+  String _renderHeaderLinks() {
+    if (customization.headerLinks.isEmpty) {
+      return '';
+    }
+    final links = customization.headerLinks.map((link) {
+      final externalAttributes =
+          link.isExternal ? ' target="_blank" rel="noopener"' : '';
+      return '<a class="header-link" href="${_escapeAttribute(link.url)}"$externalAttributes>${_escape(link.label)}</a>';
+    }).join();
+    return '<nav class="header-links" aria-label="Project links">$links</nav>';
   }
 
   String _stat(String label, int value) {
@@ -459,10 +510,11 @@ const _styles = r'''
       --text: #f3f5f9;
       --accent: #8ee3c5;
       --accent-strong: #55cfa7;
+      --accent-glow: rgba(85, 207, 167, .18);
       --purple: #b8a8ff;
       --shadow: 0 24px 70px rgba(0, 0, 0, .28);
       --hero-background:
-        radial-gradient(circle at 12% 20%, rgba(85, 207, 167, .18), transparent 30%),
+        radial-gradient(circle at 12% 20%, var(--accent-glow), transparent 30%),
         radial-gradient(circle at 88% 15%, rgba(184, 168, 255, .14), transparent 28%),
         #10141d;
       --summary-background: rgba(11, 13, 18, .55);
@@ -487,10 +539,11 @@ const _styles = r'''
       --text: #151923;
       --accent: #137a5a;
       --accent-strong: #0b6549;
+      --accent-glow: rgba(44, 188, 139, .2);
       --purple: #6f5bd3;
       --shadow: 0 18px 48px rgba(37, 49, 72, .12);
       --hero-background:
-        radial-gradient(circle at 12% 20%, rgba(44, 188, 139, .2), transparent 32%),
+        radial-gradient(circle at 12% 20%, var(--accent-glow), transparent 32%),
         radial-gradient(circle at 88% 15%, rgba(126, 101, 224, .13), transparent 30%),
         #f7fafc;
       --summary-background: rgba(255, 255, 255, .72);
@@ -520,6 +573,10 @@ const _styles = r'''
     .hero__topline { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 10px; }
     .eyebrow { margin: 0 0 10px; color: var(--accent); font-size: 12px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
     .hero__topline .eyebrow { margin: 0; }
+    .hero__actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
+    .header-links { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .header-link { display: inline-flex; min-height: 40px; align-items: center; padding: 0 14px; border: 1px solid var(--border); border-radius: 999px; background: var(--summary-background); color: var(--text); font-size: 12px; font-weight: 750; text-decoration: none; }
+    .header-link:hover { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
     .theme-toggle { display: inline-flex; min-height: 40px; align-items: center; gap: 8px; padding: 0 13px; border: 1px solid var(--border); border-radius: 999px; background: var(--summary-background); color: var(--text); font-size: 12px; font-weight: 750; }
     .theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
     .theme-toggle__icon { display: grid; width: 20px; height: 20px; place-items: center; color: var(--accent); font-size: 17px; line-height: 1; }
@@ -537,7 +594,7 @@ const _styles = r'''
     .select-field { position: relative; min-width: 0; }
     input, select, .select-trigger, .reset-button { min-height: 42px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel); color: var(--text); }
     input, select { width: 100%; padding: 0 12px; }
-    input:focus, select:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    input:focus, select:focus, button:focus-visible, .header-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
     .select-trigger, .select-popover { display: none; }
     .select-field.is-enhanced select { position: absolute; width: 1px; height: 1px; overflow: hidden; padding: 0; border: 0; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
     .select-field.is-enhanced .select-trigger { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 12px; padding: 0 13px; text-align: left; }
@@ -596,9 +653,9 @@ const _styles = r'''
     .badges { display: flex; flex-wrap: wrap; gap: 6px; min-height: 24px; }
     .badge { padding: 5px 8px; border-radius: 999px; background: var(--badge-background); color: var(--badge-text); font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
     .badge--theme { background: var(--theme-badge-background); color: var(--theme-badge-text); }
-    .badge--locale { background: rgba(142, 227, 197, .12); color: var(--accent); }
+    .badge--locale { background: var(--accent-soft); color: var(--accent); }
     .badge--status-failed { background: rgba(255, 99, 132, .16); color: #ff8da8; }
-    .badge--status-passed { background: rgba(85, 207, 167, .14); color: var(--accent); }
+    .badge--status-passed { background: var(--accent-soft); color: var(--accent); }
     .failure-details { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 10px; color: #ff8da8; font-size: 11px; }
     .failure-details summary { cursor: pointer; font-weight: 800; }
     .failure-details pre { overflow: auto; max-height: 180px; margin: 8px 0 0; padding: 9px; border-radius: 8px; background: var(--panel-soft); color: var(--text); font: 10px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; }
@@ -640,6 +697,10 @@ const _styles = r'''
       .hero__content, .controls__content, .report-shell { width: min(100% - 28px, 1440px); }
       .hero__content { padding: 48px 0 36px; }
       .hero__topline { align-items: flex-start; }
+      .hero__topline--with-links { flex-direction: column; }
+      .hero__actions--with-links { width: 100%; justify-content: space-between; }
+      .header-links { min-width: 0; }
+      .header-link { min-height: 36px; padding: 0 11px; }
       .theme-toggle { min-height: 36px; padding: 0 10px; }
       .theme-toggle__icon { width: 18px; height: 18px; }
       .summary { grid-template-columns: repeat(2, 1fr); }
@@ -654,7 +715,7 @@ const _styles = r'''
       .lightbox__nav { width: 40px; height: 40px; }
     }
     @media print {
-      .controls, .scenario-nav, .image-button__hint, .lightbox, footer { display: none; }
+      .hero__actions, .controls, .scenario-nav, .image-button__hint, .lightbox, footer { display: none; }
       body, .hero, .golden-card { background: #fff; color: #111; }
       .report-shell { display: block; width: 100%; }
       .scenario-group { break-before: page; }

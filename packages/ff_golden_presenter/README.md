@@ -72,7 +72,7 @@ The equivalent manual dependency is:
 
 ```yaml
 dev_dependencies:
-  ff_golden_presenter: ^1.0.3
+  ff_golden_presenter: ^1.0.4
 ```
 
 For an unreleased repository revision, use the package Git source and
@@ -144,12 +144,43 @@ The main `build` options are:
 | `--install-tools` | off | Install a compatible missing optimizer. |
 | `--dry-run` | off | Inspect the pipeline without writing or installing. |
 | `--title <text>` | `Golden test report` | Heading displayed in the report. |
+| `--primary-color <color>` | built-in theme | Accent color as CSS hex or Flutter `0xAARRGGBB`. |
+| `--favicon <file>` | none | PNG, SVG, ICO, JPEG, WebP, or GIF favicon embedded in the HTML. |
+| `--header-link <label=url>` | none | Project navigation link displayed in the header; repeatable. |
 | `-g, --golden-directory <name>` | `golden` | Directory marker used to discover scenarios. |
 | `--extensions <list>` | `png,jpg,jpeg,webp,svg` | Image extensions copied and included. |
 | `--manifest <path>` | `build/ff_golden` | Runner manifest file or shard directory; repeatable. |
 | `--[no-]support-attribution` | on | Show or remove the ASO.dev support attribution in the report footer. |
 
 `--clean` refuses dangerous targets such as the filesystem root, home, repository root, input directory, or an ancestor of the input. Existing output is otherwise left intact unless the flag is passed.
+
+### Report branding and project links
+
+Both `build` and `report` accept the same optional visual customization flags.
+For example, an ASO.dev report can reuse the Flutter project color and web
+favicon while linking back to the product and its blog:
+
+```shell
+dart run ff_golden_presenter build \
+  --input test/screens \
+  --output-directory goldens \
+  --report-file index.html \
+  --profile balanced \
+  --clean \
+  --title "ASO.dev Golden Tests" \
+  --primary-color 0xFF18BFFB \
+  --favicon apps/aso/web/favicon.png \
+  --header-link "Home=https://aso.dev/" \
+  --header-link "Blog=https://aso.dev/blog/"
+```
+
+`--primary-color` accepts `#RGB`, `#RRGGBB`, `#RRGGBBAA`, bare `RRGGBB`, and
+Flutter's `0xAARRGGBB` notation. Each `--header-link` uses the first `=` as the
+label/URL separator, so query parameters remain intact. External `http` and
+`https` links open in a new tab; relative links remain in the current tab.
+Unsafe schemes such as `javascript:` are rejected. The favicon is encoded as a
+data URL inside the generated HTML, so no extra icon file needs to be copied to
+the publication directory.
 
 ### Cleaning failure images
 

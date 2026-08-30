@@ -149,6 +149,7 @@ Future<int> _runReport(
   }
 
   try {
+    final customization = await options.customization.resolve();
     final runIndex = await GoldenRunManifestLoader(
       projectDirectory: Directory.current,
       imageRoot: inputDirectory,
@@ -177,6 +178,7 @@ Future<int> _runReport(
         outputPath: outputPath,
         title: options.title,
         showSupportAttribution: options.supportAttribution,
+        customization: customization,
       ),
       writer: HtmlReportWriter(outputPath: outputPath),
     );
@@ -329,6 +331,7 @@ Future<int> _runBuild(
     path.normalize(path.absolute(options.outputDirectory)),
   );
   try {
+    final customization = await options.customization.resolve();
     final result = await GoldenPublicationPipeline(
       options: GoldenPublicationOptions(
         inputDirectory: input,
@@ -342,6 +345,7 @@ Future<int> _runBuild(
         themePattern: options.themePattern,
         manifestPaths: options.manifestPaths,
         supportAttribution: options.supportAttribution,
+        customization: customization,
         profile: options.profile,
         backend: options.backend,
         jobs: options.jobs,

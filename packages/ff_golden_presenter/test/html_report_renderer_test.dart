@@ -136,6 +136,60 @@ void main() {
     expect(result.html, contains('FF Golden Presenter'));
   });
 
+  test('renders project branding and safe header navigation', () {
+    final result = HtmlReportRenderer(
+      outputPath: '/project/report.html',
+      customization: GoldenReportCustomization(
+        primaryColor: '0xFF18BFFB',
+        faviconHref: 'data:image/png;base64,AQID',
+        headerLinks: [
+          GoldenReportLink(
+            label: 'Home & project',
+            url: 'https://aso.dev/?from=golden&view=report',
+          ),
+          GoldenReportLink(label: 'Blog', url: '/blog/'),
+        ],
+      ),
+    ).render(GoldenCatalog(scenarios: const []));
+
+    expect(
+      result.html,
+      contains('<link rel="icon" href="data:image/png;base64,AQID">'),
+    );
+    expect(result.html, contains('--accent: #18BFFB;'));
+    expect(result.html, contains('aria-label="Project links"'));
+    expect(result.html, contains('Home &amp; project'));
+    expect(
+      result.html,
+      contains(
+        'href="https://aso.dev/?from=golden&amp;view=report" target="_blank" rel="noopener"',
+      ),
+    );
+    expect(
+      result.html,
+      contains('<a class="header-link" href="/blog/">Blog</a>'),
+    );
+    expect(
+      result.html,
+      contains('hero__topline hero__topline--with-links'),
+    );
+  });
+
+  test('rejects unsafe report customization values', () {
+    expect(
+      () => GoldenReportCustomization(primaryColor: 'blue'),
+      throwsFormatException,
+    );
+    expect(
+      () => GoldenReportLink(label: 'Unsafe', url: 'javascript:alert(1)'),
+      throwsFormatException,
+    );
+    expect(
+      () => GoldenReportLink(label: 'Protocol relative', url: '//example.com'),
+      throwsFormatException,
+    );
+  });
+
   test('renders a useful empty report', () {
     final result = HtmlReportRenderer(
       outputPath: '/project/report.html',

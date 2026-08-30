@@ -1,7 +1,9 @@
 import 'package:args/args.dart';
 import 'package:path/path.dart' as path;
 
-const ffGoldenPresenterVersion = '1.0.3';
+import 'report_customization_cli.dart';
+
+const ffGoldenPresenterVersion = '1.0.4';
 
 /// Parsed command-line configuration for FF Golden Presenter.
 final class GoldenPresenterOptions {
@@ -16,6 +18,7 @@ final class GoldenPresenterOptions {
     required this.themePattern,
     required this.manifestPaths,
     required this.supportAttribution,
+    required this.customization,
     required this.showHelp,
     required this.showVersion,
     required ArgParser parser,
@@ -31,6 +34,7 @@ final class GoldenPresenterOptions {
   final String themePattern;
   final List<String> manifestPaths;
   final bool supportAttribution;
+  final ReportCustomizationCliOptions customization;
   final bool showHelp;
   final bool showVersion;
   final ArgParser _parser;
@@ -76,6 +80,7 @@ final class GoldenPresenterOptions {
       themePattern: results['theme-pattern'] as String,
       manifestPaths: List.unmodifiable(results['manifest'] as List<String>),
       supportAttribution: results['support-attribution'] as bool,
+      customization: parseReportCustomization(results),
       showHelp: results['help'] as bool,
       showVersion: results['version'] as bool,
       parser: parser,
@@ -95,7 +100,7 @@ Example:
 ''';
 
   static ArgParser _buildParser() {
-    return ArgParser(usageLineLength: 100)
+    final parser = ArgParser(usageLineLength: 100)
       ..addOption(
         'input',
         abbr: 'i',
@@ -178,5 +183,7 @@ Example:
         negatable: false,
         help: 'Print this usage information.',
       );
+    addReportCustomizationOptions(parser);
+    return parser;
   }
 }

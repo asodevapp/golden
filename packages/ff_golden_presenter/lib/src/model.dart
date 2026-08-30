@@ -216,6 +216,127 @@ final class GoldenPresenterResult {
   final GoldenCatalog catalog;
 }
 
+/// Optional visual branding and project navigation for a generated report.
+final class GoldenReportCustomization {
+  factory GoldenReportCustomization({
+    String? primaryColor,
+    String? faviconHref,
+    Iterable<GoldenReportLink> headerLinks = const [],
+  }) {
+    return GoldenReportCustomization._(
+      primaryColor: _normalizePrimaryColor(primaryColor),
+      faviconHref: _validateFaviconHref(faviconHref),
+      headerLinks: List.unmodifiable(headerLinks),
+    );
+  }
+
+  const GoldenReportCustomization._({
+    this.primaryColor,
+    this.faviconHref,
+    this.headerLinks = const [],
+  });
+
+  /// Default report appearance without project-specific branding.
+  static const empty = GoldenReportCustomization._();
+
+  /// CSS hex color used for report accents in light and dark themes.
+  final String? primaryColor;
+
+  /// Browser-safe favicon URL, usually an embedded `data:image/...` URL.
+  final String? faviconHref;
+
+  /// Navigation links rendered beside the theme switcher.
+  final List<GoldenReportLink> headerLinks;
+}
+
+/// One project navigation link displayed in the report header.
+final class GoldenReportLink {
+  factory GoldenReportLink({
+    required String label,
+    required String url,
+  }) {
+    final normalizedLabel = label.trim();
+    final normalizedUrl = url.trim();
+    if (normalizedLabel.isEmpty) {
+      throw const FormatException('Header link label must not be empty.');
+    }
+    _validateNavigationUrl(normalizedUrl);
+    return GoldenReportLink._(
+      label: normalizedLabel,
+      url: normalizedUrl,
+    );
+  }
+
+  const GoldenReportLink._({
+    required this.label,
+    required this.url,
+  });
+
+  final String label;
+  final String url;
+
+  bool get isExternal => Uri.parse(url).hasScheme;
+}
+
+String? _normalizePrimaryColor(String? value) {
+  if (value == null) {
+    return null;
+  }
+  final normalized = value.trim();
+  final cssMatch = RegExp(
+    r'^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$',
+  ).firstMatch(normalized);
+  if (cssMatch != null) {
+    return normalized.toUpperCase();
+  }
+  if (RegExp(r'^[0-9a-fA-F]{6}$').hasMatch(normalized)) {
+    return '#${normalized.toUpperCase()}';
+  }
+  final flutterMatch = RegExp(
+    r'^0[xX]([0-9a-fA-F]{8})$',
+  ).firstMatch(normalized);
+  if (flutterMatch != null) {
+    final argb = flutterMatch.group(1)!.toUpperCase();
+    final alpha = argb.substring(0, 2);
+    final rgb = argb.substring(2);
+    return alpha == 'FF' ? '#$rgb' : '#$rgb$alpha';
+  }
+  throw FormatException(
+    'Invalid primary color "$value". Use #RGB, #RRGGBB, #RRGGBBAA, '
+    'RRGGBB, or Flutter 0xAARRGGBB.',
+  );
+}
+
+String? _validateFaviconHref(String? value) {
+  if (value == null) {
+    return null;
+  }
+  final normalized = value.trim();
+  if (normalized.isEmpty) {
+    throw const FormatException('Favicon URL must not be empty.');
+  }
+  if (normalized.startsWith('data:image/')) {
+    return normalized;
+  }
+  _validateNavigationUrl(normalized);
+  return normalized;
+}
+
+void _validateNavigationUrl(String value) {
+  if (value.isEmpty) {
+    throw const FormatException('Header link URL must not be empty.');
+  }
+  final uri = Uri.tryParse(value);
+  if (uri == null || value.startsWith('//')) {
+    throw FormatException('Invalid report URL "$value".');
+  }
+  if (uri.hasScheme && uri.scheme != 'http' && uri.scheme != 'https') {
+    throw FormatException(
+      'Unsupported report URL scheme "${uri.scheme}". Use http, https, or a relative URL.',
+    );
+  }
+}
+
 int _compareNaturally(String left, String right) {
   return left.toLowerCase().compareTo(right.toLowerCase());
 }

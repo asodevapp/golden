@@ -1,3 +1,8 @@
+## 1.0.4
+
+- Added reusable report branding with a project primary color, embedded
+  favicon, and responsive header navigation links for `report` and `build`.
+
 ## 1.0.3
 
 - Grouped scenarios by their first path segment with hierarchical navigation

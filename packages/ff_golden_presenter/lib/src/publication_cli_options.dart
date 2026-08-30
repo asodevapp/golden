@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:args/args.dart';
 
 import 'publication_model.dart';
+import 'report_customization_cli.dart';
 
 const publicationInputDefault = 'test/screens';
 const publicationOutputDefault = 'build/golden-report';
@@ -193,6 +194,7 @@ final class BuildCliOptions {
     required this.themePattern,
     required this.manifestPaths,
     required this.supportAttribution,
+    required this.customization,
     required this.profile,
     required this.backend,
     required this.jobs,
@@ -214,6 +216,7 @@ final class BuildCliOptions {
   final String themePattern;
   final List<String> manifestPaths;
   final bool supportAttribution;
+  final ReportCustomizationCliOptions customization;
   final ImageOptimizationProfile profile;
   final ImageOptimizerBackend backend;
   final int jobs;
@@ -239,6 +242,7 @@ final class BuildCliOptions {
       themePattern: results['theme-pattern'] as String,
       manifestPaths: List.unmodifiable(results['manifest'] as List<String>),
       supportAttribution: results['support-attribution'] as bool,
+      customization: parseReportCustomization(results),
       profile: ImageOptimizationProfile.parse(results['profile'] as String),
       backend: ImageOptimizerBackend.parse(results['backend'] as String),
       jobs: _parseJobs(results),
@@ -470,6 +474,7 @@ ArgParser _buildParser() {
       negatable: false,
       help: 'Print this usage information.',
     );
+  addReportCustomizationOptions(parser);
   return parser;
 }
 

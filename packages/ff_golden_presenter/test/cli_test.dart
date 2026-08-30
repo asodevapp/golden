@@ -30,7 +30,7 @@ void main() {
     );
 
     expect(code, 0);
-    expect(output.toString(), 'ff_golden_presenter 1.0.3\n');
+    expect(output.toString(), 'ff_golden_presenter 1.0.4\n');
   });
 
   test('generates a report end to end', () async {
@@ -41,6 +41,8 @@ void main() {
     final input = Directory(path.join(temporaryDirectory.path, 'input'));
     final image = File(path.join(input.path, 'auth/golden/login/phone.png'));
     await image.create(recursive: true);
+    final favicon = File(path.join(temporaryDirectory.path, 'favicon.png'));
+    await favicon.writeAsBytes([1, 2, 3]);
     final reportPath = path.join(temporaryDirectory.path, 'report/index.html');
     final output = StringBuffer();
 
@@ -52,6 +54,14 @@ void main() {
         reportPath,
         '--title',
         'CLI report',
+        '--primary-color',
+        '0xFF18BFFB',
+        '--favicon',
+        favicon.path,
+        '--header-link',
+        'Home=https://aso.dev/',
+        '--header-link',
+        'Blog=https://aso.dev/blog/',
       ],
       output: output,
       errors: StringBuffer(),
@@ -64,6 +74,10 @@ void main() {
     final report = await File(reportPath).readAsString();
     expect(report, contains('CLI report'));
     expect(report, contains('https://aso.dev/'));
+    expect(report, contains('--accent: #18BFFB;'));
+    expect(report, contains('data:image/png;base64,AQID'));
+    expect(report, contains('>Home</a>'));
+    expect(report, contains('>Blog</a>'));
   });
 
   test('reports a missing input directory with a stable exit code', () async {
@@ -87,6 +101,8 @@ void main() {
     final input = Directory(path.join(temporaryDirectory.path, 'screens'));
     final image = File(path.join(input.path, 'auth/golden/login/phone.png'));
     await image.create(recursive: true);
+    final favicon = File(path.join(temporaryDirectory.path, 'favicon.svg'));
+    await favicon.writeAsString('<svg xmlns="http://www.w3.org/2000/svg"/>');
     final publication = path.join(temporaryDirectory.path, 'publication');
     final output = StringBuffer();
     final errors = StringBuffer();
@@ -101,6 +117,12 @@ void main() {
         '--profile',
         'none',
         '--no-support-attribution',
+        '--primary-color',
+        '#18BFFB',
+        '--favicon',
+        favicon.path,
+        '--header-link',
+        'Project=/',
         '--clean',
       ],
       output: output,
@@ -117,10 +139,12 @@ void main() {
     );
     expect(output.toString(), contains('Collected 1 images'));
     expect(output.toString(), contains('Generated 1 images'));
-    expect(
-      await File(path.join(publication, 'index.html')).readAsString(),
-      isNot(contains('aso.dev')),
-    );
+    final report =
+        await File(path.join(publication, 'index.html')).readAsString();
+    expect(report, isNot(contains('aso.dev')));
+    expect(report, contains('--accent: #18BFFB;'));
+    expect(report, contains('data:image/svg+xml;base64,'));
+    expect(report, contains('href="/">Project</a>'));
   });
 
   test('clean-failures previews and deletes only failure images', () async {

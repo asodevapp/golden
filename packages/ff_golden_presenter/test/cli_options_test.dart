@@ -16,6 +16,50 @@ void main() {
     expect(options.devicePattern, r'^(.+?)(?=\[|\(|\{|$)');
     expect(options.manifestPaths, ['build/ff_golden']);
     expect(options.supportAttribution, isTrue);
+    expect(options.customization.primaryColor, isNull);
+    expect(options.customization.faviconPath, isNull);
+    expect(options.customization.headerLinks, isEmpty);
+  });
+
+  test('report parses reusable project customization', () {
+    final options = GoldenPresenterOptions.parse(
+      const [
+        '--primary-color',
+        '0xFF18BFFB',
+        '--favicon',
+        'web/favicon.png',
+        '--header-link',
+        'Home=https://aso.dev/',
+        '--header-link',
+        'Blog=https://aso.dev/blog/?source=goldens',
+      ],
+    );
+
+    expect(options.customization.primaryColor, '#18BFFB');
+    expect(options.customization.faviconPath, 'web/favicon.png');
+    expect(
+      options.customization.headerLinks.map((link) => link.label),
+      ['Home', 'Blog'],
+    );
+    expect(
+      options.customization.headerLinks.last.url,
+      'https://aso.dev/blog/?source=goldens',
+    );
+  });
+
+  test('report rejects malformed or unsafe header links', () {
+    expect(
+      () => GoldenPresenterOptions.parse(
+        const ['--header-link', 'https://aso.dev/'],
+      ),
+      throwsFormatException,
+    );
+    expect(
+      () => GoldenPresenterOptions.parse(
+        const ['--header-link', 'Unsafe=javascript:alert(1)'],
+      ),
+      throwsFormatException,
+    );
   });
 
   test('report support attribution can be disabled', () {
@@ -51,6 +95,24 @@ void main() {
     expect(options.backend, ImageOptimizerBackend.auto);
     expect(options.manifestPaths, ['build/ff_golden']);
     expect(options.supportAttribution, isTrue);
+    expect(options.customization.primaryColor, isNull);
+  });
+
+  test('build accepts the same report customization flags', () {
+    final options = BuildCliOptions.parse(
+      const [
+        '--primary-color',
+        '#18BFFB',
+        '--favicon',
+        'favicon.svg',
+        '--header-link',
+        'Home=/',
+      ],
+    );
+
+    expect(options.customization.primaryColor, '#18BFFB');
+    expect(options.customization.faviconPath, 'favicon.svg');
+    expect(options.customization.headerLinks.single.url, '/');
   });
 
   test('build support attribution can be disabled', () {
