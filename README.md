@@ -28,7 +28,7 @@ No Melos or globally activated executable is required.
 Add one or both published packages as project-local development dependencies:
 
 ```shell
-flutter pub add --dev 'ff_golden:^1.2.1'
+flutter pub add --dev 'ff_golden:^1.2.2'
 flutter pub add --dev ff_golden_presenter
 ```
 

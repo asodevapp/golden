@@ -3,6 +3,7 @@
 Deterministic visual regression testing for the Flutter Files toolchain.
 
 [`ff_golden` on pub.dev](https://pub.dev/packages/ff_golden) ·
+[`ff_golden_presenter` companion](https://pub.dev/packages/ff_golden_presenter) ·
 [Documentation](https://asodevapp.github.io/golden/) ·
 [GitHub](https://github.com/asodevapp/golden)
 
@@ -32,7 +33,7 @@ stable machine-readable run metadata alongside the golden artifacts.
 Add the package as a development dependency:
 
 ```shell
-flutter pub add --dev 'ff_golden:^1.2.1'
+flutter pub add --dev 'ff_golden:^1.2.2'
 ```
 
 Then import the primary library:
@@ -271,7 +272,7 @@ Keep fakes application-local and prefer a controlled `Completer` over nested
 fake-async zones or real delays. See the
 [fixtures and async guide](https://asodevapp.github.io/golden/guides/fixtures-and-async/).
 
-## Reports and ff_golden_presenter
+## Reports and [ff_golden_presenter](https://pub.dev/packages/ff_golden_presenter)
 
 Share one `JsonGoldenReporter` instance across every scenario in a test file.
 Give each file a stable, project-unique `shardName`. At the end of the suite it
@@ -294,7 +295,7 @@ application as a project-local development dependency:
 
 ```yaml
 dev_dependencies:
-  ff_golden_presenter: ^1.0.1
+  ff_golden_presenter: ^1.0.2
 ```
 
 Then build a self-contained report with:

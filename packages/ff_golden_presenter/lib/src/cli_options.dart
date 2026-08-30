@@ -1,7 +1,7 @@
 import 'package:args/args.dart';
 import 'package:path/path.dart' as path;
 
-const ffGoldenPresenterVersion = '1.0.1';
+const ffGoldenPresenterVersion = '1.0.2';
 
 /// Parsed command-line configuration for FF Golden Presenter.
 final class GoldenPresenterOptions {

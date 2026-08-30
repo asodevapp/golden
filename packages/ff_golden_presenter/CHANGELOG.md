@@ -1,3 +1,8 @@
+## 1.0.2
+
+- Linked the companion `ff_golden` runner directly from the package README
+  displayed on pub.dev.
+
 ## 1.0.1
 
 - Completed dartdoc coverage for the public cleanup and catalog-scanning

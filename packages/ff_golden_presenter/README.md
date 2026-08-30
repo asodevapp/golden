@@ -1,10 +1,15 @@
 # FF Golden Presenter
 
 [`ff_golden_presenter` on pub.dev](https://pub.dev/packages/ff_golden_presenter) ·
+[`ff_golden` runner](https://pub.dev/packages/ff_golden) ·
 [Documentation](https://asodevapp.github.io/golden/presenter/) ·
 [GitHub](https://github.com/asodevapp/golden)
 
-FF Golden Presenter turns Flutter and Dart golden test images into a searchable, portable HTML report. It can also collect screenshots into an isolated staging directory, optimize PNG files, and produce the complete publication artifact in one command.
+FF Golden Presenter is the reporting companion to the
+[`ff_golden`](https://pub.dev/packages/ff_golden) runner. It turns Flutter and
+Dart golden test images into a searchable, portable HTML report. It can also
+collect screenshots into an isolated staging directory, optimize PNG files,
+and produce the complete publication artifact in one command.
 
 The generated page has no runtime dependencies. Open it locally, attach the whole directory to CI, or serve it as a static site. It includes scenario navigation, search and variant filters, remembered light/dark themes, responsive cards, a keyboard-friendly lightbox, and relative image URLs.
 
@@ -67,7 +72,7 @@ The equivalent manual dependency is:
 
 ```yaml
 dev_dependencies:
-  ff_golden_presenter: ^1.0.1
+  ff_golden_presenter: ^1.0.2
 ```
 
 For an unreleased repository revision, use the package Git source and

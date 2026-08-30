@@ -1,3 +1,8 @@
+## 1.2.2
+
+- Linked the companion `ff_golden_presenter` package directly from the package
+  README displayed on pub.dev.
+
 ## 1.2.1
 
 - Added API documentation for the primary device, theme, variant, and
