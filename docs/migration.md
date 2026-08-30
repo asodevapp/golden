@@ -17,7 +17,7 @@ need to rewrite the entire harness.
 ## 1. Record the current result
 
 ```shell
-flutter test --tags golden
+flutter pub run ff_golden test
 git status --short
 ```
 
@@ -91,7 +91,7 @@ counterpart and review any corrected geometry as a separate visual change.
 ## 6. Verify before updating
 
 ```shell
-flutter test --tags golden
+flutter pub run ff_golden test
 ```
 
 Unexpected changes often point to custom physical sizes, corrected presets,
@@ -101,8 +101,8 @@ them before update mode.
 Generate only the intended baselines, review every PNG, then verify cleanly:
 
 ```shell
-flutter test --update-goldens --tags golden
-flutter test --tags golden
+flutter pub run ff_golden update
+flutter pub run ff_golden test
 git status --short
 ```
 

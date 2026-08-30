@@ -45,6 +45,7 @@ theme:
 nav:
   - Home: index.md
   - Get started: getting-started.md
+  - Runner CLI: runner-cli.md
   - Core concepts:
       - Device fidelity: concepts/device-fidelity.md
       - Coverage and sampling: concepts/coverage.md

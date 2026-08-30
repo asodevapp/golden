@@ -1,3 +1,9 @@
+## 1.2.0
+
+- Added `ff_golden test`, `verify`, and `update` commands with golden-test file
+  discovery, project-local FVM resolution, safe test defaults, argument
+  forwarding, and dry-run support.
+
 ## 1.1.0
 
 - Added bounded virtual-time helpers for predicate, finder, fixed-frame, and

@@ -28,7 +28,7 @@ stable machine-readable run metadata alongside the golden artifacts.
 Add the package as a development dependency:
 
 ```shell
-flutter pub add --dev 'ff_golden:^1.1.0'
+flutter pub add --dev 'ff_golden:^1.2.0'
 ```
 
 Then import the primary library:
@@ -104,15 +104,35 @@ void main() {
 }
 ```
 
-Generate and verify baselines with the standard Flutter commands:
+Generate and verify baselines with the project-local runner:
 
 ```shell
-flutter test --update-goldens
-flutter test
+flutter pub run ff_golden update
+flutter pub run ff_golden test
 ```
 
 Always review regenerated PNGs. `--update-goldens` is an approval step, not a
 way to make a failing test green automatically.
+
+The runner discovers `test/**/*_golden_test.dart` in sorted order and applies
+`--no-pub`, `--tags golden`, and `--concurrency=8`. Explicit test paths and
+Flutter filters are forwarded, so focused runs stay short:
+
+```shell
+flutter pub run ff_golden update test/screens/login_golden_test.dart \
+  --plain-name 'loaded page'
+flutter pub run ff_golden verify --concurrency 4
+flutter pub run ff_golden update --dry-run
+```
+
+Use `--all-tests` when golden-tagged tests do not follow the
+`*_golden_test.dart` naming convention, `--pub` when dependencies must be
+resolved first, and `--flutter <path>` to override automatic project-local FVM
+and Flutter SDK detection. Run
+`flutter pub run ff_golden <command> --help` for the complete runner reference.
+
+In an FVM-managed project, use the same commands with the `fvm` prefix, for
+example `fvm flutter pub run ff_golden update`.
 
 ## Device fidelity and capture resolution
 
@@ -297,7 +317,7 @@ See [MIGRATION.md](MIGRATION.md). Existing `GoldenTester` and
 All generated tests have both `golden` and `ff_golden` tags:
 
 ```shell
-flutter test --tags ff_golden
+flutter pub run ff_golden test --tags ff_golden
 ```
 
 ## Project support

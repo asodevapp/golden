@@ -31,7 +31,7 @@ to a deleted test file can survive from an earlier cached job.
 
 ```yaml
 - name: Run golden tests
-  run: flutter test --tags ff_golden
+  run: flutter pub run ff_golden verify --tags ff_golden
 
 - name: Build golden report
   if: always()

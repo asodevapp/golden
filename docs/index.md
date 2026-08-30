@@ -60,7 +60,7 @@ be opened locally, attached to CI, or published to Pages.
 Add the runner as a development dependency:
 
 ```shell
-flutter pub add --dev 'ff_golden:^1.1.0'
+flutter pub add --dev 'ff_golden:^1.2.0'
 ```
 
 Create a deterministic scenario:
@@ -96,11 +96,11 @@ void main() {
 }
 ```
 
-Generate and verify baselines with Flutter's normal commands:
+Generate and verify baselines with the project-local runner:
 
 ```shell
-flutter test --update-goldens
-flutter test
+flutter pub run ff_golden update
+flutter pub run ff_golden test
 ```
 
 !!! warning "Review every regenerated PNG"

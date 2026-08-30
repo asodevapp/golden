@@ -15,13 +15,13 @@ application dependencies.
 === "Runner only"
 
     ```shell
-    flutter pub add --dev 'ff_golden:^1.1.0'
+    flutter pub add --dev 'ff_golden:^1.2.0'
     ```
 
 === "Runner and presenter"
 
     ```shell
-    flutter pub add --dev 'ff_golden:^1.1.0'
+    flutter pub add --dev 'ff_golden:^1.2.0'
     flutter pub add --dev ff_golden_presenter
     ```
 
@@ -95,18 +95,23 @@ The repository contains a complete
 Generate the initial contract:
 
 ```shell
-flutter test --update-goldens --tags ff_golden
+flutter pub run ff_golden update --tags ff_golden
 ```
 
 Review every added PNG, then run without update mode:
 
 ```shell
-flutter test --tags ff_golden
+flutter pub run ff_golden test --tags ff_golden
 ```
 
 Every generated test carries both the `golden` and `ff_golden` tags. The first
 tag keeps existing project-level commands useful; the second isolates new
 FF Golden suites.
+
+The runner normally discovers `test/**/*_golden_test.dart`, sorts the paths,
+and applies `--no-pub` plus eight-way concurrency. It forwards explicit test
+paths and Flutter filters such as `--plain-name`. See the
+[runner CLI reference](runner-cli.md) for overrides and dry-run mode.
 
 ## 5. Build a local report
 

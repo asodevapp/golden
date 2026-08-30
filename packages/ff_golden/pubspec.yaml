@@ -1,6 +1,6 @@
 name: ff_golden
 description: Deterministic Flutter golden testing with scenario flows, device fidelity, coverage sampling, and strict diagnostics.
-version: 1.1.0
+version: 1.2.0
 homepage: https://asodevapp.github.io/golden/
 documentation: https://asodevapp.github.io/golden/getting-started/
 repository: https://github.com/asodevapp/golden
@@ -17,6 +17,9 @@ environment:
   flutter: ">=3.27.0"
 
 resolution: workspace
+
+executables:
+  ff_golden:
 
 dependencies:
   flutter:

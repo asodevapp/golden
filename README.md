@@ -28,7 +28,7 @@ No Melos or globally activated executable is required.
 Add one or both published packages as project-local development dependencies:
 
 ```shell
-flutter pub add --dev 'ff_golden:^1.1.0'
+flutter pub add --dev 'ff_golden:^1.2.0'
 flutter pub add --dev ff_golden_presenter
 ```
 
@@ -38,7 +38,7 @@ Git dependencies that use the matching `path` values from the package table.
 Run golden tests, then build the static publication artifact:
 
 ```shell
-flutter test
+flutter pub run ff_golden test
 dart run ff_golden_presenter build \
   --input test/screens \
   --manifest build/ff_golden \

@@ -32,9 +32,11 @@ flutter pub publish
 Run from `packages/ff_golden`:
 
 ```shell
-dart format --output=none --set-exit-if-changed lib test example
+dart format --output=none --set-exit-if-changed bin lib test example
 flutter analyze
 flutter test
+flutter pub run ff_golden --version
+flutter pub run ff_golden update --dry-run
 flutter pub publish --dry-run
 flutter pub publish
 ```
@@ -50,5 +52,13 @@ dart run ff_golden_presenter --version
 dart run ff_golden_presenter clean-failures --input test/screens --dry-run
 ```
 
-Use the equivalent `flutter pub upgrade ff_golden` check when publishing the
-runner package. Never publish from the repository root.
+For the runner package, upgrade it and verify the hosted executable from the
+consumer project:
+
+```shell
+flutter pub upgrade ff_golden
+flutter pub run ff_golden --version
+flutter pub run ff_golden update --dry-run
+```
+
+Never publish from the repository root.

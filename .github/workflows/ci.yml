@@ -16,7 +16,7 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
-      - run: dart format --output=none --set-exit-if-changed lib test example
+      - run: dart format --output=none --set-exit-if-changed bin lib test example
         working-directory: packages/ff_golden
       - run: flutter analyze
         working-directory: packages/ff_golden
