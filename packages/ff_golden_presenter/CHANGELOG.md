@@ -4,6 +4,8 @@
 
 - Replaced relative README screenshot paths with absolute repository URLs so
   pub.dev renders the live report and Git diff images instead of alt text.
+- Fixed Git repository-root validation on Windows when Git uses forward slashes
+  and Dart reports the same path with backslashes.
 
 ## 1.1.1
 

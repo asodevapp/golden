@@ -84,7 +84,7 @@ final class GitImageRepository {
     final result = await _git(projectPath, ['rev-parse', '--show-toplevel']);
     final root = utf8.decode(result.stdout as List<int>).trimRight();
     final inputPath = p.normalize(p.join(projectPath, input));
-    if (inputPath != root && !p.isWithin(root, inputPath)) {
+    if (!p.equals(inputPath, root) && !p.isWithin(root, inputPath)) {
       throw const GitReviewException(
           'Input must be inside the Git repository.');
     }
