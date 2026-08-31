@@ -15,13 +15,13 @@ application dependencies.
 === "Runner only"
 
     ```shell
-    flutter pub add --dev 'ff_golden:^1.2.2'
+    flutter pub add --dev 'ff_golden:^1.3.0'
     ```
 
 === "Runner and presenter"
 
     ```shell
-    flutter pub add --dev 'ff_golden:^1.2.2'
+    flutter pub add --dev 'ff_golden:^1.3.0'
     flutter pub add --dev ff_golden_presenter
     ```
 

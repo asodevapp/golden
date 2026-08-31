@@ -9,7 +9,7 @@ an independently versioned, publishable package.
 | Package | Source | Responsibility |
 | --- | --- | --- |
 | [`ff_golden`](https://pub.dev/packages/ff_golden) | [`packages/ff_golden`](packages/ff_golden) | Flutter golden execution, device fidelity, scenario coverage, comparison, and diagnostics. |
-| [`ff_golden_presenter`](https://pub.dev/packages/ff_golden_presenter) | [`packages/ff_golden_presenter`](packages/ff_golden_presenter) | Project-local CLI for collecting, optimizing, browsing, and publishing golden artifacts. |
+| [`ff_golden_presenter`](https://pub.dev/packages/ff_golden_presenter) | [`packages/ff_golden_presenter`](packages/ff_golden_presenter) | Project-local CLI for reviewing Git image changes, running golden tests, and publishing golden artifacts. |
 
 Read the [FF Golden documentation](https://asodevapp.github.io/golden/) or explore
 the generated report in the
@@ -28,7 +28,7 @@ No Melos or globally activated executable is required.
 Add one or both published packages as project-local development dependencies:
 
 ```shell
-flutter pub add --dev 'ff_golden:^1.2.2'
+flutter pub add --dev 'ff_golden:^1.3.0'
 flutter pub add --dev ff_golden_presenter
 ```
 
@@ -45,6 +45,13 @@ dart run ff_golden_presenter build \
   --output-directory build/golden-report \
   --profile balanced \
   --clean
+```
+
+Review changed golden images, run a selected project/folder/file/scenario, and
+stage approved image files from the local browser viewer:
+
+```shell
+dart run ff_golden_presenter diff
 ```
 
 Migrating an existing project? Follow the end-to-end

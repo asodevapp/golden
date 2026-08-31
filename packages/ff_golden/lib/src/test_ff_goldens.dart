@@ -10,6 +10,7 @@ import 'capture.dart';
 import 'comparator.dart';
 import 'error_capture.dart';
 import 'coverage.dart';
+import 'discovery.dart';
 import 'naming.dart';
 import 'report.dart';
 import 'stale.dart';
@@ -202,6 +203,17 @@ void testFfGoldens(
   Iterable<String> tags = const [],
 }) {
   final plan = (coverage ?? GoldenCoverage()).plan();
+  if (goldenDiscoveryEnabled) {
+    for (final goldenVariant in plan.variants) {
+      registerGoldenDiscovery(
+        testName: '$description (${goldenVariant.label})',
+        description: description,
+        scenario: scenario,
+        variant: goldenVariant,
+      );
+    }
+    return;
+  }
   final plannedPaths = plan.variants
       .map(
         (variant) => configuration.pathStrategy.build(

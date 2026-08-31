@@ -1,4 +1,5 @@
 import 'package:ff_golden_presenter/src/cli_options.dart';
+import 'package:ff_golden_presenter/src/diff_cli_options.dart';
 import 'package:ff_golden_presenter/src/migration_cli_options.dart';
 import 'package:ff_golden_presenter/src/publication_cli_options.dart';
 import 'package:ff_golden_presenter/src/publication_model.dart';
@@ -6,6 +7,21 @@ import 'package:path/path.dart' as path;
 import 'package:test/test.dart';
 
 void main() {
+  test('diff defaults to a local viewer and validates the port', () {
+    final options = DiffCliOptions.parse([]);
+    expect(options.project, '.');
+    expect(options.input, '.');
+    expect(options.port, 0);
+    expect(options.openBrowser, isTrue);
+    expect(DiffCliOptions.parse(['--no-open']).openBrowser, isFalse);
+    expect(
+        DiffCliOptions.parse(['--flutter', './sdk/bin/flutter'])
+            .flutterExecutable,
+        path.absolute('./sdk/bin/flutter'));
+    expect(
+        () => DiffCliOptions.parse(['--port', '65536']), throwsFormatException);
+    expect(() => DiffCliOptions.parse(['unexpected']), throwsFormatException);
+  });
   test('uses the standardized defaults', () {
     final options = GoldenPresenterOptions.parse(const []);
 

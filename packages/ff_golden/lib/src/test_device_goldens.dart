@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:meta/meta.dart';
 
 import 'device.dart';
+import 'discovery.dart';
 import 'error_capture.dart';
 import 'test_view.dart';
 import 'test_ff_goldens.dart';
@@ -56,6 +57,15 @@ void testDeviceGoldens(
           brightness: device.brightness,
           highContrast: device.highContrast,
         );
+        if (goldenDiscoveryEnabled) {
+          registerGoldenDiscovery(
+            testName: '$description (${device.name}:$locale:${theme.name})',
+            description: description,
+            variant: goldenVariant,
+            legacy: true,
+          );
+          continue;
+        }
         testWidgets(
           '$description (${device.name}:$locale:${theme.name})',
           (tester) async {

@@ -72,7 +72,7 @@ The equivalent manual dependency is:
 
 ```yaml
 dev_dependencies:
-  ff_golden_presenter: ^1.0.4
+  ff_golden_presenter: ^1.1.0
 ```
 
 For an unreleased repository revision, use the package Git source and
@@ -109,6 +109,7 @@ Run `dart run ff_golden_presenter --help` for the action list and `<action> --he
 
 | Action | Purpose |
 | --- | --- |
+| `diff` | Start a local Git image viewer with selected-file stage/unstage. |
 | `build` | Collect images, optimize staged PNG files, and create `index.html`. |
 | `collect` | Copy supported images recursively while preserving relative paths. |
 | `optimize` | Optimize PNG files already in a staging directory. Requires `--in-place`. |
@@ -116,6 +117,197 @@ Run `dart run ff_golden_presenter --help` for the action list and `<action> --he
 | `doctor` | Detect compatible tools and print a platform-specific install command. |
 | `migrate` | Preview/apply safe package renames and report manual migration work. |
 | `clean-failures` | Delete generated comparison images below `failures` directories. |
+
+### Local Git image review
+
+Run this from the project whose images you want to review:
+
+```shell
+dart run ff_golden_presenter diff
+```
+
+The command opens a browser viewer served only on `127.0.0.1`. There is no
+separate application to install, no external server, and no generated report
+directory. Git must be available on `PATH`. Stop the viewer with **Ctrl-C**.
+
+The sidebar separates **Unstaged** (`index → working tree`, including untracked
+images) and **Staged** (`HEAD → index`) changes. A file can appear in both groups
+with different image versions. The compact sidebar puts search above the Git
+filter (**All changes**, **Unstaged**, **Staged**) and the **Tree** / **List** icon
+buttons. **⋯** opens folder expand/collapse commands and **Show ignored**. While
+ignored files are visible, a removable **+ ignored (N)** indicator stays beside
+search. The tree compacts single-child folders, remembers collapsed folders
+during live refresh, and supports selecting a whole folder. Search shows matching
+files together with their parent folders.
+
+Select a file and switch between side-by-side, swipe, overlay, and pixel-diff
+views. In side-by-side, enable **Highlight changes** to overlay changed pixels on
+the new version only, keeping the old version unchanged; the intensity slider
+controls the highlight opacity.
+
+Zoom with **− / +**, an editable percentage (1–800%), **Fit**, **Width**, or
+**100%**. **Changes** zooms directly to the bounding area of changed pixels.
+Ctrl/Cmd + wheel (including trackpad pinch where supported by the browser) zooms
+around the cursor. Drag an image to pan; double-click toggles between 100% at the
+clicked point and Fit. The two side-by-side images share zoom and scroll position.
+Keyboard shortcuts outside controls: `+` / `−` to zoom, `0` for Fit, `1` for 100%,
+and arrow keys for previous/next images. Changes refresh every two seconds while
+the tab is visible.
+
+Use **Stage file / Unstage file** for the active image or **Stage (N) / Unstage (N)**
+below the sidebar for checked images. The **×** button clears the selection.
+These actions only change the selected index entries;
+they do not rewrite working images, discard changes, commit, or push. Existing
+staged changes outside the selection are preserved. Stale selections are rejected
+and must be reviewed again. Finish the commit in your usual Git client.
+
+Right-click a file, folder, or image preview to open its action menu, or use
+**⋯** beside the active image or below the sidebar. The menu offers Stage,
+Unstage, Ignore, Stop ignoring, and selection commands as applicable. Right-click
+on a checked file applies to the whole selection; an unchecked file applies
+only to itself. Folder actions apply to the folder's visible files. Menu headings
+and command counts identify the scope. **Shift+F10** also opens the menu from
+a file or folder; use arrow keys to navigate and **Escape** to close it.
+
+Choose **Ignore** in this menu to hide images from `diff`. The viewer
+writes `.golden_ignore` at the Git repository root and hides both staged and
+unstaged versions of each path. **Show ignored** reveals those images again;
+**Stop ignoring** removes their entries. Ignored images cannot be staged or
+unstaged in the viewer until restored. A selected folder adds its currently
+selected files, not a rule for future files in that folder.
+
+The format is one exact repository-relative path per line, with an optional
+leading `/`. Blank lines and lines starting with `#` are comments. Paths are
+literal: `*`, `?`, and `[]` are not patterns. Generated entries start with `/`,
+so even names starting with `#` work. Existing comments and unrelated entries
+are preserved, and manual edits reload automatically.
+
+```text
+# Hide this image from local diff review
+/test/golden/login/iphone[light](en-US).png
+```
+
+This file affects only `diff`, not golden execution, pass/fail results, reports,
+or Git tracking. Images and the Git index are unchanged. Commit `.golden_ignore`
+yourself if you want to share the exclusions; the viewer never stages it for you.
+
+Open **Tests** in the header or **Run tests…** in a file, folder, selection,
+image-preview, or staged/unstaged group menu. **Run scope** offers the whole
+project, any discovered folder, a test file, or a scenario. **Run test file(s)…**
+selects the complete source files associated with the images. Folder scopes
+include unchanged test files too; image selections include their mapped scenarios.
+Overlapping selections are deduplicated, and selecting a whole file supersedes
+individual scenarios in that file.
+
+Drag the top divider to resize the Tests panel; its height is saved locally.
+The focused divider also supports Up/Down (Shift for larger steps), Home/End,
+and double-click to reset.
+
+**Open test ↗** opens the selected source file in the system's default application
+for `.dart` files on the machine running `diff`. Source files in **Included tests
+& commands** are clickable too; the ↗ above the log opens its current/last test
+even if you have since changed the run scope. Opening accepts only discovered,
+revalidated test files, never arbitrary paths or commands.
+
+Choose a scope and click **Load variants** to populate **Device**, **Theme**,
+**Locale**, text scale, direction, platform, and contrast from the actual test
+configuration. The runner plans variants itself, including imported/shared
+configuration, generated cases, rules, and sampling. Loading uses the same
+queue/logs/Stop controls and reads complete source files, ignoring the current
+variant filters. It compiles and initializes the test files and may run shared
+test/group setup hooks, but does not call golden builders, scenario lifecycle
+callbacks, capture/comparison code, or golden reporters. This requires
+ff_golden 1.3.0 or newer; older runners report an
+explicit error and do not fall back to executing the tests.
+
+Lists contain values from the selected scope and narrow to compatible values
+as other filters change. The panel shows how many loaded variants match. Reload
+variants after editing shared configuration; values are cached for this viewer
+session. **More filters** includes a literal test-name substring with suggestions
+(not a regex or an individual capture name). Text scale, direction, platform,
+and contrast require `testFfGoldens`; these controls are unavailable for legacy
+`testDeviceGoldens`. Switching scope preserves filters, with unavailable selected
+values marked explicitly. Locale separators `-` and `_` are equivalent.
+Scenario names and variant filters are combined; each file gets its own filter.
+Files known to have no matches are omitted from the queue; an empty selection
+blocks Run. Unloaded or custom golden-tagged files still run through Flutter's
+tag/name filters. Variant discovery covers ff_golden APIs, not custom test runners.
+
+**Included tests & commands** lists the exact files, scenarios, package
+folders, and commands before **Run**. Files run sequentially using
+`flutter test --no-pub --tags=golden --concurrency=1 --reporter=expanded`,
+with an escaped `--name` where needed. A failure is recorded and the remaining
+files continue. The final queue fails if any file failed. **Stop** cancels the
+current process tree and all pending files. Progress and logs identify the
+current file; a cancelled queue is never shown as passed.
+
+Only golden test files (`*_test.dart`) are listed under `--project`, independently
+of `--input` and `.golden_ignore`. Discovery requires a `testDeviceGoldens`,
+`testFfGoldens`, or `testFfGoldenScenarios` call, a literal `golden` tag on a
+test/group/library, or an explicit source-file entry in a run manifest. Dynamic
+test names still qualify; names, imports, comments, and strings alone do not.
+Helper-generated suites can use a library `@Tags(['golden'])` annotation or a
+run manifest to be discovered. Folder/project counts and queues exclude ordinary
+test files. Each file runs from its nearest package directory.
+Mixed files include only golden-tagged tests at execution time;
+Flutter reports files or filters with no matching tests, without falling back
+to another scope. Baselines are never accepted automatically and
+`--update-goldens` is not exposed. Install dependencies first and use trusted
+checkouts: test execution runs project code.
+
+Scenarios are discovered by parsing literal `testDeviceGoldens`, `testFfGoldens`,
+and inline `testFfGoldenScenarios` declarations without executing them. Literal
+`group` prefixes and legacy `scenarioName` values are preserved, so a folder
+such as `different` can select a test named `light and dark` precisely. Run
+manifests in the package's `build/ff_golden` supply capture/source mappings and
+variants, including custom paths. Dynamic declarations, helper-generated cases,
+or ambiguous image mappings require manual scope/name selection; a partially
+mapped image selection is not silently narrowed. A scenario runs its complete
+test callback, including all named captures.
+
+Only one queue is active per viewer. Ctrl-C stops the current process and
+pending queue when closing the viewer. Hiding the panel or closing the browser
+tab does not stop the run. Scrolling up pauses **Follow logs**, preserving the
+reading position as output arrives; scrolling back to the end resumes it.
+The checkbox can also pause or resume following explicitly. Logs keep
+approximately the latest 512 KiB in memory
+and are discarded on the next run or server shutdown. Launching tests currently
+supports macOS/Linux. Flutter is resolved from package-local FVM, `FLUTTER_ROOT`,
+the SDK running Dart, or `PATH`; override it with `--flutter /path/to/flutter`.
+
+**Copy log** copies all retained output with the executed commands, package
+directories, scenarios, filters, status and exit codes. **Copy errors** extracts
+Flutter error blocks with assertions and stack traces from failed files (or
+errors already visible in an active run). Unrecognized failures include the last
+120 retained lines instead. Excerpts are heuristic; use the full log when needed.
+Both commands copy a snapshot of the actual run, not the current filter controls,
+and mark incomplete/truncated output explicitly. They preserve the log's scroll
+position. If clipboard access is blocked, a selectable report opens for manual
+copying. Nothing is sent to an AI service: review logs for secrets before sharing.
+
+```shell
+dart run ff_golden_presenter diff --input test/screens
+dart run ff_golden_presenter diff --project ../my-app --input test
+dart run ff_golden_presenter diff --no-open --port 8088
+```
+
+| Option | Default | Purpose |
+| --- | --- | --- |
+| `--project` | `.` | Project directory inside the Git repository. |
+| `-i, --input` | `.` | Literal path scope relative to the project; can include deleted directories. |
+| `--port` | `0` | Local port; zero chooses an available port. |
+| `--flutter` | auto | Flutter executable used by the Tests panel. |
+| `--[no-]open` | on | Open the default browser automatically. |
+
+The diff viewer supports PNG, JPEG, and WebP; it uses original bytes without
+image optimization. Pixel counts are browser-rendered diagnostics, not the
+runner's pass/fail result. Previews are limited to 32 MiB per image and a combined
+16-megapixel canvas. Git LFS pointers cannot be previewed, symbolic links are
+excluded, and merge conflicts must be resolved in a Git client. Renames appear
+as deletion/addition pairs. Branch comparisons, baseline acceptance, and commits
+are outside this version's scope.
+
+### Report-only invocation
 
 The original report-only invocation remains compatible:
 

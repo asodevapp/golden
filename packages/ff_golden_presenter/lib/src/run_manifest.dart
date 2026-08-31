@@ -11,8 +11,10 @@ final class GoldenRunIndex {
     required Map<String, GoldenImageMetadata> exact,
     required Map<String, List<GoldenImageMetadata>> suffixes,
     required this.manifestCount,
+    Set<String> sourceTestFiles = const {},
   })  : _exact = Map.unmodifiable(exact),
-        _suffixes = Map.unmodifiable(suffixes);
+        _suffixes = Map.unmodifiable(suffixes),
+        sourceTestFiles = Set.unmodifiable(sourceTestFiles);
 
   factory GoldenRunIndex.empty() => GoldenRunIndex._(
         exact: const {},
@@ -23,6 +25,10 @@ final class GoldenRunIndex {
   final Map<String, GoldenImageMetadata> _exact;
   final Map<String, List<GoldenImageMetadata>> _suffixes;
   final int manifestCount;
+
+  /// Project-relative sources, including runs without captured images.
+  final Set<String> sourceTestFiles;
+  Map<String, GoldenImageMetadata> get exactImages => _exact;
 
   int get imageCount => _suffixes.values.fold(
         0,
@@ -87,17 +93,21 @@ final class GoldenRunManifestLoader {
 
     final exact = <String, GoldenImageMetadata>{};
     final suffixes = <String, List<GoldenImageMetadata>>{};
+    final sourceTestFiles = <String>{};
     var manifestCount = 0;
     for (final file in files) {
       final decoded = await _decode(file);
       if (decoded == null) continue;
       manifestCount++;
       _addManifest(decoded, exact, suffixes, file.path);
+      final testFile = _string(_map(decoded['source'])?['testFile']);
+      if (testFile != null) sourceTestFiles.add(testFile);
     }
     return GoldenRunIndex._(
       exact: exact,
       suffixes: suffixes,
       manifestCount: manifestCount,
+      sourceTestFiles: sourceTestFiles,
     );
   }
 
@@ -161,6 +171,8 @@ final class GoldenRunManifestLoader {
         failurePhase: _string(result['failurePhase']),
         error: _string(result['error']),
         sourceTestFile: testFile,
+        testDescription: _string(result['description']),
+        scenario: _string(result['scenario']),
       );
 
       final captures = _captures(result);
@@ -183,6 +195,8 @@ final class GoldenRunManifestLoader {
           failurePhase: metadataBase.failurePhase,
           error: metadataBase.error,
           sourceTestFile: metadataBase.sourceTestFile,
+          testDescription: metadataBase.testDescription,
+          scenario: metadataBase.scenario,
         );
         final suffix = _normalize(capturePath);
         suffixes.putIfAbsent(suffix, () => []).add(metadata);

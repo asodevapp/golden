@@ -1,3 +1,45 @@
+## Unreleased
+
+## 1.1.0
+
+- Styled the linked `aso.dev` credit in the local viewer with its own blue
+  accent and hover state.
+- Compacted the file toolbar to two rows, keeping Git filtering and Tree/List
+  controls visible while moving folder actions and Show ignored into a keyboard
+  accessible menu. Visible ignored files have a removable status indicator.
+- Added quick source-file opening and Copy log / Copy errors with actual run
+  commands, filters, results and diagnostic context for AI, including explicit
+  truncation notices and a manual clipboard fallback.
+- Preserved log scroll/selection on polling and new output; manual scrolling
+  pauses Follow logs, with resume at the end or through the checkbox.
+- Added a resizable Tests panel with saved height and actual variant dropdowns
+  loaded from ff_golden, compatible-choice filtering, matching counts, and
+  coverage-only advanced filters. Discovery uses the existing queue/logs/Stop
+  controls and never falls back to golden execution on unsupported runners.
+- Limited Tests discovery, folder/project counts, and queues to golden test
+  files, identified by ff_golden calls, explicit golden tags, or run manifests.
+- Extended Tests to project, folder, file, scenario, and image-selection scopes,
+  with static Dart/manifest discovery, deduplicated per-file queues, exact scoped
+  filters, included-command previews, progress, and cancellation of pending files.
+- Added a Tests panel to `diff`: explicit test-file selection, combined variant
+  filters, command preview, bounded live logs, exit status, and process-tree
+  cancellation on macOS/Linux. Image menus can suggest a source test from run
+  manifests. Runs verify goldens without updating baselines; `--flutter` selects
+  an SDK explicitly.
+- Added `diff`, a loopback Git image viewer with staged/unstaged groups,
+  side-by-side, swipe, overlay and pixel-diff modes, zoom, synchronized scrolling,
+  automatic refresh, and selected-file stage/unstage with stale-selection checks.
+- Added a collapsible file tree with folder selection, adjustable side-by-side
+  change highlighting, cursor-centered zoom, drag-to-pan, and zoom-to-changes.
+- Added `.golden_ignore` for persistent, reversible diff exclusions, with
+  single-file and selected-file actions, ignored-file visibility, and exact
+  repository-relative paths. Golden tests and the Git index are unchanged.
+- Simplified the selection toolbar to Stage/Unstage counts and moved ignore
+  commands into context menus for files, folders, selections, and image previews,
+  with keyboard navigation and visible overflow buttons.
+- Stopped unstage when the HEAD lookup is interrupted or fails unexpectedly,
+  instead of treating that failure as an unborn branch.
+
 ## 1.0.4
 
 - Added reusable report branding with a project primary color, embedded

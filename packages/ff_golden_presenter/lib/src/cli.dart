@@ -4,6 +4,7 @@ import 'package:path/path.dart' as path;
 
 import 'catalog_scanner.dart';
 import 'cli_options.dart';
+import 'diff_cli.dart';
 import 'failure_artifact_cleaner.dart';
 import 'golden_image_factory.dart';
 import 'golden_presenter.dart';
@@ -20,6 +21,7 @@ import 'run_manifest.dart';
 import 'screenshot_collector.dart';
 
 const _actions = {
+  'diff',
   'report',
   'collect',
   'optimize',
@@ -56,6 +58,7 @@ Future<int> runGoldenPresenter(
   }
   final actionArguments = arguments.skip(1).toList(growable: false);
   return switch (first) {
+    'diff' => runDiff(actionArguments, out, errorOutput),
     'report' => _runReport(actionArguments, out, errorOutput),
     'collect' => _runCollect(actionArguments, out, errorOutput),
     'optimize' => _runOptimize(actionArguments, out, errorOutput),
@@ -527,6 +530,7 @@ Usage: ff_golden_presenter [options]
        ff_golden_presenter <action> [options]
 
 Actions:
+  diff      Review local Git image changes and stage/unstage selected files.
   report    Generate HTML from images in place (default; legacy compatible).
   collect   Copy project screenshots into a staging directory.
   optimize  Optimize staged PNG files with an explicit profile.

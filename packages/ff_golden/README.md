@@ -33,7 +33,7 @@ stable machine-readable run metadata alongside the golden artifacts.
 Add the package as a development dependency:
 
 ```shell
-flutter pub add --dev 'ff_golden:^1.2.2'
+flutter pub add --dev 'ff_golden:^1.3.0'
 ```
 
 Then import the primary library:
@@ -295,7 +295,7 @@ application as a project-local development dependency:
 
 ```yaml
 dev_dependencies:
-  ff_golden_presenter: ^1.0.2
+  ff_golden_presenter: ^1.1.0
 ```
 
 Then build a self-contained report with:
@@ -310,6 +310,13 @@ Presenter merges schema-v1/v2 shards and uses them as the authoritative source
 for multi-shot capture names, dotted device names, every coverage axis, run
 status, duration, and failure diagnostics. Images without a matching manifest
 remain available through filename parsing.
+
+Presenter 1.1.0 can also load the variants planned by `ff_golden` 1.3.0 while
+reviewing local changes with `dart run ff_golden_presenter diff`. Discovery is
+opt-in and presenter-controlled: it registers metadata-only tests under the
+`ff_golden_discovery` tag and does not invoke builders, scenario lifecycle,
+captures, comparisons, or reporters. Test-file initialization and shared setup
+hooks can still run, so use it only with trusted project code.
 
 ## Migrating from golden
 

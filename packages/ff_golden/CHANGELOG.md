@@ -1,3 +1,14 @@
+## Unreleased
+
+## 1.3.0
+
+- Added opt-in variant discovery for ff_golden_presenter: with
+  `--dart-define=FF_GOLDEN_DISCOVERY=true` and `--tags=ff_golden_discovery`,
+  the legacy and coverage APIs expose planned variants through Flutter's JSON
+  reporter without golden callbacks, captures, comparisons, or reporters.
+  Normal test execution is unchanged; file initialization and shared setup
+  hooks still run during discovery.
+
 ## 1.2.2
 
 - Linked the companion `ff_golden_presenter` package directly from the package

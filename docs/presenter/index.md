@@ -1,16 +1,17 @@
 ---
 title: FF Golden Presenter
-description: Collect Flutter golden images, merge ff_golden run manifests, optimize staged copies, and publish a searchable portable HTML review report.
+description: Review local golden changes, run filtered tests, and publish searchable portable HTML reports.
 ---
 
 # FF Golden Presenter
 
 Package: [`ff_golden_presenter` on pub.dev](https://pub.dev/packages/ff_golden_presenter)
 
-FF Golden Presenter turns Flutter and Dart golden images into a searchable,
-portable HTML report. The generated page has no runtime dependencies and uses
-relative image URLs, so the whole output directory can be opened locally,
-attached to CI, published to Pages, or served by a container.
+FF Golden Presenter reviews local Git image changes, runs selected golden tests,
+and turns Flutter and Dart golden images into a searchable, portable HTML report.
+The generated report has no runtime dependencies and uses relative image URLs,
+so the whole output directory can be opened locally, attached to CI, published
+to Pages, or served by a container.
 
 [Open the live report](https://asodevapp.github.io/golden/demo/){ .md-button .md-button--primary }
 
@@ -22,6 +23,24 @@ flutter pub add --dev ff_golden_presenter
 
 Use `dart pub add --dev ff_golden_presenter` in a pure Dart project. Keep the
 version in the application lockfile rather than globally activating the CLI.
+
+## Review local changes
+
+```shell
+dart run ff_golden_presenter diff
+```
+
+The loopback-only viewer shows staged and unstaged PNG, JPEG, and WebP changes
+in tree or list form. Compare versions side by side, by swipe, overlay, or pixel
+diff; zoom and highlight changes on the new version; then stage or unstage only
+the selected files. Secondary file actions live in context menus, including
+reversible `.golden_ignore` exclusions.
+
+Open **Tests** to run a project, folder, file, scenario, or image selection with
+live logs. With `ff_golden` 1.3.0 or newer, **Load variants** reads the planned
+devices, themes, locales, scale, direction, platform, and contrast without
+calling golden builders or updating baselines. See the
+[CLI reference](cli.md#diff) for scope rules, safety limits, and shortcuts.
 
 ## Build a publication directory
 

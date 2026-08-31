@@ -5,6 +5,14 @@ import 'package:path/path.dart' as path;
 import 'package:test/test.dart';
 
 void main() {
+  test('diff help does not start a server or open a browser', () async {
+    final output = StringBuffer();
+    final code = await runGoldenPresenter(['diff', '--help'],
+        output: output, errors: StringBuffer());
+    expect(code, 0);
+    expect(output.toString(), contains('127.0.0.1'));
+    expect(output.toString(), contains('--[no-]open'));
+  });
   test('--help exits successfully without generating a report', () async {
     final output = StringBuffer();
     final errors = StringBuffer();
@@ -30,7 +38,7 @@ void main() {
     );
 
     expect(code, 0);
-    expect(output.toString(), 'ff_golden_presenter 1.0.4\n');
+    expect(output.toString(), 'ff_golden_presenter 1.1.0\n');
   });
 
   test('generates a report end to end', () async {

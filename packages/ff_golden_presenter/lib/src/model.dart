@@ -94,6 +94,8 @@ final class GoldenImageMetadata {
     this.failurePhase,
     this.error,
     this.sourceTestFile,
+    this.testDescription,
+    this.scenario,
   });
 
   final String device;
@@ -112,6 +114,8 @@ final class GoldenImageMetadata {
   final String? failurePhase;
   final String? error;
   final String? sourceTestFile;
+  final String? testDescription;
+  final String? scenario;
 }
 
 /// Images that belong to one logical golden test scenario.
