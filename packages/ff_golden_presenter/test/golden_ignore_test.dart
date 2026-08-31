@@ -25,6 +25,7 @@ void main() {
     await fixture.write(neighbor, [2]);
     await fixture.write('notes.txt', [3]);
     await fixture.commitAll();
+    final originalIndex = await fixture.blob(':$reviewIgnoreFileName');
     await fixture.write(target, [4]);
     await fixture.write('notes.txt', [5]);
     await fixture.git(['add', '--', target, 'notes.txt']);
@@ -43,7 +44,7 @@ void main() {
     expect(await fixture.blob(':$target'), [4]);
     expect(await fixture.file(target).readAsBytes(), [6]);
     expect(await fixture.blob(':notes.txt'), [5]);
-    expect(await fixture.blob(':$reviewIgnoreFileName'), original.codeUnits);
+    expect(await fixture.blob(':$reviewIgnoreFileName'), originalIndex);
     final ignored = changes.firstWhere((c) => c.ignored && !c.staged);
     await expectLater(
         repository.setStaged({ignored.id: ignored.revision}, staged: true),

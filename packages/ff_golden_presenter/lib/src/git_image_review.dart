@@ -82,7 +82,8 @@ final class GitImageRepository {
   }) async {
     final projectPath = await project.resolveSymbolicLinks();
     final result = await _git(projectPath, ['rev-parse', '--show-toplevel']);
-    final root = utf8.decode(result.stdout as List<int>).trimRight();
+    final root =
+        p.normalize(utf8.decode(result.stdout as List<int>).trimRight());
     final inputPath = p.normalize(p.join(projectPath, input));
     if (!p.equals(inputPath, root) && !p.isWithin(root, inputPath)) {
       throw const GitReviewException(
