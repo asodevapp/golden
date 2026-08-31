@@ -1,5 +1,10 @@
 ## Unreleased
 
+## 1.1.1
+
+- Added pub.dev screenshots for the searchable live report and local Git diff
+  viewer, and moved the live demo link to the top of the package README.
+
 ## 1.1.0
 
 - Styled the linked `aso.dev` credit in the local viewer with its own blue

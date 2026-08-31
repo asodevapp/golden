@@ -2,16 +2,27 @@
 
 [`ff_golden_presenter` on pub.dev](https://pub.dev/packages/ff_golden_presenter) ·
 [`ff_golden` runner](https://pub.dev/packages/ff_golden) ·
+[Live demo](https://asodevapp.github.io/golden/demo/) ·
 [Documentation](https://asodevapp.github.io/golden/presenter/) ·
 [GitHub](https://github.com/asodevapp/golden)
 
-FF Golden Presenter is the reporting companion to the
-[`ff_golden`](https://pub.dev/packages/ff_golden) runner. It turns Flutter and
-Dart golden test images into a searchable, portable HTML report. It can also
-collect screenshots into an isolated staging directory, optimize PNG files,
-and produce the complete publication artifact in one command.
+FF Golden Presenter is the review and reporting companion to the
+[`ff_golden`](https://pub.dev/packages/ff_golden) runner. Review local Git image
+changes, run filtered golden tests with live logs, and turn Flutter and Dart
+golden images into a searchable, portable HTML report.
 
 The generated page has no runtime dependencies. Open it locally, attach the whole directory to CI, or serve it as a static site. It includes scenario navigation, search and variant filters, remembered light/dark themes, responsive cards, a keyboard-friendly lightbox, and relative image URLs.
+
+## See it in action
+
+**[Open the interactive live report →](https://asodevapp.github.io/golden/demo/)**
+
+[![Searchable FF Golden live report](screenshots/live-report.jpg)](https://asodevapp.github.io/golden/demo/)
+
+The local `diff` viewer keeps Git state, the file tree, comparison modes, zoom,
+test execution, and logs in one browser window:
+
+![Local Git golden diff viewer](screenshots/diff-viewer.jpg)
 
 ## Quick start
 
@@ -72,7 +83,7 @@ The equivalent manual dependency is:
 
 ```yaml
 dev_dependencies:
-  ff_golden_presenter: ^1.1.0
+  ff_golden_presenter: ^1.1.1
 ```
 
 For an unreleased repository revision, use the package Git source and
