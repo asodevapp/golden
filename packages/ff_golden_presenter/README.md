@@ -17,12 +17,12 @@ The generated page has no runtime dependencies. Open it locally, attach the whol
 
 **[Open the interactive live report →](https://asodevapp.github.io/golden/demo/)**
 
-[![Searchable FF Golden live report](screenshots/live-report.jpg)](https://asodevapp.github.io/golden/demo/)
+[![Searchable FF Golden live report](https://raw.githubusercontent.com/asodevapp/golden/master/packages/ff_golden_presenter/screenshots/live-report.jpg)](https://asodevapp.github.io/golden/demo/)
 
 The local `diff` viewer keeps Git state, the file tree, comparison modes, zoom,
 test execution, and logs in one browser window:
 
-![Local Git golden diff viewer](screenshots/diff-viewer.jpg)
+![Local Git golden diff viewer](https://raw.githubusercontent.com/asodevapp/golden/master/packages/ff_golden_presenter/screenshots/diff-viewer.jpg)
 
 ## Quick start
 
@@ -83,7 +83,7 @@ The equivalent manual dependency is:
 
 ```yaml
 dev_dependencies:
-  ff_golden_presenter: ^1.1.1
+  ff_golden_presenter: ^1.1.2
 ```
 
 For an unreleased repository revision, use the package Git source and

@@ -1,5 +1,10 @@
 ## Unreleased
 
+## 1.1.2
+
+- Replaced relative README screenshot paths with absolute repository URLs so
+  pub.dev renders the live report and Git diff images instead of alt text.
+
 ## 1.1.1
 
 - Added pub.dev screenshots for the searchable live report and local Git diff

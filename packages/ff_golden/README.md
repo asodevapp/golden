@@ -295,7 +295,7 @@ application as a project-local development dependency:
 
 ```yaml
 dev_dependencies:
-  ff_golden_presenter: ^1.1.1
+  ff_golden_presenter: ^1.1.2
 ```
 
 Then build a self-contained report with:
