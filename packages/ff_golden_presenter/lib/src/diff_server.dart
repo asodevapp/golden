@@ -3,8 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
-import 'package:path/path.dart' as p;
-
 import 'diff_viewer.dart';
 import 'git_image_review.dart';
 import 'review_test_catalog.dart';
@@ -104,7 +102,7 @@ final class DiffReviewServer {
           throw const FormatException('Expected a discovered test ID.');
         }
         final target = await _tests.validate(body['testId'] as String);
-        await openTestFile(p.join(repository.directory.path, target.path));
+        await openTestFile(_tests.absolutePath(target.path));
         _json(response, 200, {'file': target.path});
       } else if (request.method == 'POST' &&
           request.uri.path == '/api/test-log') {

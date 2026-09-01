@@ -88,9 +88,7 @@ final class ReviewTestRunner {
       for (final selection in selections)
         if (discovery || _hasMatches(selection, filters))
           ReviewTestCommand(
-            _resolveFlutter(p.normalize(p.join(
-                catalog.repository.directory.path,
-                selection.target.packagePath))),
+            _resolveFlutter(catalog.absolutePath(selection.target.packagePath)),
             [
               'test',
               '--no-pub',
@@ -101,10 +99,9 @@ final class ReviewTestRunner {
               if (!discovery)
                 if (filters.patternFor(selection.scenarios)
                     case final pattern?) ...['--name', pattern],
-              '.${p.separator}${selection.target.relativePath}',
+              './${selection.target.relativePath}',
             ],
-            p.normalize(p.join(catalog.repository.directory.path,
-                selection.target.packagePath)),
+            catalog.absolutePath(selection.target.packagePath),
             selection,
           ),
     ];

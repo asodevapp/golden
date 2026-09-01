@@ -67,6 +67,12 @@ final class ReviewTestCatalog {
   final warnings = <String>[];
   final _variants = <String, List<ReviewTestVariant>>{};
 
+  /// Resolves a catalog path, which always uses POSIX separators, locally.
+  String absolutePath(String repositoryRelativePath) => p.normalize(p.joinAll([
+        repository.directory.path,
+        ...p.posix.split(repositoryRelativePath),
+      ]));
+
   void forgetVariants(ReviewTestTarget target) => _variants.remove(target.id);
   void rememberVariants(
       ReviewTestTarget target, List<ReviewTestVariant> values) {
@@ -145,7 +151,7 @@ final class ReviewTestCatalog {
       final pubspec = p.join(directory.path, 'pubspec.yaml');
       if (await FileSystemEntity.type(pubspec, followLinks: false) ==
           FileSystemEntityType.file) {
-        packagePath = p.relative(directory.path, from: root);
+        packagePath = _posix(p.relative(directory.path, from: root));
       }
       await for (final entity in directory.list(followLinks: false)) {
         final name = p.basename(entity.path);
@@ -156,9 +162,9 @@ final class ReviewTestCatalog {
             packagePath != null &&
             name.endsWith('_test.dart')) {
           final relative =
-              p.relative(entity.path, from: p.join(root, packagePath));
+              _posix(p.relative(entity.path, from: absolutePath(packagePath)));
           final target = ReviewTestTarget(
-            p.relative(entity.path, from: root).split(p.separator).join('/'),
+            _posix(p.relative(entity.path, from: root)),
             packagePath,
             relative,
           );
@@ -178,7 +184,7 @@ final class ReviewTestCatalog {
       if (await FileSystemEntity.type(p.join(parent.path, 'pubspec.yaml'),
               followLinks: false) ==
           FileSystemEntityType.file) {
-        parentPackage = p.relative(parent.path, from: root);
+        parentPackage = _posix(p.relative(parent.path, from: root));
         break;
       }
       parent = parent.parent;
@@ -187,7 +193,7 @@ final class ReviewTestCatalog {
     for (final package in targets.values.map((t) => t.packagePath).toSet()) {
       try {
         _indexes[package] = await GoldenRunManifestLoader(
-          projectDirectory: Directory(p.join(root, package)),
+          projectDirectory: Directory(absolutePath(package)),
           imageRoot: repository.directory,
           manifestPaths: const ['build/ff_golden'],
         ).load();
@@ -217,7 +223,7 @@ final class ReviewTestCatalog {
   }
 
   Future<ReviewTestSource> _readSource(ReviewTestTarget target) async {
-    final file = File(p.join(repository.directory.path, target.path));
+    final file = File(absolutePath(target.path));
     final stat = await file.stat();
     if (stat.size > 1024 * 1024) {
       warnings.add(
@@ -518,7 +524,7 @@ final class ReviewTestCatalog {
       throw const GitReviewException('Choose a discovered test file.');
     }
     final root = repository.directory.path;
-    final file = File(p.join(root, target.path));
+    final file = File(absolutePath(target.path));
     if (await FileSystemEntity.type(file.path, followLinks: false) !=
             FileSystemEntityType.file ||
         !p.isWithin(root, await file.resolveSymbolicLinks()) ||
@@ -540,6 +546,8 @@ final class ReviewTestCatalog {
     'coverage',
   };
 }
+
+String _posix(String path) => path.split(p.separator).join('/');
 
 /// Matches ff_golden's public legacy and coverage test-name formats.
 final class ReviewTestFilters {

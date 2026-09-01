@@ -358,7 +358,7 @@ final class GitImageRepository {
   }
 
   Future<File> _workingFile(String relative) async {
-    final absolute = p.join(directory.path, relative);
+    final absolute = p.joinAll([directory.path, ...p.posix.split(relative)]);
     if (!p.isWithin(directory.path, p.normalize(absolute)) ||
         await FileSystemEntity.type(absolute, followLinks: false) !=
             FileSystemEntityType.file) {
