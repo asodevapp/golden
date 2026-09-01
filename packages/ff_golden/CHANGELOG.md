@@ -1,5 +1,10 @@
 ## Unreleased
 
+## 1.3.1
+
+- Added a pub.dev screenshot and an early README visual showing one scenario
+  across controlled device, theme, locale, direction, and platform variants.
+
 ## 1.3.0
 
 - Added opt-in variant discovery for ff_golden_presenter: with

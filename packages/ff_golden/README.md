@@ -12,6 +12,8 @@ locales, text scales, directions, platforms, brightness modes, and accessibility
 settings. It keeps every combination as an isolated Flutter test and emits
 stable machine-readable run metadata alongside the golden artifacts.
 
+![One Flutter golden scenario across controlled device, theme, and locale variants](https://raw.githubusercontent.com/asodevapp/golden/master/packages/ff_golden/screenshots/coverage-matrix.png)
+
 ## Why ff_golden
 
 - Accurate device geometry: logical size, physical size, device pixel ratio,
@@ -33,7 +35,7 @@ stable machine-readable run metadata alongside the golden artifacts.
 Add the package as a development dependency:
 
 ```shell
-flutter pub add --dev 'ff_golden:^1.3.0'
+flutter pub add --dev 'ff_golden:^1.3.1'
 ```
 
 Then import the primary library:
