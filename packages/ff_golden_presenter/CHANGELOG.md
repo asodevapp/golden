@@ -1,5 +1,10 @@
 ## Unreleased
 
+## 1.1.3
+
+- Added support for `analyzer` 14 while retaining compatibility with analyzer 7
+  and Dart 3.6.
+
 ## 1.1.2
 
 - Replaced relative README screenshot paths with absolute repository URLs so
