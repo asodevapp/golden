@@ -63,6 +63,55 @@ void main() {
     expect(await fixture.file(target).readAsBytes(), [4]);
   });
 
+  test('staging removes an unheld stale index lock and retries once', () async {
+    await fixture.write('image.png', [1]);
+    await fixture.commitAll();
+    await fixture.write('image.png', [2]);
+    final selected = (await repository.scan()).changes.single;
+    final lock = fixture.file('.git/index.lock');
+    await lock.writeAsString('stale');
+    repository = await GitImageRepository.open(
+      project: fixture.directory,
+      lockUsageProbe: (_) async => false,
+    );
+
+    final removedStaleIndexLock = await repository.setStaged(
+      {selected.id: selected.revision},
+      staged: true,
+    );
+
+    expect(removedStaleIndexLock, isTrue);
+    expect(await lock.exists(), isFalse);
+    expect(await fixture.blob(':image.png'), [2]);
+  });
+
+  test('staging preserves an active or unverifiable index lock', () async {
+    await fixture.write('image.png', [1]);
+    await fixture.commitAll();
+    await fixture.write('image.png', [2]);
+    final selected = (await repository.scan()).changes.single;
+    final lock = fixture.file('.git/index.lock');
+    await lock.writeAsString('active');
+    for (final inUse in <bool?>[true, null]) {
+      repository = await GitImageRepository.open(
+        project: fixture.directory,
+        lockUsageProbe: (_) async => inUse,
+      );
+
+      await expectLater(
+        repository.setStaged(
+          {selected.id: selected.revision},
+          staged: true,
+        ),
+        throwsA(isA<GitReviewException>().having(
+            (error) => error.message, 'message', contains('index.lock'))),
+      );
+
+      expect(await lock.readAsString(), 'active');
+      expect(await fixture.blob(':image.png'), [1]);
+    }
+  });
+
   test('stale batch is rejected before staging any selected path', () async {
     await fixture.write('one.png', [1]);
     await fixture.write('two.png', [2]);

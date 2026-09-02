@@ -230,15 +230,16 @@ final class DiffReviewServer {
           throw const FormatException('Expected a revisions map.');
         }
         final revisions = Map<String, String>.from(body['revisions'] as Map);
+        var removedStaleIndexLock = false;
         if (request.uri.path == '/api/ignore' ||
             request.uri.path == '/api/unignore') {
           await repository.setIgnored(revisions,
               ignored: request.uri.path == '/api/ignore');
         } else {
-          await repository.setStaged(revisions,
+          removedStaleIndexLock = await repository.setStaged(revisions,
               staged: request.uri.path == '/api/stage');
         }
-        await _refresh(response);
+        await _refresh(response, removedStaleIndexLock: removedStaleIndexLock);
       } else {
         _json(response, 404, {'error': 'Not found.'});
       }
@@ -278,13 +279,15 @@ final class DiffReviewServer {
     return jsonDecode(utf8.decode(bytes));
   }
 
-  Future<void> _refresh(HttpResponse response) async {
+  Future<void> _refresh(HttpResponse response,
+      {bool removedStaleIndexLock = false}) async {
     _snapshot = await repository.scan();
     _json(response, 200, {
       'repository': repository.directory.path,
       'input': repository.input,
       'changes': _snapshot.changes.map((c) => c.toJson()).toList(),
       'warnings': _snapshot.warnings,
+      if (removedStaleIndexLock) 'removedStaleIndexLock': true,
     });
   }
 

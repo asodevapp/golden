@@ -57,8 +57,10 @@ void main() {
     expect(page.statusCode, 200);
     expect(page.headers.value('content-security-policy'),
         contains("frame-ancestors 'none'"));
-    expect(
-        await utf8.decoder.bind(page).join(), contains('FF Golden · Changes'));
+    final html = await utf8.decoder.bind(page).join();
+    expect(html, contains('FF Golden · Changes'));
+    expect(html, contains("'Staging '"));
+    expect(html, contains('Removed stale Git index.lock and retried.'));
     for (final response in [
       await request('/api/changes', authenticated: false),
       await request('/api/changes', origin: 'https://untrusted.example'),
@@ -160,6 +162,7 @@ void main() {
     data = await json(await request('/api/stage', body: {
       'revisions': {change['id']: change['revision']}
     }));
+    expect(data, isNot(contains('removedStaleIndexLock')));
     change = (data['changes'] as List).single as Map<String, dynamic>;
     expect(change['staged'], isTrue);
     expect(await fixture.blob(':image.png'), [0, 254, 127]);
@@ -168,6 +171,31 @@ void main() {
     }));
     expect(await fixture.blob(':image.png'), [0, 255, 128]);
     expect(await fixture.file('image.png').readAsBytes(), [0, 254, 127]);
+  });
+
+  test('stage response reports when a stale index lock was removed', () async {
+    final data = await json(await request('/api/changes'));
+    final change = (data['changes'] as List).single as Map<String, dynamic>;
+    client.close(force: true);
+    await server.close();
+    final lock = fixture.file('.git/index.lock');
+    await lock.writeAsString('stale');
+    server = await DiffReviewServer.start(
+      await GitImageRepository.open(
+        project: fixture.directory,
+        lockUsageProbe: (_) async => false,
+      ),
+      openTestFile: (path) async => openedFiles.add(path),
+    );
+    client = HttpClient();
+
+    final staged = await json(await request('/api/stage', body: {
+      'revisions': {change['id']: change['revision']}
+    }));
+
+    expect(staged['removedStaleIndexLock'], isTrue);
+    expect(await lock.exists(), isFalse);
+    expect(await fixture.blob(':image.png'), [0, 254, 127]);
   });
 
   test('rejects stale mutations and arbitrary image paths', () async {

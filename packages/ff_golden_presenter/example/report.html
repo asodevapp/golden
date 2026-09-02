@@ -136,6 +136,7 @@
     .select-option { position: relative; width: 100%; min-height: 38px; padding: 8px 34px 8px 10px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); text-align: left; font-size: 13px; font-weight: 650; line-height: 1.3; }
     .select-option:hover, .select-option:focus-visible { outline: none; background: var(--panel-soft); color: var(--text); }
     .select-option[aria-selected="true"] { background: var(--accent-soft); color: var(--accent); }
+    .select-option[hidden] { display: none; }
     .select-option::after { position: absolute; top: 50%; right: 11px; content: "✓"; color: var(--accent); font-size: 15px; opacity: 0; transform: translateY(-50%); }
     .select-option[aria-selected="true"]::after { opacity: 1; }
     .reset-button { padding: 0 16px; font-weight: 700; }
@@ -657,13 +658,42 @@
       .filter((card) => !card.hidden)
       .map((card) => card.querySelector('[data-lightbox-index]'));
 
+    function cardMatches(card, query, excludedFilter = null) {
+      return (!query || card.dataset.search.includes(query)) &&
+        filters.every(([key, control]) =>
+          key === excludedFilter || !control.value || card.dataset[key] === control.value);
+    }
+
+    function updateFilterOptions(query) {
+      filters.forEach(([key, control]) => {
+        const available = new Set(
+          cards
+            .filter((card) => cardMatches(card, query, key))
+            .map((card) => card.dataset[key])
+            .filter(Boolean),
+        );
+        const wrapper = control.closest('[data-custom-select]');
+        const enhancedOptions = wrapper ? customOptions(wrapper) : [];
+        Array.from(control.options).forEach((option, index) => {
+          const applicable = !option.value ||
+            option.value === control.value ||
+            available.has(option.value);
+          option.disabled = !applicable;
+          option.hidden = !applicable;
+          if (enhancedOptions[index]) {
+            enhancedOptions[index].disabled = !applicable;
+            enhancedOptions[index].hidden = !applicable;
+          }
+        });
+      });
+    }
+
     function applyFilters() {
       const query = search.value.trim().toLocaleLowerCase();
+      updateFilterOptions(query);
       let count = 0;
       cards.forEach((card) => {
-        const matches = (!query || card.dataset.search.includes(query)) &&
-          filters.every(([key, control]) =>
-            !control.value || card.dataset[key] === control.value);
+        const matches = cardMatches(card, query);
         card.hidden = !matches;
         if (matches) count++;
       });
@@ -731,8 +761,9 @@
       themeToggle.setAttribute('aria-label', 'Switch to ' + targetTheme + ' theme');
     }
 
-    function customOptions(wrapper) {
-      return Array.from(wrapper.querySelectorAll('.select-option'));
+    function customOptions(wrapper, visibleOnly = false) {
+      const options = Array.from(wrapper.querySelectorAll('.select-option'));
+      return visibleOnly ? options.filter((option) => !option.hidden) : options;
     }
 
     function syncCustomSelect(wrapper) {
@@ -761,7 +792,7 @@
       if (openSelect && openSelect !== wrapper) closeCustomSelect(openSelect);
       const trigger = wrapper.querySelector('.select-trigger');
       const popover = wrapper.querySelector('.select-popover');
-      const options = customOptions(wrapper);
+      const options = customOptions(wrapper, true);
       wrapper.classList.add('is-open');
       popover.hidden = false;
       trigger.setAttribute('aria-expanded', 'true');
@@ -793,7 +824,7 @@
           closeCustomSelect(wrapper, true);
         });
         option.addEventListener('keydown', (event) => {
-          const options = customOptions(wrapper);
+          const options = customOptions(wrapper, true);
           const current = options.indexOf(option);
           let target = null;
           if (event.key === 'ArrowDown') target = options[(current + 1) % options.length];

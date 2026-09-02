@@ -1,5 +1,15 @@
 ## Unreleased
 
+## 1.1.4
+
+- Limited generated report filter menus to values that are applicable to the
+  current search and other active filters, and omitted filters for metadata axes
+  absent from every rendered image.
+- Recovered `diff` stage and unstage actions from a stale Git `index.lock` only
+  after verifying that no process holds the unchanged lock file; active or
+  unverifiable locks remain untouched. Stage actions now show immediate progress
+  and report when the stale lock was removed.
+
 ## 1.1.3
 
 - Added support for `analyzer` 14 while retaining compatibility with analyzer 7

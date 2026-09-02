@@ -12,6 +12,9 @@ changes, run filtered golden tests with live logs, and turn Flutter and Dart
 golden images into a searchable, portable HTML report.
 
 The generated page has no runtime dependencies. Open it locally, attach the whole directory to CI, or serve it as a static site. It includes scenario navigation, search and variant filters, remembered light/dark themes, responsive cards, a keyboard-friendly lightbox, and relative image URLs.
+Filter menus narrow to values that have images matching the current search and
+the other selected filters, so they do not offer combinations with zero results.
+A filter is omitted when none of the rendered images contains that metadata.
 
 ## See it in action
 
@@ -83,7 +86,7 @@ The equivalent manual dependency is:
 
 ```yaml
 dev_dependencies:
-  ff_golden_presenter: ^1.1.2
+  ff_golden_presenter: ^1.1.4
 ```
 
 For an unreleased repository revision, use the package Git source and
@@ -170,7 +173,11 @@ below the sidebar for checked images. The **×** button clears the selection.
 These actions only change the selected index entries;
 they do not rewrite working images, discard changes, commit, or push. Existing
 staged changes outside the selection are preserved. Stale selections are rejected
-and must be reviewed again. Finish the commit in your usual Git client.
+and must be reviewed again. If Git reports a stale `index.lock` while staging or
+unstaging, the viewer removes it and retries once only after confirming that no
+process holds the file; active or unverifiable locks are left untouched. The
+status area shows progress immediately and reports when this recovery occurs.
+Finish the commit in your usual Git client.
 
 Right-click a file, folder, or image preview to open its action menu, or use
 **⋯** beside the active image or below the sidebar. The menu offers Stage,

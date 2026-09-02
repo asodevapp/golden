@@ -873,13 +873,17 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
     if (mutating || !items.length) return;
     closeMenu();
     mutating = true; updateButtons();
+    const imageCount = items.length + ' ' + (items.length === 1 ? 'image' : 'images');
+    if (action === 'stage' || action === 'unstage') {
+      message((action === 'stage' ? 'Staging ' : 'Unstaging ') + imageCount + '…');
+    }
     try {
       const revisions = Object.fromEntries(items.map(c => [c.id,c.revision]));
       const data = await (await request('/api/' + action,{revisions})).json();
       items.forEach(c => selected.delete(c.id)); applyData(data);
       if (action === 'ignore' || action === 'unignore') {
         message((action === 'ignore' ? 'Added ' : 'Removed ') + new Set(items.map(c=>c.path)).size + ' file(s) ' + (action === 'ignore' ? 'to' : 'from') + ' .golden_ignore. Git and golden tests were not changed.');
-      } else message((action === 'stage' ? 'Staged ' : 'Unstaged ') + items.length + ' image(s). Working files were not rewritten.');
+      } else message((data.removedStaleIndexLock ? 'Removed stale Git index.lock and retried. ' : '') + (action === 'stage' ? 'Staged ' : 'Unstaged ') + imageCount + '. Working files were not rewritten.');
     } catch (error) { message(error.message,true); }
     finally { mutating = false; renderList(); await refresh(); }
   }

@@ -9,6 +9,8 @@ const reviewMaxImageBytes = 32 * 1024 * 1024;
 const reviewIgnoreFileName = '.golden_ignore';
 const _maxIgnoreBytes = 1024 * 1024;
 
+typedef GitLockUsageProbe = Future<bool?> Function(String path);
+
 /// A Git change, with immutable blob IDs for HEAD/index and a working-file hash.
 final class GitImageChange {
   GitImageChange({
@@ -67,7 +69,12 @@ final class GitReviewException implements Exception {
 
 /// Reviews Git, stages selected paths, and manages the local review ignore list.
 final class GitImageRepository {
-  GitImageRepository._(this.directory, this.input, this.projectDirectory);
+  GitImageRepository._(
+    this.directory,
+    this.input,
+    this.projectDirectory,
+    this._lockUsageProbe,
+  );
 
   final Directory directory;
   final Directory projectDirectory;
@@ -75,10 +82,12 @@ final class GitImageRepository {
   /// Repository-relative literal path scope; may include deleted directories.
   final String input;
   final _hashCache = <String, ({String stamp, String hash})>{};
+  final GitLockUsageProbe _lockUsageProbe;
 
   static Future<GitImageRepository> open({
     required Directory project,
     String input = '.',
+    GitLockUsageProbe? lockUsageProbe,
   }) async {
     final projectPath = await project.resolveSymbolicLinks();
     final result = await _git(projectPath, ['rev-parse', '--show-toplevel']);
@@ -93,6 +102,7 @@ final class GitImageRepository {
       Directory(root),
       p.relative(inputPath, from: root).split(p.separator).join('/'),
       Directory(projectPath),
+      lockUsageProbe ?? _indexLockInUse,
     );
   }
 
@@ -211,7 +221,7 @@ final class GitImageRepository {
   }
 
   /// Rejects stale selections before touching the index. Never writes worktree files.
-  Future<void> setStaged(Map<String, String> revisions,
+  Future<bool> setStaged(Map<String, String> revisions,
       {required bool staged}) async {
     if (revisions.isEmpty || revisions.length > 500) {
       throw const GitReviewException('Select between 1 and 500 images.');
@@ -233,21 +243,102 @@ final class GitImageRepository {
       paths.add(change.path);
     }
     if (staged) {
-      await _text(['add', '--', ...paths]);
+      return _mutateIndex(['add', '--', ...paths]);
     } else {
       final head = await _git(
           directory.path, ['rev-parse', '--verify', '--quiet', 'HEAD'],
           allowFailure: true);
       if (head.exitCode == 0) {
-        await _text(['restore', '--staged', '--source=HEAD', '--', ...paths]);
+        return _mutateIndex(
+            ['restore', '--staged', '--source=HEAD', '--', ...paths]);
       } else if (head.exitCode == 1) {
         // An unborn branch has no HEAD to restore. --cached preserves the files.
-        await _text(['rm', '--cached', '--force', '--', ...paths]);
+        return _mutateIndex(['rm', '--cached', '--force', '--', ...paths]);
       } else {
         // An interrupted Git process must never be mistaken for an unborn branch.
         throw const GitReviewException(
             'Could not read HEAD. The index was not changed; refresh and retry.');
       }
+    }
+  }
+
+  Future<bool> _mutateIndex(List<String> arguments) async {
+    try {
+      await _text(arguments);
+      return false;
+    } on GitReviewException catch (error) {
+      final recovery = await _recoverStaleIndexLock(error.message);
+      if (!recovery.retry) rethrow;
+      await _text(arguments);
+      return recovery.removed;
+    }
+  }
+
+  Future<({bool retry, bool removed})> _recoverStaleIndexLock(
+      String message) async {
+    if (!message.contains('Unable to create') ||
+        !message.contains('index.lock') ||
+        !message.contains('File exists')) {
+      return (retry: false, removed: false);
+    }
+    final gitDirectoryResult = await _git(
+      directory.path,
+      ['rev-parse', '--absolute-git-dir'],
+      allowFailure: true,
+    );
+    final lockResult = await _git(
+      directory.path,
+      ['rev-parse', '--git-path', 'index.lock'],
+      allowFailure: true,
+    );
+    if (gitDirectoryResult.exitCode != 0 || lockResult.exitCode != 0) {
+      return (retry: false, removed: false);
+    }
+    final gitDirectory = p.normalize(
+      utf8.decode(gitDirectoryResult.stdout as List<int>).trimRight(),
+    );
+    final reportedLock =
+        utf8.decode(lockResult.stdout as List<int>).trimRight();
+    final lockPath = p.normalize(p.isAbsolute(reportedLock)
+        ? reportedLock
+        : p.join(directory.path, reportedLock));
+    if (!p.equals(lockPath, p.join(gitDirectory, 'index.lock')) ||
+        !message.contains(lockPath)) {
+      return (retry: false, removed: false);
+    }
+    final type = await FileSystemEntity.type(lockPath, followLinks: false);
+    if (type == FileSystemEntityType.notFound) {
+      return (retry: true, removed: false);
+    }
+    if (type != FileSystemEntityType.file) {
+      return (retry: false, removed: false);
+    }
+
+    final lock = File(lockPath);
+    final beforeProbe = await lock.stat();
+    final inUse = await _lockUsageProbe(lockPath);
+    final afterType = await FileSystemEntity.type(lockPath, followLinks: false);
+    if (afterType == FileSystemEntityType.notFound) {
+      return (retry: true, removed: false);
+    }
+    if (inUse != false || afterType != FileSystemEntityType.file) {
+      return (retry: false, removed: false);
+    }
+    final afterProbe = await lock.stat();
+    if (beforeProbe.type != afterProbe.type ||
+        beforeProbe.size != afterProbe.size ||
+        beforeProbe.modified != afterProbe.modified ||
+        beforeProbe.changed != afterProbe.changed) {
+      return (retry: false, removed: false);
+    }
+    try {
+      await lock.delete();
+      return (retry: true, removed: true);
+    } on FileSystemException {
+      final disappeared =
+          await FileSystemEntity.type(lockPath, followLinks: false) ==
+              FileSystemEntityType.notFound;
+      return (retry: disappeared, removed: false);
     }
   }
 
@@ -386,6 +477,27 @@ final class GitImageRepository {
       RegExp(r'^0+$').hasMatch(value) ? null : value;
   static bool _isImage(String file) => reviewImageExtensions
       .contains(p.extension(file).replaceFirst('.', '').toLowerCase());
+
+  static Future<bool?> _indexLockInUse(String path) async {
+    if (Platform.isWindows) return null;
+    try {
+      final result = await Process.run(
+        'lsof',
+        ['-t', '--', path],
+        stdoutEncoding: utf8,
+        stderrEncoding: utf8,
+      );
+      final output = (result.stdout as String).trim();
+      final errors = (result.stderr as String).trim();
+      if (result.exitCode == 0) return output.isNotEmpty;
+      if (result.exitCode == 1 && output.isEmpty && errors.isEmpty) {
+        return false;
+      }
+      return null;
+    } on ProcessException {
+      return null;
+    }
+  }
 
   static Future<ProcessResult> _git(String directory, List<String> arguments,
       {bool allowFailure = false}) async {
