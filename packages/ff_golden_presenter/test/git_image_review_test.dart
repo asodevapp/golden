@@ -63,6 +63,69 @@ void main() {
     expect(await fixture.file(target).readAsBytes(), [4]);
   });
 
+  test(
+      'revert restores tracked worktree images, deletes untracked images and preserves the index',
+      () async {
+    await fixture.write('modified.png', [1]);
+    await fixture.write('deleted.png', [2]);
+    await fixture.write('staged.png', [3]);
+    await fixture.commitAll();
+    await fixture.write('modified.png', [4]);
+    await fixture.file('deleted.png').delete();
+    await fixture.write('untracked.png', [5]);
+    await fixture.write('staged.png', [6]);
+    await fixture.git(['add', '--', 'staged.png']);
+    await fixture.write('staged.png', [7]);
+    final unstaged = (await repository.scan())
+        .changes
+        .where((change) => !change.staged)
+        .toList();
+
+    final result = await repository.revertWorkingChanges({
+      for (final change in unstaged) change.id: change.revision,
+    });
+
+    expect(result, (restored: 3, deleted: 1));
+    expect(await fixture.file('modified.png').readAsBytes(), [1]);
+    expect(await fixture.file('deleted.png').readAsBytes(), [2]);
+    expect(await fixture.file('untracked.png').exists(), isFalse);
+    expect(await fixture.file('staged.png').readAsBytes(), [6]);
+    expect(await fixture.blob(':staged.png'), [6]);
+    expect((await repository.scan()).changes.single.path, 'staged.png');
+  });
+
+  test('revert rejects staged and stale selections before rewriting files',
+      () async {
+    await fixture.write('one.png', [1]);
+    await fixture.write('two.png', [2]);
+    await fixture.commitAll();
+    await fixture.write('one.png', [3]);
+    await fixture.write('two.png', [4]);
+    final stale = await repository.scan();
+    await fixture.write('two.png', [5]);
+
+    await expectLater(
+      repository.revertWorkingChanges({
+        for (final change in stale.changes) change.id: change.revision,
+      }),
+      throwsA(isA<GitReviewException>()
+          .having((error) => error.conflict, 'conflict', isTrue)),
+    );
+    expect(await fixture.file('one.png').readAsBytes(), [3]);
+    expect(await fixture.file('two.png').readAsBytes(), [5]);
+
+    await fixture.git(['add', '--', 'one.png']);
+    final staged = (await repository.scan())
+        .changes
+        .singleWhere((change) => change.staged && change.path == 'one.png');
+    await expectLater(
+      repository.revertWorkingChanges({staged.id: staged.revision}),
+      throwsA(isA<GitReviewException>()
+          .having((error) => error.conflict, 'conflict', isTrue)),
+    );
+    expect(await fixture.blob(':one.png'), [3]);
+  });
+
   test('staging removes an unheld stale index lock and retries once', () async {
     await fixture.write('image.png', [1]);
     await fixture.commitAll();

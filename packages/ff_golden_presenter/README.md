@@ -86,7 +86,7 @@ The equivalent manual dependency is:
 
 ```yaml
 dev_dependencies:
-  ff_golden_presenter: ^1.1.4
+  ff_golden_presenter: ^1.1.5
 ```
 
 For an unreleased repository revision, use the package Git source and
@@ -150,9 +150,15 @@ with different image versions. The compact sidebar puts search above the Git
 filter (**All changes**, **Unstaged**, **Staged**) and the **Tree** / **List** icon
 buttons. **⋯** opens folder expand/collapse commands and **Show ignored**. While
 ignored files are visible, a removable **+ ignored (N)** indicator stays beside
-search. The tree compacts single-child folders, remembers collapsed folders
-during live refresh, and supports selecting a whole folder. Search shows matching
-files together with their parent folders.
+search. **Shown / unstaged / staged** counts stay above the scrolling tree, so
+the current filter result and both Git groups remain visible. The tree compacts
+single-child folders, remembers collapsed folders during live refresh, and
+supports selecting a whole folder. Search shows matching files together with
+their parent folders. File rows show their changed-pixel percentage, and folders
+show a pixel-weighted aggregate of their images. An ellipsis means the Dart
+background isolate is still calculating; an em dash means an image could not be
+decoded within the preview limits. The browser only receives the resulting
+counts and percentages.
 
 Select a file and switch between side-by-side, swipe, overlay, and pixel-diff
 views. In side-by-side, enable **Highlight changes** to overlay changed pixels on
@@ -170,8 +176,8 @@ the tab is visible.
 
 Use **Stage file / Unstage file** for the active image or **Stage (N) / Unstage (N)**
 below the sidebar for checked images. The **×** button clears the selection.
-These actions only change the selected index entries;
-they do not rewrite working images, discard changes, commit, or push. Existing
+These actions only change the selected index entries; they do not rewrite
+working images, discard changes, commit, or push. Existing
 staged changes outside the selection are preserved. Stale selections are rejected
 and must be reviewed again. If Git reports a stale `index.lock` while staging or
 unstaging, the viewer removes it and retries once only after confirming that no
@@ -179,13 +185,21 @@ process holds the file; active or unverifiable locks are left untouched. The
 status area shows progress immediately and reports when this recovery occurs.
 Finish the commit in your usual Git client.
 
+Use **Revert changes** for an unstaged file, folder, or selection. After an
+explicit confirmation, tracked files are restored from the current Git index,
+so staged versions remain staged; selected untracked images are permanently
+deleted. Revisions are revalidated before any file is changed. To discard a
+staged version, unstage it first and then revert the resulting working-tree
+change.
+
 Right-click a file, folder, or image preview to open its action menu, or use
 **⋯** beside the active image or below the sidebar. The menu offers Stage,
-Unstage, Ignore, Stop ignoring, and selection commands as applicable. Right-click
-on a checked file applies to the whole selection; an unchecked file applies
-only to itself. Folder actions apply to the folder's visible files. Menu headings
-and command counts identify the scope. **Shift+F10** also opens the menu from
-a file or folder; use arrow keys to navigate and **Escape** to close it.
+Unstage, Revert changes, Ignore, Stop ignoring, and selection commands as
+applicable. Right-click on a checked file applies to the whole selection; an
+unchecked file applies only to itself. Folder actions apply to the folder's
+visible files. Menu headings and command counts identify the scope.
+**Shift+F10** also opens the menu from a file or folder; use arrow keys to
+navigate and **Escape** to close it.
 
 Choose **Ignore** in this menu to hide images from `diff`. The viewer
 writes `.golden_ignore` at the Git repository root and hides both staged and
@@ -318,8 +332,9 @@ dart run ff_golden_presenter diff --no-open --port 8088
 | `--[no-]open` | on | Open the default browser automatically. |
 
 The diff viewer supports PNG, JPEG, and WebP; it uses original bytes without
-image optimization. Pixel counts are browser-rendered diagnostics, not the
-runner's pass/fail result. Previews are limited to 32 MiB per image and a combined
+image optimization. Pixel counts are calculated asynchronously by a Dart
+isolate and remain diagnostics, not the runner's pass/fail result. Previews are
+limited to 32 MiB per image and a combined
 16-megapixel canvas. Git LFS pointers cannot be previewed, symbolic links are
 excluded, and merge conflicts must be resolved in a Git client. Renames appear
 as deletion/addition pairs. Branch comparisons, baseline acceptance, and commits

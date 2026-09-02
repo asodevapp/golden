@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:ff_golden_presenter/src/diff_server.dart';
 import 'package:ff_golden_presenter/src/git_image_review.dart';
+import 'package:image/image.dart' as image_package;
 import 'package:test/test.dart';
 
 import 'helpers/git_fixture.dart';
@@ -61,6 +63,10 @@ void main() {
     expect(html, contains('FF Golden · Changes'));
     expect(html, contains("'Staging '"));
     expect(html, contains('Removed stale Git index.lock and retried.'));
+    expect(html, contains('Revert changes'));
+    expect(html, contains('Calculating pixel difference in Dart'));
+    expect(html, contains('id="file-count"'));
+    expect(html, contains('id="shown-count"'));
     for (final response in [
       await request('/api/changes', authenticated: false),
       await request('/api/changes', origin: 'https://untrusted.example'),
@@ -80,6 +86,8 @@ void main() {
       await request('/api/test-stop',
           host: 'untrusted.example', body: {'runId': '1'}),
       await request('/api/stage',
+          authenticated: false, body: {'revisions': {}}),
+      await request('/api/revert',
           authenticated: false, body: {'revisions': {}}),
       await request('/api/ignore',
           authenticated: false, body: {'revisions': {}}),
@@ -198,6 +206,50 @@ void main() {
     expect(await fixture.blob(':image.png'), [0, 254, 127]);
   });
 
+  test('reverts a selected working-tree image through the guarded API',
+      () async {
+    final data = await json(await request('/api/changes'));
+    final change = (data['changes'] as List).single as Map<String, dynamic>;
+
+    final reverted = await json(await request('/api/revert', body: {
+      'revisions': {change['id']: change['revision']}
+    }));
+
+    expect(reverted['restoredWorkingFiles'], 1);
+    expect(reverted, isNot(contains('deletedUntrackedFiles')));
+    expect(reverted['changes'], isEmpty);
+    expect(await fixture.file('image.png').readAsBytes(), [0, 255, 128]);
+    expect(await fixture.blob(':image.png'), [0, 255, 128]);
+  });
+
+  test('serves background Dart pixel differences without browser calculation',
+      () async {
+    client.close(force: true);
+    await server.close();
+    await fixture.write('image.png', _png(redPixel: false));
+    await fixture.commitAll();
+    await fixture.write('image.png', _png(redPixel: true));
+    server = await DiffReviewServer.start(
+      await GitImageRepository.open(project: fixture.directory),
+      openTestFile: (path) async => openedFiles.add(path),
+    );
+    client = HttpClient();
+
+    Map<String, dynamic>? difference;
+    for (var attempt = 0; attempt < 100; attempt++) {
+      final data = await json(await request('/api/changes'));
+      final change = (data['changes'] as List).single as Map<String, dynamic>;
+      difference = change['difference'] as Map<String, dynamic>;
+      if (difference['status'] != 'pending') break;
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+    }
+
+    expect(difference?['status'], 'ready');
+    expect(difference?['changedPixels'], 1);
+    expect(difference?['totalPixels'], 4);
+    expect(difference?['percent'], 25);
+  });
+
   test('rejects stale mutations and arbitrary image paths', () async {
     final data = await json(await request('/api/changes'));
     final change = (data['changes'] as List).single as Map;
@@ -294,4 +346,15 @@ void main() {
     expect(arbitrary.statusCode, 409);
     await arbitrary.drain<void>();
   });
+}
+
+Uint8List _png({required bool redPixel}) {
+  final value = image_package.Image(width: 2, height: 2);
+  for (var y = 0; y < 2; y++) {
+    for (var x = 0; x < 2; x++) {
+      final red = redPixel && x == 1 && y == 0;
+      value.setPixelRgba(x, y, 255, red ? 0 : 255, red ? 0 : 255, 255);
+    }
+  }
+  return image_package.encodePng(value);
 }

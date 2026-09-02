@@ -1,6 +1,6 @@
 name: ff_golden_presenter
 description: Review local Git golden changes, run filtered tests, and publish searchable HTML reports.
-version: 1.1.4
+version: 1.1.5
 homepage: https://asodevapp.github.io/golden/
 repository: https://github.com/asodevapp/golden
 issue_tracker: https://github.com/asodevapp/golden/issues
@@ -15,7 +15,7 @@ topics:
 screenshots:
   - description: Searchable live golden report with summary metrics, scenario navigation, and device, theme, and locale filters.
     path: screenshots/live-report.jpg
-  - description: Local Git diff review comparing dark and light golden images side by side before staging.
+  - description: Local Git diff review with changed-pixel percentages, guarded revert, and side-by-side comparison before staging.
     path: screenshots/diff-viewer.jpg
 
 executables:
@@ -30,6 +30,7 @@ dependencies:
   analyzer: '>=7.0.0 <15.0.0'
   args: ^2.7.0
   crypto: ^3.0.6
+  image: ^4.9.2
   path: ^1.9.1
 
 dev_dependencies:

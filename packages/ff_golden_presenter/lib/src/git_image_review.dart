@@ -262,6 +262,61 @@ final class GitImageRepository {
     }
   }
 
+  /// Reverts only working-tree changes. The index and staged changes are kept.
+  /// Untracked files are deleted after their content revision is revalidated.
+  Future<({int restored, int deleted})> revertWorkingChanges(
+      Map<String, String> revisions) async {
+    if (revisions.isEmpty || revisions.length > 500) {
+      throw const GitReviewException('Select between 1 and 500 images.');
+    }
+    final snapshot = await scan(verifyWorkingBytes: true);
+    final current = {for (final change in snapshot.changes) change.id: change};
+    final trackedPaths = <String>{};
+    final untracked = <GitImageChange>[];
+    for (final entry in revisions.entries) {
+      final change = current[entry.key];
+      if (change == null || change.revision != entry.value || change.staged) {
+        throw const GitReviewException(
+          'Selection changed since it was loaded. Only current unstaged changes can be reverted.',
+          conflict: true,
+        );
+      }
+      if (change.status == '?') {
+        untracked.add(change);
+      } else {
+        trackedPaths.add(change.path);
+      }
+    }
+
+    final untrackedFiles = <File>[];
+    for (final change in untracked) {
+      final warnings = <String>[];
+      final currentHash = await _hashWorkingFile(
+        change.path,
+        warnings,
+        verify: true,
+      );
+      if (currentHash == null || currentHash != change.workingHash) {
+        throw const GitReviewException(
+          'An untracked image changed. Nothing was reverted; refresh and try again.',
+          conflict: true,
+        );
+      }
+      untrackedFiles.add(await _workingFile(change.path));
+    }
+
+    if (trackedPaths.isNotEmpty) {
+      await _text(['restore', '--worktree', '--', ...trackedPaths]);
+    }
+    for (final file in untrackedFiles) {
+      await file.delete();
+    }
+    for (final path in [...trackedPaths, ...untracked.map((c) => c.path)]) {
+      _hashCache.remove(path);
+    }
+    return (restored: trackedPaths.length, deleted: untrackedFiles.length);
+  }
+
   Future<bool> _mutateIndex(List<String> arguments) async {
     try {
       await _text(arguments);

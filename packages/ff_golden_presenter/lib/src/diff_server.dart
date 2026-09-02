@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'diff_viewer.dart';
+import 'git_image_difference.dart';
 import 'git_image_review.dart';
 import 'review_test_catalog.dart';
 import 'review_test_opener.dart';
@@ -15,6 +16,7 @@ final class DiffReviewServer {
       {String? flutterExecutable, required this.openTestFile}) {
     _tests = ReviewTestCatalog(repository);
     _runner = ReviewTestRunner(_tests, flutterExecutable: flutterExecutable);
+    _differences = GitImageDifferenceQueue(repository);
   }
   final GitImageRepository repository;
   final HttpServer _server;
@@ -24,6 +26,7 @@ final class DiffReviewServer {
   GitImageSnapshot _snapshot = const GitImageSnapshot([], []);
   late final ReviewTestCatalog _tests;
   late final ReviewTestRunner _runner;
+  late final GitImageDifferenceQueue _differences;
 
   Uri get uri =>
       Uri(scheme: 'http', host: '127.0.0.1', port: _server.port, path: '/');
@@ -41,7 +44,8 @@ final class DiffReviewServer {
         base64Url.encode(List.generate(32, (_) => random.nextInt(256)));
     final viewer = DiffReviewServer._(repository, server, token,
         flutterExecutable: flutterExecutable, openTestFile: openTestFile)
-      .._snapshot = snapshot;
+      .._snapshot = snapshot
+      .._differences.schedule(snapshot);
     server.listen((request) {
       // Polling, reads, index and ignore-list writes share a session queue.
       viewer._pending = viewer._pending.then((_) => viewer._handle(request));
@@ -53,6 +57,7 @@ final class DiffReviewServer {
     await _server.close(force: true);
     await _pending;
     await _runner.close();
+    await _differences.close();
   }
 
   Future<void> _handle(HttpRequest request) async {
@@ -219,8 +224,13 @@ final class DiffReviewServer {
             });
         response.add(bytes);
       } else if (request.method == 'POST' &&
-          ['/api/stage', '/api/unstage', '/api/ignore', '/api/unignore']
-              .contains(request.uri.path)) {
+          [
+            '/api/stage',
+            '/api/unstage',
+            '/api/revert',
+            '/api/ignore',
+            '/api/unignore'
+          ].contains(request.uri.path)) {
         final body = await _readBody(request);
         if (body is! Map ||
             body['revisions'] is! Map ||
@@ -231,15 +241,26 @@ final class DiffReviewServer {
         }
         final revisions = Map<String, String>.from(body['revisions'] as Map);
         var removedStaleIndexLock = false;
+        var restoredWorkingFiles = 0;
+        var deletedUntrackedFiles = 0;
         if (request.uri.path == '/api/ignore' ||
             request.uri.path == '/api/unignore') {
           await repository.setIgnored(revisions,
               ignored: request.uri.path == '/api/ignore');
+        } else if (request.uri.path == '/api/revert') {
+          final result = await repository.revertWorkingChanges(revisions);
+          restoredWorkingFiles = result.restored;
+          deletedUntrackedFiles = result.deleted;
         } else {
           removedStaleIndexLock = await repository.setStaged(revisions,
               staged: request.uri.path == '/api/stage');
         }
-        await _refresh(response, removedStaleIndexLock: removedStaleIndexLock);
+        await _refresh(
+          response,
+          removedStaleIndexLock: removedStaleIndexLock,
+          restoredWorkingFiles: restoredWorkingFiles,
+          deletedUntrackedFiles: deletedUntrackedFiles,
+        );
       } else {
         _json(response, 404, {'error': 'Not found.'});
       }
@@ -280,14 +301,26 @@ final class DiffReviewServer {
   }
 
   Future<void> _refresh(HttpResponse response,
-      {bool removedStaleIndexLock = false}) async {
+      {bool removedStaleIndexLock = false,
+      int restoredWorkingFiles = 0,
+      int deletedUntrackedFiles = 0}) async {
     _snapshot = await repository.scan();
+    _differences.schedule(_snapshot);
     _json(response, 200, {
       'repository': repository.directory.path,
       'input': repository.input,
-      'changes': _snapshot.changes.map((c) => c.toJson()).toList(),
+      'changes': _snapshot.changes
+          .map((change) => {
+                ...change.toJson(),
+                'difference': _differences.stateFor(change).toJson(),
+              })
+          .toList(),
       'warnings': _snapshot.warnings,
       if (removedStaleIndexLock) 'removedStaleIndexLock': true,
+      if (restoredWorkingFiles > 0)
+        'restoredWorkingFiles': restoredWorkingFiles,
+      if (deletedUntrackedFiles > 0)
+        'deletedUntrackedFiles': deletedUntrackedFiles,
     });
   }
 

@@ -26,22 +26,26 @@ input[type=search] { width:100%; min-width:0; height:30px; color:inherit; backgr
 .file-layout svg { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; }
 .file-tools>button { font-size:20px; } .file-layout [aria-pressed=true],[aria-pressed=true] { color:var(--accent); border-color:var(--accent); background:#213d3b; }
 #ignored-active { height:30px; padding:3px 7px; font-size:11px; white-space:nowrap; color:var(--accent); border-color:#397f69; background:#213d3b; } .ignored-label { color:var(--muted); font-size:10px; }
+.file-count { display:flex; min-width:0; padding-top:2px; color:var(--muted); font-size:10px; } .file-count span { flex:1; min-width:0; text-align:center; white-space:nowrap; } .file-count span+span { border-left:1px solid var(--line); } .file-count strong { margin-right:3px; color:#cbd5df; font-size:11px; font-variant-numeric:tabular-nums; }
 #files { flex:1; overflow:auto; padding:6px 8px 16px; } .group-title { margin:14px 8px 6px; display:flex; justify-content:space-between; color:var(--muted); font-size:11px; font-weight:650; letter-spacing:.08em; text-transform:uppercase; }
 .folder { margin:4px 0; } .folder summary { display:flex; align-items:center; gap:6px; padding:7px 5px; cursor:pointer; color:#bdcbd7; font-size:12px; list-style:none; }
 .folder summary::-webkit-details-marker { display:none; } .folder summary::before { content:'▸'; width:10px; flex-shrink:0; color:var(--muted); } .folder[open]>summary::before { content:'▾'; }
 .folder-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .folder-count { color:var(--muted); font-size:10px; }
+.difference-value { min-width:48px; flex-shrink:0; color:#9fd9d1; font:600 10px ui-monospace,monospace; text-align:right; white-space:nowrap; } .difference-value.pending,.difference-value.unavailable { color:var(--muted); }
 .folder input { accent-color:var(--accent); } .folder-children { margin-left:12px; padding-left:6px; border-left:1px solid var(--line); } .folder-children .file { padding-right:2px; }
 .file { display:flex; align-items:center; gap:8px; padding:3px 7px; border-radius:6px; margin:2px 0; } .file.active { background:#283b41; } .file:hover { background:#242f38; }
 .file input { accent-color:var(--accent); flex-shrink:0; } .file button { flex:1; min-width:0; background:none; border:0; text-align:left; padding:7px 0; display:flex; gap:9px; align-items:center; }
 .file-name { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; } .file-dir { display:block; color:var(--muted); font-size:10px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .file-text { min-width:0; flex:1; } .badge { font:700 11px ui-monospace,monospace; color:#edc984; border:1px solid #64563b; border-radius:4px; width:22px; text-align:center; padding:2px; }
 .badge.added { color:#91d9b1; border-color:#3d634f; } .badge.deleted { color:#f6a6a6; border-color:#744747; }
-.selection { border-top:1px solid var(--line); padding:10px; display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) 28px 28px; gap:6px; } .selection button { font-size:12px; padding:7px 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.selection { border-top:1px solid var(--line); padding:10px; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)) 28px 28px; gap:6px; } .selection button { font-size:12px; padding:7px 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .selection .icon-button { padding:4px; font-size:17px; } .context-target { outline:1px solid var(--accent); outline-offset:-1px; border-radius:6px; }
+.danger { color:#ffc2c2; border-color:#744747; background:#482a2e; } button.danger:hover:not(:disabled) { border-color:#e78383; }
 .context-menu { position:fixed; z-index:10; width:250px; max-width:calc(100vw - 16px); max-height:calc(100vh - 16px); overflow:auto; padding:6px; border:1px solid #46525f; border-radius:10px; background:#20272f; box-shadow:0 12px 36px #0008; }
 .context-title { padding:7px 9px 9px; font-size:11px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .context-menu button { display:flex; align-items:center; justify-content:space-between; gap:20px; width:100%; border:0; padding:8px 9px; background:transparent; text-align:left; font-size:13px; border-radius:5px; }
 .context-menu button:hover:not(:disabled),.context-menu button:focus-visible { background:#30434a; outline:none; } .context-menu .menu-count { font-size:11px; color:var(--muted); }
+.context-menu button.danger { color:#ffc2c2; background:transparent; } .context-menu button.danger:hover:not(:disabled),.context-menu button.danger:focus-visible { background:#482a2e; }
 .context-menu [role=separator] { height:1px; background:var(--line); margin:5px 4px; }
 .review { display:flex; flex-direction:column; min-width:0; min-height:0; } .detail { padding:15px 20px; border-bottom:1px solid var(--line); display:flex; gap:16px; align-items:center; }
 .detail-text { flex:1; min-width:0; } h1 { font-size:15px; margin:0 0 3px; overflow-wrap:anywhere; } #context { font-size:12px; color:var(--muted); }
@@ -80,6 +84,7 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
 .test-output { display:flex; flex-direction:column; min-width:0; min-height:0; background:#101418; } .test-output-bar { padding:7px 12px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; color:var(--muted); font-size:11px; border-bottom:1px solid var(--line); } .test-output-actions { display:flex; gap:6px; align-items:center; margin-left:auto; } .test-output-bar button { padding:4px 7px; font-size:11px; white-space:nowrap; }
 #test-log-hint { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .test-output-bar label { display:flex; gap:5px; align-items:center; white-space:nowrap; } #test-logs { flex:1; min-height:0; overflow:auto; overflow-anchor:none; white-space:pre-wrap; overflow-wrap:anywhere; padding:12px; margin:0; font:11px/1.6 ui-monospace,SFMono-Regular,monospace; }
 #test-copy-dialog { color:#edf1f5; background:var(--panel); border:1px solid var(--line); border-radius:10px; width:min(800px,85vw); padding:18px; } #test-copy-dialog::backdrop { background:#0009; } #test-copy-dialog h2 { margin:0 0 8px; font-size:16px; } #test-copy-text { box-sizing:border-box; width:100%; height:50vh; margin:12px 0; background:var(--bg); color:#edf1f5; border:1px solid var(--line); padding:12px; font:12px/1.5 ui-monospace,monospace; }
+#revert-dialog { color:#edf1f5; background:var(--panel); border:1px solid #744747; border-radius:10px; width:min(520px,85vw); padding:20px; } #revert-dialog::backdrop { background:#0009; } #revert-dialog h2 { margin:0 0 10px; font-size:17px; } #revert-dialog p { color:var(--muted); } .dialog-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:18px; }
 @media(max-width:850px) { .tests-body { grid-template-columns:310px minmax(0,1fr); } .test-settings { padding:10px; } }
 @media(max-width:1050px) { #test-log-hint { flex-basis:100%; } .test-output-actions { margin-left:0; } }
 @media(max-width:850px) { main { grid-template-columns:240px minmax(0,1fr); } header { padding:12px; } .local { display:none; } .toolbar,.detail { padding:10px; } .detail { flex-wrap:wrap; } #viewer { margin:0 8px 8px; } }
@@ -95,12 +100,13 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
       <div class="file-layout" role="group" aria-label="File layout"><button data-layout="tree" aria-label="Tree" title="Tree view" aria-pressed="true"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 3v12h5M4 7h5M10 5h6v4h-6zM10 13h6v4h-6z"/></svg></button><button data-layout="list" aria-label="List" title="List view" aria-pressed="false"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h1m3 0h10M3 10h1m3 0h10M3 15h1m3 0h10"/></svg></button></div>
       <button id="file-view-options" aria-label="File view options" title="File view options · folders and ignored files" aria-haspopup="menu" aria-expanded="false" aria-controls="action-menu">⋯</button>
     </div>
+    <div id="file-count" class="file-count" role="status"><span><strong id="shown-count">0</strong>shown</span><span><strong id="unstaged-count">0</strong>unstaged</span><span><strong id="staged-count">0</strong>staged</span></div>
   </div>
   <div id="files"></div><div id="warnings" hidden></div>
-  <div class="selection"><button id="stage-selected" disabled>Stage (0)</button><button id="unstage-selected" disabled>Unstage (0)</button><button id="clear-selected" class="icon-button" aria-label="Clear selection" title="Clear selection" disabled>×</button><button id="selection-actions" class="icon-button" aria-label="Selection actions" title="Selection actions" aria-haspopup="menu" aria-expanded="false" aria-controls="action-menu" disabled>⋯</button></div>
+  <div class="selection"><button id="stage-selected" disabled>Stage (0)</button><button id="unstage-selected" disabled>Unstage (0)</button><button id="revert-selected" class="danger" disabled>Revert (0)</button><button id="clear-selected" class="icon-button" aria-label="Clear selection" title="Clear selection" disabled>×</button><button id="selection-actions" class="icon-button" aria-label="Selection actions" title="Selection actions" aria-haspopup="menu" aria-expanded="false" aria-controls="action-menu" disabled>⋯</button></div>
 </aside>
 <section class="review" aria-label="Image comparison">
-  <div class="detail"><div class="detail-text"><h1 id="filename">Image changes</h1><div id="context">Choose an image to compare</div></div><button id="previous" aria-label="Previous image" disabled>←</button><button id="next" aria-label="Next image" disabled>→</button><button id="toggle-stage" class="primary" disabled>Stage file</button><button id="file-actions" aria-label="File actions" title="File actions · also available with right-click" aria-haspopup="menu" aria-expanded="false" aria-controls="action-menu" disabled>⋯</button></div>
+  <div class="detail"><div class="detail-text"><h1 id="filename">Image changes</h1><div id="context">Choose an image to compare</div></div><button id="previous" aria-label="Previous image" disabled>←</button><button id="next" aria-label="Next image" disabled>→</button><button id="toggle-stage" class="primary" disabled>Stage file</button><button id="revert-file" class="danger" disabled>Revert changes</button><button id="file-actions" aria-label="File actions" title="File actions · also available with right-click" aria-haspopup="menu" aria-expanded="false" aria-controls="action-menu" disabled>⋯</button></div>
   <div class="toolbar">
     <label>View <select id="mode"><option value="side">Side by side</option><option value="split">Swipe</option><option value="overlay">Overlay</option><option value="diff">Pixel diff</option></select></label>
     <label id="highlight-control" class="highlight-control" title="Highlight changed pixels on the new version only"><input id="highlight" type="checkbox">Highlight changes</label>
@@ -153,16 +159,17 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
   </div>
 </section>
 <dialog id="test-copy-dialog" aria-labelledby="test-copy-title"><h2 id="test-copy-title">Copy for AI</h2><p class="test-note">Clipboard access is unavailable. Press ⌘C / Ctrl+C to copy the selected report. Nothing is sent automatically; review logs for secrets before sharing.</p><textarea id="test-copy-text" aria-label="Test report to copy" readonly></textarea><button id="close-test-copy">Close copy preview</button></dialog>
+<dialog id="revert-dialog" aria-labelledby="revert-title"><h2 id="revert-title">Revert working-tree changes?</h2><p><strong id="revert-count"></strong> Modified or deleted tracked images will be restored from the Git index. <span id="revert-untracked"></span></p><p>Staged changes remain staged. FF Golden cannot undo this action.</p><div class="dialog-actions"><button id="cancel-revert">Cancel</button><button id="confirm-revert" class="danger">Revert changes</button></div></dialog>
 <div id="action-menu" class="context-menu" role="menu" aria-label="Image actions" tabindex="-1" hidden></div>
 <div id="message" role="status" hidden></div>
-<footer><span>Stage/unstage affects selected index entries. Ignore writes .golden_ignore. Commit in your Git client.</span><span id="connection">Connecting…</span></footer>
+<footer><span>Revert restores unstaged files from the index and deletes selected untracked files. Stage/unstage affects index entries.</span><span id="connection">Connecting…</span></footer>
 <script nonce="__SESSION_TOKEN__">
 (() => {
   const token = '__SESSION_TOKEN__';
   const $ = (id) => document.getElementById(id);
   let changes = [], activeId = null, scope = 'all', selected = new Map();
   let fileLayout = 'tree', showIgnored = false, selectionControls = [], collapsedFolders = new Set();
-  let menuState = null;
+  let menuState = null, pendingRevert = [];
   let before = null, after = null, loadedRevision = null, loadingRevision = null, loadSequence = 0;
   let polling = false, mutating = false, diffImage = null, diffMask = null, diffBounds = null, diffSummary = '', diffAttempted = false;
   let zoomMode = 'fit', manualScale = 1, renderedScale = 1, renderedMode = 'side', paintKey = null, synchronizing = false;
@@ -466,15 +473,19 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
     const values = [...selected.values()];
     const included = values.filter(c => !c.ignored);
     const unstaged = included.filter(c => !c.staged).length, staged = included.filter(c => c.staged).length;
+    const revertable = values.filter(c => !c.staged).length;
     $('stage-selected').textContent = $('stage-selected').title = 'Stage (' + unstaged + ')';
     $('unstage-selected').textContent = $('unstage-selected').title = 'Unstage (' + staged + ')';
+    $('revert-selected').textContent = $('revert-selected').title = 'Revert (' + revertable + ')';
     $('stage-selected').disabled = !unstaged || mutating;
     $('unstage-selected').disabled = !staged || mutating;
+    $('revert-selected').disabled = !revertable || mutating;
     $('clear-selected').disabled = !values.length || mutating;
     $('selection-actions').disabled = !values.length || mutating;
     const item = current();
     $('toggle-stage').textContent = item?.staged ? 'Unstage file' : 'Stage file';
     $('toggle-stage').disabled = !item || item.ignored || loadedRevision !== item.revision || mutating;
+    $('revert-file').disabled = !item || item.staged || loadedRevision !== item.revision || mutating;
     $('file-actions').disabled = !item || mutating;
     if (item) $('context').textContent = (item.staged ? 'Staged · HEAD → Index' : 'Unstaged · Index → Working tree') + (item.ignored ? ' · Ignored by .golden_ignore' : '');
     $('previous').disabled = $('next').disabled = visible().length < 2;
@@ -558,8 +569,9 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
     if(origin.hasAttribute('aria-expanded')) origin.setAttribute('aria-expanded','true');
     menu.setAttribute('aria-label',title);
     const heading=document.createElement('div'); heading.className='context-title'; heading.textContent=title; heading.title=title; heading.setAttribute('aria-hidden','true'); menu.append(heading);
-    function command(label,count,run,hint) {
+    function command(label,count,run,hint,danger=false) {
       const button=document.createElement('button'); button.setAttribute('role','menuitem'); button.tabIndex=-1;
+      if(danger) button.classList.add('danger');
       const text=document.createElement('span'); text.textContent=label; button.append(text);
       if(count!==null) { const badge=document.createElement('span'); badge.className='menu-count'; badge.textContent='('+count+')'; button.append(badge); }
       if(hint) button.title=hint;
@@ -567,6 +579,7 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
     }
     function separator() { const line=document.createElement('div'); line.setAttribute('role','separator'); menu.append(line); }
     const staged=items.filter(c=>c.staged && !c.ignored), unstaged=items.filter(c=>!c.staged && !c.ignored);
+    const revertable=items.filter(c=>!c.staged);
     const included=items.filter(c=>!c.ignored), excluded=items.filter(c=>c.ignored);
     command('Run tests…',null,()=>openTests({items,folder}),'Choose scenario, folder or project scope and preview the queue');
     if(!folder) command('Run test file(s)…',null,()=>openTests({items,wholeFiles:true}),'Run entire source test files with the selected variant filters');
@@ -574,6 +587,7 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
     if(unstaged.length) command('Stage',unstaged.length,()=>mutate('stage',unstaged));
     if(staged.length) command('Unstage',staged.length,()=>mutate('unstage',staged));
     if(staged.length || unstaged.length) separator();
+    if(revertable.length) { command('Revert changes',revertable.length,()=>confirmRevert(revertable),'Restore tracked files from the index and delete untracked files',true); separator(); }
     if(included.length) command('Ignore',new Set(included.map(c=>c.path)).size,()=>mutate('ignore',included),'Add exact paths to .golden_ignore');
     if(excluded.length) command('Stop ignoring',new Set(excluded.map(c=>c.path)).size,()=>mutate('unignore',excluded),'Remove exact paths from .golden_ignore');
     separator();
@@ -599,6 +613,22 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
   function selectionContext() {
     const items=[...selected.values()]; return {items,title:'Selection · '+items.length+' changes',selection:true};
   }
+  function differenceSummary(items) {
+    const differences=items.map(item=>item.difference);
+    if(differences.some(value=>!value || value.status==='pending')) return {text:'…',className:'pending',title:'Calculating pixel difference in Dart…'};
+    const unavailable=differences.find(value=>value.status!=='ready');
+    if(unavailable) return {text:'—',className:'unavailable',title:unavailable.error || 'Pixel difference is unavailable.'};
+    const changed=differences.reduce((sum,value)=>sum+value.changedPixels,0);
+    const total=differences.reduce((sum,value)=>sum+value.totalPixels,0);
+    const percent=total ? changed/total*100 : 0;
+    const text=percent===0 ? '0%' : percent===100 ? '100%' : percent<.01 ? '<0.01%' : percent.toFixed(2)+'%';
+    return {text,className:'ready',title:'Pixel difference: '+changed.toLocaleString()+' / '+total.toLocaleString()+' pixels ('+text+')'};
+  }
+  function differenceValue(items) {
+    const summary=differenceSummary(items), value=document.createElement('span');
+    value.className='difference-value '+summary.className; value.textContent=summary.text; value.title=summary.title;
+    value.setAttribute('aria-label',summary.title); return value;
+  }
   function fileRow(item) {
     const row = document.createElement('div'); row.className = 'file' + (item.id === activeId ? ' active' : '');
     const check = selectionCheckbox([item],'Select ' + item.path + (item.staged ? ' staged' : ' unstaged'));
@@ -612,7 +642,7 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
       text.append(directory);
     }
     if (item.ignored) { const ignored = document.createElement('span'); ignored.className='ignored-label'; ignored.textContent='Ignored'; text.append(ignored); }
-    button.append(badge,text); button.addEventListener('click',() => choose(item.id)); row.append(check,button);
+    button.append(badge,text,differenceValue([item])); button.addEventListener('click',() => choose(item.id)); row.append(check,button);
     bindContextMenu(row,()=>selected.has(item.id) ? selectionContext() : {items:[item],title:(item.staged ? 'Staged · ' : 'Unstaged · ')+item.path},button);
     return row;
   }
@@ -642,7 +672,7 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
         const check = selectionCheckbox(folder.items,'Select folder ' + folder.path + (staged ? ' staged' : ' unstaged'));
         const text = document.createElement('span'); text.className = 'folder-name'; text.textContent = label;
         const count = document.createElement('span'); count.className = 'folder-count'; count.textContent = folder.items.length;
-        summary.append(check,text,count);
+        summary.append(check,text,count,differenceValue(folder.items));
         bindContextMenu(summary,()=>({items:folder.items,folder:folder.path,title:folder.path+' · '+folder.items.length+' image(s)'}));
         const content = document.createElement('div'); content.className = 'folder-children'; children(folder,content);
         details.append(summary,content);
@@ -659,6 +689,13 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
   function renderList() {
     closeMenu();
     const fragment = document.createDocumentFragment(), items = visible();
+    const available = changes.filter(c=>!c.ignored || showIgnored);
+    const counts = [items.length,available.filter(c=>!c.staged).length,available.filter(c=>c.staged).length];
+    for(const [id,value] of [['shown-count',counts[0]],['unstaged-count',counts[1]],['staged-count',counts[2]]]) {
+      if($(id).textContent!==String(value)) $(id).textContent=String(value);
+    }
+    const countLabel='Showing '+counts[0]+' of '+available.length+' changes: '+counts[1]+' unstaged and '+counts[2]+' staged.';
+    if($('file-count').getAttribute('aria-label')!==countLabel) $('file-count').setAttribute('aria-label',countLabel);
     const ignoredCount = new Set(changes.filter(c=>c.ignored).map(c=>c.path)).size;
     selectionControls = [];
     for (const staged of [false, true]) {
@@ -869,6 +906,14 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
     $('combined-label').textContent = mode === 'diff' ? 'Changed pixels in pink' : mode === 'split' ? 'Before ← | → After' : 'After over Before';
     $('metrics').textContent = dimensions(before) + ' → ' + dimensions(after) + (before && after && (before.naturalWidth!==after.naturalWidth || before.naturalHeight!==after.naturalHeight) ? ' · Dimensions changed' : '') + (mode === 'diff' || highlight ? diffSummary : '');
   }
+  function confirmRevert(items) {
+    pendingRevert=items.filter(item=>!item.staged);
+    if(!pendingRevert.length || mutating) return;
+    const paths=new Set(pendingRevert.map(item=>item.path)), untracked=new Set(pendingRevert.filter(item=>item.status==='?').map(item=>item.path));
+    $('revert-count').textContent='Revert '+paths.size+' '+(paths.size===1 ? 'image' : 'images')+'.';
+    $('revert-untracked').textContent=untracked.size ? untracked.size+' untracked '+(untracked.size===1 ? 'file will' : 'files will')+' be permanently deleted.' : 'No untracked files will be deleted.';
+    $('revert-dialog').showModal();
+  }
   async function mutate(action, items) {
     if (mutating || !items.length) return;
     closeMenu();
@@ -876,13 +921,16 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
     const imageCount = items.length + ' ' + (items.length === 1 ? 'image' : 'images');
     if (action === 'stage' || action === 'unstage') {
       message((action === 'stage' ? 'Staging ' : 'Unstaging ') + imageCount + '…');
-    }
+    } else if(action === 'revert') message('Reverting '+imageCount+'…');
     try {
       const revisions = Object.fromEntries(items.map(c => [c.id,c.revision]));
       const data = await (await request('/api/' + action,{revisions})).json();
       items.forEach(c => selected.delete(c.id)); applyData(data);
       if (action === 'ignore' || action === 'unignore') {
         message((action === 'ignore' ? 'Added ' : 'Removed ') + new Set(items.map(c=>c.path)).size + ' file(s) ' + (action === 'ignore' ? 'to' : 'from') + ' .golden_ignore. Git and golden tests were not changed.');
+      } else if(action === 'revert') {
+        const restored=data.restoredWorkingFiles || 0, deleted=data.deletedUntrackedFiles || 0;
+        message('Reverted '+(restored+deleted)+' '+(restored+deleted===1 ? 'image' : 'images')+'. '+(deleted ? 'Deleted '+deleted+' untracked '+(deleted===1 ? 'file' : 'files')+'. ' : '')+'Staged changes were preserved.');
       } else message((data.removedStaleIndexLock ? 'Removed stale Git index.lock and retried. ' : '') + (action === 'stage' ? 'Staged ' : 'Unstaged ') + imageCount + '. Working files were not rewritten.');
     } catch (error) { message(error.message,true); }
     finally { mutating = false; renderList(); await refresh(); }
@@ -912,9 +960,14 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
   $('zoom-percent').addEventListener('change',commitZoom); $('zoom-percent').addEventListener('keydown',event=>{if(event.key==='Enter') {commitZoom();$('zoom-percent').blur();}});
   $('previous').addEventListener('click',()=>step(-1)); $('next').addEventListener('click',()=>step(1));
   $('toggle-stage').addEventListener('click',()=>{const item=current(); if(item && !item.ignored) mutate(item.staged ? 'unstage' : 'stage',[item]);});
+  $('revert-file').addEventListener('click',()=>{const item=current(); if(item && !item.staged) confirmRevert([item]);});
   $('stage-selected').addEventListener('click',()=>mutate('stage',[...selected.values()].filter(c=>!c.staged && !c.ignored)));
   $('unstage-selected').addEventListener('click',()=>mutate('unstage',[...selected.values()].filter(c=>c.staged && !c.ignored)));
+  $('revert-selected').addEventListener('click',()=>confirmRevert([...selected.values()].filter(c=>!c.staged)));
   $('clear-selected').addEventListener('click',()=>{selected.clear();renderList();});
+  $('cancel-revert').addEventListener('click',()=>{$('revert-dialog').close();pendingRevert=[];});
+  $('confirm-revert').addEventListener('click',()=>{const items=pendingRevert;pendingRevert=[];$('revert-dialog').close();mutate('revert',items);});
+  $('revert-dialog').addEventListener('cancel',()=>{pendingRevert=[];});
   function fileContext() { const item=current(); return {items:item ? [item] : [],title:item ? (item.staged ? 'Staged · ' : 'Unstaged · ')+item.path : 'Image actions'}; }
   for(const [id,getContext] of [['file-actions',fileContext],['selection-actions',selectionContext]]) {
     const button=$(id);

@@ -1,4 +1,11 @@
-## Unreleased
+## 1.1.5
+
+- Added guarded working-tree revert actions for files, folders, and selections;
+  tracked files restore from the index while revalidated untracked files are
+  deleted only after explicit confirmation.
+- Added asynchronous Dart-isolate pixel-difference percentages for image files
+  and pixel-weighted folder aggregates in the `diff` tree, plus persistent
+  shown/unstaged/staged counts above the scrolling file list.
 
 ## 1.1.4
 
