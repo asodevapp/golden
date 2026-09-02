@@ -7,6 +7,29 @@ import 'package:test/test.dart';
 import 'helpers/git_fixture.dart';
 
 void main() {
+  test('recognizes Git for Windows forward-slash index lock paths', () {
+    const expectedPath = r'C:\repo\.git\index.lock';
+    const message =
+        "fatal: Unable to create 'C:/repo/.git/index.lock': File exists.";
+
+    expect(
+      gitLockErrorReferencesPath(
+        message,
+        expectedPath,
+        context: p.windows,
+      ),
+      isTrue,
+    );
+    expect(
+      gitLockErrorReferencesPath(
+        message,
+        r'C:\other\.git\index.lock',
+        context: p.windows,
+      ),
+      isFalse,
+    );
+  });
+
   late GitFixture fixture;
   late GitImageRepository repository;
   setUp(() async {

@@ -1,3 +1,9 @@
+## 1.1.6
+
+- Fixed stale Git `index.lock` recovery on Windows when Git reports the lock
+  path with forward slashes and Dart normalizes it with backslashes.
+- Synchronized the CLI `--version` output with the published package version.
+
 ## 1.1.5
 
 - Added guarded working-tree revert actions for files, folders, and selections;

@@ -11,6 +11,26 @@ const _maxIgnoreBytes = 1024 * 1024;
 
 typedef GitLockUsageProbe = Future<bool?> Function(String path);
 
+/// Checks the path quoted by Git using the platform's path semantics.
+///
+/// Git for Windows reports paths with forward slashes even though Dart
+/// normalizes the same paths with backslashes.
+bool gitLockErrorReferencesPath(
+  String message,
+  String expectedPath, {
+  p.Context? context,
+}) {
+  final match =
+      RegExp(r"Unable to create '([^']+)': File exists").firstMatch(message);
+  final reportedPath = match?.group(1);
+  if (reportedPath == null) return false;
+  final pathContext = context ?? p.context;
+  return pathContext.equals(
+    pathContext.normalize(reportedPath),
+    pathContext.normalize(expectedPath),
+  );
+}
+
 /// A Git change, with immutable blob IDs for HEAD/index and a working-file hash.
 final class GitImageChange {
   GitImageChange({
@@ -358,7 +378,7 @@ final class GitImageRepository {
         ? reportedLock
         : p.join(directory.path, reportedLock));
     if (!p.equals(lockPath, p.join(gitDirectory, 'index.lock')) ||
-        !message.contains(lockPath)) {
+        !gitLockErrorReferencesPath(message, lockPath)) {
       return (retry: false, removed: false);
     }
     final type = await FileSystemEntity.type(lockPath, followLinks: false);
