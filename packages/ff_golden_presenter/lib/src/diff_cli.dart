@@ -31,7 +31,8 @@ Future<int> runDiff(
     output.writeln('FF Golden Changes: ${server.uri}');
     output.writeln(
         'Repository: ${repository.directory.path} (scope: ${repository.input})');
-    output.writeln('Stage/unstage only selected images. '
+    output.writeln('Stage/unstage only selected Git images. '
+        'Failures are reviewed separately and cleanup requires confirmation. '
         'Ignore writes $reviewIgnoreFileName. Press Ctrl-C to stop.');
     output.writeln(
         'Tests runs selected scenarios, files or folders with live logs (no baseline updates).');

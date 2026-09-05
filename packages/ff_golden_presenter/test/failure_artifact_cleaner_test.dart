@@ -35,6 +35,25 @@ void main() {
     expect(await failureImage.exists(), isTrue);
   });
 
+  test('scan returns stable relative metadata without deleting images',
+      () async {
+    final failureImage = await _writeFile(
+      temporaryDirectory,
+      'auth/failures/login_testImage.png',
+      [1, 2, 3, 4],
+    );
+
+    final files = await FailureArtifactCleaner(
+      inputDirectory: temporaryDirectory,
+    ).scan();
+
+    expect(files, hasLength(1));
+    expect(files.single.relativePath, 'auth/failures/login_testImage.png');
+    expect(files.single.byteSize, 4);
+    expect(files.single.modifiedMicroseconds, greaterThan(0));
+    expect(await failureImage.exists(), isTrue);
+  });
+
   test('deletes only configured images below exact failures directories',
       () async {
     final pngFailure = await _writeFile(

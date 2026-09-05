@@ -1,3 +1,13 @@
+## 1.1.7
+
+- Added a dedicated **Failures** filter that groups Flutter's expected, actual,
+  isolated-diff, and masked-diff artifacts into one tree row, with pinned counts
+  and asynchronous Dart-isolate difference percentages.
+- Added confirmed one-click cleanup for generated failure images, with immediate
+  progress, exact-directory and symlink guards, and protection against cleanup
+  while golden tests are running. Failure artifacts no longer appear as Git
+  changes.
+
 ## 1.1.6
 
 - Fixed stale Git `index.lock` recovery on Windows when Git reports the lock

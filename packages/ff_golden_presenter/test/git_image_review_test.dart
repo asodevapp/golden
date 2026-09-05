@@ -59,6 +59,16 @@ void main() {
     expect(await repository.readImage(unstaged, before: false), [0, 253, 126]);
   });
 
+  test('keeps generated failures out of the Git changes collection', () async {
+    await fixture.write('test/screens/failures/login_testImage.png', [1]);
+    await fixture.write('test/screens/golden/login.png', [2]);
+
+    final snapshot = await repository.scan();
+
+    expect(snapshot.changes, hasLength(1));
+    expect(snapshot.changes.single.path, 'test/screens/golden/login.png');
+  });
+
   test(
       'stage and unstage touch only literal selected paths, preserving other staged work',
       () async {

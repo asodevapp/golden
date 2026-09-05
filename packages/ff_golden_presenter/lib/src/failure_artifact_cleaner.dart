@@ -2,6 +2,25 @@ import 'dart:io';
 
 import 'package:path/path.dart' as path;
 
+/// A generated image found below a directory named `failures`.
+final class FailureArtifactFile {
+  /// Creates immutable metadata for one generated failure image.
+  const FailureArtifactFile({
+    required this.relativePath,
+    required this.byteSize,
+    required this.modifiedMicroseconds,
+  });
+
+  /// Path relative to the configured cleanup input, using `/` separators.
+  final String relativePath;
+
+  /// File size captured during the scan.
+  final int byteSize;
+
+  /// Last modification time captured during the scan.
+  final int modifiedMicroseconds;
+}
+
 /// The result of scanning for or deleting golden comparison failure images.
 final class FailureArtifactCleanupResult {
   /// Creates a cleanup summary.
@@ -44,33 +63,51 @@ final class FailureArtifactCleaner {
 
   /// Finds failure images and deletes them unless [dryRun] is true.
   Future<FailureArtifactCleanupResult> clean({bool dryRun = false}) async {
+    final files = await scan();
+    for (final artifact in files) {
+      if (!dryRun) {
+        await File(_absolutePath(artifact.relativePath)).delete();
+      }
+    }
+
+    return FailureArtifactCleanupResult(
+      fileCount: files.length,
+      totalBytes: files.fold(0, (sum, file) => sum + file.byteSize),
+    );
+  }
+
+  /// Lists generated failure images without following symbolic links.
+  Future<List<FailureArtifactFile>> scan() async {
     await _validateInput();
     if (extensions.isEmpty) {
       throw const FormatException(
           'Failure image extensions must not be empty.');
     }
 
-    final files = <File>[];
+    final files = <FailureArtifactFile>[];
     await for (final entity in inputDirectory.list(
       recursive: true,
       followLinks: false,
     )) {
       if (entity is! File || !_isFailureImage(entity.path)) continue;
-      files.add(entity);
+      final stat = await entity.stat();
+      files.add(FailureArtifactFile(
+        relativePath: path
+            .relative(entity.path, from: inputDirectory.path)
+            .split(path.separator)
+            .join('/'),
+        byteSize: stat.size,
+        modifiedMicroseconds: stat.modified.microsecondsSinceEpoch,
+      ));
     }
-    files.sort((left, right) => left.path.compareTo(right.path));
-
-    var totalBytes = 0;
-    for (final file in files) {
-      totalBytes += await file.length();
-      if (!dryRun) await file.delete();
-    }
-
-    return FailureArtifactCleanupResult(
-      fileCount: files.length,
-      totalBytes: totalBytes,
-    );
+    files
+        .sort((left, right) => left.relativePath.compareTo(right.relativePath));
+    return files;
   }
+
+  String _absolutePath(String relativePath) => path.normalize(
+        path.joinAll([inputDirectory.path, ...relativePath.split('/')]),
+      );
 
   bool _isFailureImage(String filePath) {
     final relativePath = path.relative(filePath, from: inputDirectory.path);

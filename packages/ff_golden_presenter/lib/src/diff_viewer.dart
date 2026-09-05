@@ -40,6 +40,7 @@ input[type=search] { width:100%; min-width:0; height:30px; color:inherit; backgr
 .badge.added { color:#91d9b1; border-color:#3d634f; } .badge.deleted { color:#f6a6a6; border-color:#744747; }
 .selection { border-top:1px solid var(--line); padding:10px; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)) 28px 28px; gap:6px; } .selection button { font-size:12px; padding:7px 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .selection .icon-button { padding:4px; font-size:17px; } .context-target { outline:1px solid var(--accent); outline-offset:-1px; border-radius:6px; }
+.failure-selection { border-top:1px solid var(--line); padding:10px; } .failure-selection button { width:100%; font-size:12px; }
 .danger { color:#ffc2c2; border-color:#744747; background:#482a2e; } button.danger:hover:not(:disabled) { border-color:#e78383; }
 .context-menu { position:fixed; z-index:10; width:250px; max-width:calc(100vw - 16px); max-height:calc(100vh - 16px); overflow:auto; padding:6px; border:1px solid #46525f; border-radius:10px; background:#20272f; box-shadow:0 12px 36px #0008; }
 .context-title { padding:7px 9px 9px; font-size:11px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -84,26 +85,27 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
 .test-output { display:flex; flex-direction:column; min-width:0; min-height:0; background:#101418; } .test-output-bar { padding:7px 12px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; color:var(--muted); font-size:11px; border-bottom:1px solid var(--line); } .test-output-actions { display:flex; gap:6px; align-items:center; margin-left:auto; } .test-output-bar button { padding:4px 7px; font-size:11px; white-space:nowrap; }
 #test-log-hint { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .test-output-bar label { display:flex; gap:5px; align-items:center; white-space:nowrap; } #test-logs { flex:1; min-height:0; overflow:auto; overflow-anchor:none; white-space:pre-wrap; overflow-wrap:anywhere; padding:12px; margin:0; font:11px/1.6 ui-monospace,SFMono-Regular,monospace; }
 #test-copy-dialog { color:#edf1f5; background:var(--panel); border:1px solid var(--line); border-radius:10px; width:min(800px,85vw); padding:18px; } #test-copy-dialog::backdrop { background:#0009; } #test-copy-dialog h2 { margin:0 0 8px; font-size:16px; } #test-copy-text { box-sizing:border-box; width:100%; height:50vh; margin:12px 0; background:var(--bg); color:#edf1f5; border:1px solid var(--line); padding:12px; font:12px/1.5 ui-monospace,monospace; }
-#revert-dialog { color:#edf1f5; background:var(--panel); border:1px solid #744747; border-radius:10px; width:min(520px,85vw); padding:20px; } #revert-dialog::backdrop { background:#0009; } #revert-dialog h2 { margin:0 0 10px; font-size:17px; } #revert-dialog p { color:var(--muted); } .dialog-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:18px; }
+#revert-dialog,#delete-failures-dialog { color:#edf1f5; background:var(--panel); border:1px solid #744747; border-radius:10px; width:min(520px,85vw); padding:20px; } #revert-dialog::backdrop,#delete-failures-dialog::backdrop { background:#0009; } #revert-dialog h2,#delete-failures-dialog h2 { margin:0 0 10px; font-size:17px; } #revert-dialog p,#delete-failures-dialog p { color:var(--muted); } .dialog-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:18px; }
 @media(max-width:850px) { .tests-body { grid-template-columns:310px minmax(0,1fr); } .test-settings { padding:10px; } }
 @media(max-width:1050px) { #test-log-hint { flex-basis:100%; } .test-output-actions { margin-left:0; } }
 @media(max-width:850px) { main { grid-template-columns:240px minmax(0,1fr); } header { padding:12px; } .local { display:none; } .toolbar,.detail { padding:10px; } .detail { flex-wrap:wrap; } #viewer { margin:0 8px 8px; } }
 </style>
 </head>
 <body>
-<header><div class="brand"><span>FF Golden</span> / Changes<a class="brand-credit" href="https://aso.dev/?utm_source=ff_golden&amp;utm_medium=referral" target="_blank" rel="noopener noreferrer">by <strong>aso.dev</strong></a></div><div class="repo" id="repository">Loading repository…</div><span class="local">● Local Git review</span><button id="show-tests" aria-expanded="false" aria-controls="tests-panel">Tests</button><button id="refresh">Refresh</button></header>
+<header><div class="brand"><span>FF Golden</span> / Changes<a class="brand-credit" href="https://aso.dev/?utm_source=ff_golden&amp;utm_medium=referral" target="_blank" rel="noopener noreferrer">by <strong>aso.dev</strong></a></div><div class="repo" id="repository">Loading repository…</div><span class="local">● Local image review</span><button id="show-tests" aria-expanded="false" aria-controls="tests-panel">Tests</button><button id="refresh">Refresh</button></header>
 <main>
-<aside aria-label="Changed images">
+<aside aria-label="Review images">
   <div class="filters">
     <div class="file-search"><input id="search" type="search" aria-label="Search changed images" placeholder="Search files or scenarios…"><button id="ignored-active" title="Ignored files are visible. Click to hide them." aria-label="Hide ignored files" hidden>+ ignored ×</button></div>
-    <div class="file-tools"><select id="file-scope" aria-label="Git changes filter"><option value="all">All changes</option><option value="unstaged">Unstaged</option><option value="staged">Staged</option></select>
+    <div class="file-tools"><select id="file-scope" aria-label="Image review filter"><option value="all">All changes</option><option value="unstaged">Unstaged</option><option value="staged">Staged</option><option value="failures">Failures</option></select>
       <div class="file-layout" role="group" aria-label="File layout"><button data-layout="tree" aria-label="Tree" title="Tree view" aria-pressed="true"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 3v12h5M4 7h5M10 5h6v4h-6zM10 13h6v4h-6z"/></svg></button><button data-layout="list" aria-label="List" title="List view" aria-pressed="false"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h1m3 0h10M3 10h1m3 0h10M3 15h1m3 0h10"/></svg></button></div>
       <button id="file-view-options" aria-label="File view options" title="File view options · folders and ignored files" aria-haspopup="menu" aria-expanded="false" aria-controls="action-menu">⋯</button>
     </div>
-    <div id="file-count" class="file-count" role="status"><span><strong id="shown-count">0</strong>shown</span><span><strong id="unstaged-count">0</strong>unstaged</span><span><strong id="staged-count">0</strong>staged</span></div>
+    <div id="file-count" class="file-count" role="status"><span><strong id="shown-count">0</strong>shown</span><span><strong id="unstaged-count">0</strong>unstaged</span><span><strong id="staged-count">0</strong>staged</span><span><strong id="failure-count">0</strong>failures</span></div>
   </div>
   <div id="files"></div><div id="warnings" hidden></div>
-  <div class="selection"><button id="stage-selected" disabled>Stage (0)</button><button id="unstage-selected" disabled>Unstage (0)</button><button id="revert-selected" class="danger" disabled>Revert (0)</button><button id="clear-selected" class="icon-button" aria-label="Clear selection" title="Clear selection" disabled>×</button><button id="selection-actions" class="icon-button" aria-label="Selection actions" title="Selection actions" aria-haspopup="menu" aria-expanded="false" aria-controls="action-menu" disabled>⋯</button></div>
+  <div id="git-selection" class="selection"><button id="stage-selected" disabled>Stage (0)</button><button id="unstage-selected" disabled>Unstage (0)</button><button id="revert-selected" class="danger" disabled>Revert (0)</button><button id="clear-selected" class="icon-button" aria-label="Clear selection" title="Clear selection" disabled>×</button><button id="selection-actions" class="icon-button" aria-label="Selection actions" title="Selection actions" aria-haspopup="menu" aria-expanded="false" aria-controls="action-menu" disabled>⋯</button></div>
+  <div id="failure-selection" class="failure-selection" hidden><button id="delete-failures" class="danger" disabled>Delete all failure images</button></div>
 </aside>
 <section class="review" aria-label="Image comparison">
   <div class="detail"><div class="detail-text"><h1 id="filename">Image changes</h1><div id="context">Choose an image to compare</div></div><button id="previous" aria-label="Previous image" disabled>←</button><button id="next" aria-label="Next image" disabled>→</button><button id="toggle-stage" class="primary" disabled>Stage file</button><button id="revert-file" class="danger" disabled>Revert changes</button><button id="file-actions" aria-label="File actions" title="File actions · also available with right-click" aria-haspopup="menu" aria-expanded="false" aria-controls="action-menu" disabled>⋯</button></div>
@@ -160,23 +162,26 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
 </section>
 <dialog id="test-copy-dialog" aria-labelledby="test-copy-title"><h2 id="test-copy-title">Copy for AI</h2><p class="test-note">Clipboard access is unavailable. Press ⌘C / Ctrl+C to copy the selected report. Nothing is sent automatically; review logs for secrets before sharing.</p><textarea id="test-copy-text" aria-label="Test report to copy" readonly></textarea><button id="close-test-copy">Close copy preview</button></dialog>
 <dialog id="revert-dialog" aria-labelledby="revert-title"><h2 id="revert-title">Revert working-tree changes?</h2><p><strong id="revert-count"></strong> Modified or deleted tracked images will be restored from the Git index. <span id="revert-untracked"></span></p><p>Staged changes remain staged. FF Golden cannot undo this action.</p><div class="dialog-actions"><button id="cancel-revert">Cancel</button><button id="confirm-revert" class="danger">Revert changes</button></div></dialog>
+<dialog id="delete-failures-dialog" aria-labelledby="delete-failures-title"><h2 id="delete-failures-title">Delete generated failure images?</h2><p id="delete-failures-summary"></p><p>Only image files below directories named exactly <code>failures</code> will be deleted. Git baselines and the index are not changed.</p><div class="dialog-actions"><button id="cancel-delete-failures">Cancel</button><button id="confirm-delete-failures" class="danger">Delete all</button></div></dialog>
 <div id="action-menu" class="context-menu" role="menu" aria-label="Image actions" tabindex="-1" hidden></div>
 <div id="message" role="status" hidden></div>
-<footer><span>Revert restores unstaged files from the index and deletes selected untracked files. Stage/unstage affects index entries.</span><span id="connection">Connecting…</span></footer>
+<footer><span>Git actions affect only changes. Failure cleanup deletes generated images only from exact failures directories.</span><span id="connection">Connecting…</span></footer>
 <script nonce="__SESSION_TOKEN__">
 (() => {
   const token = '__SESSION_TOKEN__';
   const $ = (id) => document.getElementById(id);
-  let changes = [], activeId = null, scope = 'all', selected = new Map();
+  let changes = [], failures = [], failureSummary = {caseCount:0,fileCount:0,totalBytes:0,scanning:true,warnings:[]};
+  let activeId = null, scope = 'all', selected = new Map();
   let fileLayout = 'tree', showIgnored = false, selectionControls = [], collapsedFolders = new Set();
   let menuState = null, pendingRevert = [];
   let before = null, after = null, loadedRevision = null, loadingRevision = null, loadSequence = 0;
   let polling = false, mutating = false, diffImage = null, diffMask = null, diffBounds = null, diffSummary = '', diffAttempted = false;
   let zoomMode = 'fit', manualScale = 1, renderedScale = 1, renderedMode = 'side', paintKey = null, synchronizing = false;
-  const current = () => changes.find(c => c.id === activeId);
-  const visible = () => changes.filter(c =>
-    (!c.ignored || showIgnored) &&
-    (scope === 'all' || (scope === 'staged') === c.staged) &&
+  const reviewItems = () => scope === 'failures' ? failures : changes;
+  const current = () => reviewItems().find(c => c.id === activeId);
+  const visible = () => reviewItems().filter(c =>
+    (c.failure || !c.ignored || showIgnored) &&
+    (c.failure || scope === 'all' || (scope === 'staged') === c.staged) &&
     c.path.toLocaleLowerCase().includes($('search').value.trim().toLocaleLowerCase()));
 
   function message(text, error = false) {
@@ -470,6 +475,7 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
   setInterval(()=>{if(testRun?.active || !$('tests-panel').hidden) pollTest();},500);
   pollTest();
   function updateButtons() {
+    const failureMode = scope === 'failures';
     const values = [...selected.values()];
     const included = values.filter(c => !c.ignored);
     const unstaged = included.filter(c => !c.staged).length, staged = included.filter(c => c.staged).length;
@@ -483,11 +489,19 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
     $('clear-selected').disabled = !values.length || mutating;
     $('selection-actions').disabled = !values.length || mutating;
     const item = current();
+    $('git-selection').hidden = failureMode;
+    $('failure-selection').hidden = !failureMode;
+    $('toggle-stage').hidden = $('revert-file').hidden = $('file-actions').hidden = failureMode;
+    $('delete-failures').textContent = 'Delete all failure images (' + failureSummary.fileCount + ')';
+    $('delete-failures').title = testActive() ? 'Stop the running golden tests before cleanup' : $('delete-failures').textContent;
+    $('delete-failures').disabled = !failureSummary.fileCount || failureSummary.scanning || mutating || testActive();
     $('toggle-stage').textContent = item?.staged ? 'Unstage file' : 'Stage file';
-    $('toggle-stage').disabled = !item || item.ignored || loadedRevision !== item.revision || mutating;
-    $('revert-file').disabled = !item || item.staged || loadedRevision !== item.revision || mutating;
-    $('file-actions').disabled = !item || mutating;
-    if (item) $('context').textContent = (item.staged ? 'Staged · HEAD → Index' : 'Unstaged · Index → Working tree') + (item.ignored ? ' · Ignored by .golden_ignore' : '');
+    $('toggle-stage').disabled = failureMode || !item || item.ignored || loadedRevision !== item.revision || mutating;
+    $('revert-file').disabled = failureMode || !item || item.staged || loadedRevision !== item.revision || mutating;
+    $('file-actions').disabled = failureMode || !item || mutating;
+    if (item) $('context').textContent = item.failure
+      ? 'Generated failure · Expected → Actual · ' + item.artifactCount + ' artifact' + (item.artifactCount===1 ? '' : 's')
+      : (item.staged ? 'Staged · HEAD → Index' : 'Unstaged · Index → Working tree') + (item.ignored ? ' · Ignored by .golden_ignore' : '');
     $('previous').disabled = $('next').disabled = visible().length < 2;
     document.querySelectorAll('.zoom-bar button, #zoom-percent, #highlight, #highlight-strength').forEach(control => { control.disabled = !loadedRevision; });
     syncSelectionControls();
@@ -541,14 +555,16 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
     const noFolders=fileLayout!=='tree' || !document.querySelector('details.folder');
     command('collapse-folders','Collapse all folders',()=>document.querySelectorAll('details.folder').forEach(folder=>{collapsedFolders.add(folder.dataset.folderKey);folder.open=false;}),{disabled:noFolders});
     command('expand-folders','Expand all folders',()=>{collapsedFolders.clear();document.querySelectorAll('details.folder').forEach(folder=>{folder.open=true;});},{disabled:noFolders});
-    const separator=document.createElement('div');separator.setAttribute('role','separator');menu.append(separator);
-    command('show-ignored','',()=>setShowIgnored(!showIgnored),{checked:showIgnored});
+    if(scope!=='failures') {
+      const separator=document.createElement('div');separator.setAttribute('role','separator');menu.append(separator);
+      command('show-ignored','',()=>setShowIgnored(!showIgnored),{checked:showIgnored});
+    }
     updateViewOptions();positionMenu(origin);
   }
   function updateViewOptions() {
     const count=new Set(changes.filter(c=>c.ignored).map(c=>c.path)).size;
-    $('ignored-active').hidden=!showIgnored;$('ignored-active').textContent='+ ignored ('+count+') ×';
-    $('file-view-options').title='File view options · '+count+' ignored file(s)'+(showIgnored ? ' shown' : ' hidden');
+    $('ignored-active').hidden=scope==='failures' || !showIgnored;$('ignored-active').textContent='+ ignored ('+count+') ×';
+    $('file-view-options').title=scope==='failures' ? 'File view options · folders' : 'File view options · '+count+' ignored file(s)'+(showIgnored ? ' shown' : ' hidden');
     if($('show-ignored')) {
       $('show-ignored').textContent=(showIgnored ? '✓ ' : '')+'Show ignored ('+count+')';
       $('show-ignored').setAttribute('aria-checked',String(showIgnored));
@@ -631,10 +647,11 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
   }
   function fileRow(item) {
     const row = document.createElement('div'); row.className = 'file' + (item.id === activeId ? ' active' : '');
-    const check = selectionCheckbox([item],'Select ' + item.path + (item.staged ? ' staged' : ' unstaged'));
+    const check = item.failure ? null : selectionCheckbox([item],'Select ' + item.path + (item.staged ? ' staged' : ' unstaged'));
     const button = document.createElement('button'); button.title = item.path;
     const badge = document.createElement('span'); badge.className = 'badge' + (item.status === 'D' ? ' deleted' : ['A','?'].includes(item.status) ? ' added' : '');
-    badge.textContent = item.status;
+    if(item.failure) badge.classList.add('deleted');
+    badge.textContent = item.failure ? 'F' : item.status;
     const text = document.createElement('span'); text.className = 'file-text';
     const name = document.createElement('span'); name.className = 'file-name'; name.textContent = item.path.split('/').pop(); text.append(name);
     if (fileLayout === 'list') {
@@ -642,11 +659,13 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
       text.append(directory);
     }
     if (item.ignored) { const ignored = document.createElement('span'); ignored.className='ignored-label'; ignored.textContent='Ignored'; text.append(ignored); }
-    button.append(badge,text,differenceValue([item])); button.addEventListener('click',() => choose(item.id)); row.append(check,button);
-    bindContextMenu(row,()=>selected.has(item.id) ? selectionContext() : {items:[item],title:(item.staged ? 'Staged · ' : 'Unstaged · ')+item.path},button);
+    button.append(badge,text,differenceValue([item])); button.addEventListener('click',() => choose(item.id));
+    if(check) row.append(check); row.append(button);
+    if(!item.failure) bindContextMenu(row,()=>selected.has(item.id) ? selectionContext() : {items:[item],title:(item.staged ? 'Staged · ' : 'Unstaged · ')+item.path},button);
     return row;
   }
   function fileTree(items,staged) {
+    const failure = !!items[0]?.failure;
     const node = (path='') => ({path,folders:new Map(),files:[],items:[]});
     const root = node();
     for (const item of items) {
@@ -665,15 +684,15 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
         while (!folder.files.length && folder.folders.size === 1) {
           const [nextName,next] = folder.folders.entries().next().value; label += ' / ' + nextName; folder = next;
         }
-        const key = (staged ? 'staged:' : 'unstaged:') + folder.path;
+        const key = (failure ? 'failures:' : staged ? 'staged:' : 'unstaged:') + folder.path;
         const details = document.createElement('details'); details.className = 'folder'; details.dataset.folderKey = key;
         details.open = !!$('search').value.trim() || !collapsedFolders.has(key);
         const summary = document.createElement('summary'); summary.title = folder.path;
-        const check = selectionCheckbox(folder.items,'Select folder ' + folder.path + (staged ? ' staged' : ' unstaged'));
+        const check = failure ? null : selectionCheckbox(folder.items,'Select folder ' + folder.path + (staged ? ' staged' : ' unstaged'));
         const text = document.createElement('span'); text.className = 'folder-name'; text.textContent = label;
         const count = document.createElement('span'); count.className = 'folder-count'; count.textContent = folder.items.length;
-        summary.append(check,text,count,differenceValue(folder.items));
-        bindContextMenu(summary,()=>({items:folder.items,folder:folder.path,title:folder.path+' · '+folder.items.length+' image(s)'}));
+        if(check) summary.append(check); summary.append(text,count,differenceValue(folder.items));
+        if(!failure) bindContextMenu(summary,()=>({items:folder.items,folder:folder.path,title:folder.path+' · '+folder.items.length+' image(s)'}));
         const content = document.createElement('div'); content.className = 'folder-children'; children(folder,content);
         details.append(summary,content);
         details.addEventListener('toggle',() => {
@@ -690,26 +709,30 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
     closeMenu();
     const fragment = document.createDocumentFragment(), items = visible();
     const available = changes.filter(c=>!c.ignored || showIgnored);
-    const counts = [items.length,available.filter(c=>!c.staged).length,available.filter(c=>c.staged).length];
-    for(const [id,value] of [['shown-count',counts[0]],['unstaged-count',counts[1]],['staged-count',counts[2]]]) {
+    const counts = [items.length,available.filter(c=>!c.staged).length,available.filter(c=>c.staged).length,failures.length];
+    for(const [id,value] of [['shown-count',counts[0]],['unstaged-count',counts[1]],['staged-count',counts[2]],['failure-count',counts[3]]]) {
       if($(id).textContent!==String(value)) $(id).textContent=String(value);
     }
-    const countLabel='Showing '+counts[0]+' of '+available.length+' changes: '+counts[1]+' unstaged and '+counts[2]+' staged.';
+    const countLabel=scope==='failures'
+      ? 'Showing '+counts[0]+' of '+failures.length+' generated failure comparisons from '+failureSummary.fileCount+' image files.'
+      : 'Showing '+counts[0]+' of '+available.length+' changes: '+counts[1]+' unstaged and '+counts[2]+' staged. '+counts[3]+' failure comparisons are available.';
     if($('file-count').getAttribute('aria-label')!==countLabel) $('file-count').setAttribute('aria-label',countLabel);
     const ignoredCount = new Set(changes.filter(c=>c.ignored).map(c=>c.path)).size;
     selectionControls = [];
-    for (const staged of [false, true]) {
-      const group = items.filter(c => c.staged === staged);
+    for (const staged of (scope==='failures' ? [false] : [false, true])) {
+      const group = scope==='failures' ? items : items.filter(c => c.staged === staged);
       if (!group.length) continue;
       const title = document.createElement('div'); title.className = 'group-title';
-      title.textContent = (staged ? 'Staged' : 'Unstaged') + ' · ' + group.length; fragment.append(title);
-      title.tabIndex=0; bindContextMenu(title,()=>({items:group,title:(staged ? 'Staged' : 'Unstaged')+' · '+group.length+' images'}));
+      title.textContent = (scope==='failures' ? 'Failure artifacts' : staged ? 'Staged' : 'Unstaged') + ' · ' + group.length; fragment.append(title);
+      if(scope!=='failures') {title.tabIndex=0; bindContextMenu(title,()=>({items:group,title:(staged ? 'Staged' : 'Unstaged')+' · '+group.length+' images'}));}
       if (fileLayout === 'tree') fragment.append(fileTree(group,staged));
       else for (const item of group) fragment.append(fileRow(item));
     }
     if (!items.length) {
       const empty = document.createElement('div'); empty.className = 'empty-list';
-      empty.textContent = changes.length ? 'No images match this filter.' + (ignoredCount && !showIgnored ? ' Use ⋯ → Show ignored to review excluded files.' : '') : 'No changed PNG, JPEG or WebP images. Regenerate your goldens to start reviewing.';
+      empty.textContent = scope==='failures'
+        ? (failureSummary.scanning ? 'Scanning generated failure images…' : failures.length ? 'No failure comparisons match this search.' : 'No generated Flutter golden failure images found.')
+        : changes.length ? 'No images match this filter.' + (ignoredCount && !showIgnored ? ' Use ⋯ → Show ignored to review excluded files.' : '') : 'No changed PNG, JPEG or WebP images. Regenerate your goldens to start reviewing.';
       fragment.append(empty);
     }
     $('files').replaceChildren(fragment);
@@ -720,9 +743,12 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
     const previousPath = current()?.path;
     $('repository').textContent = data.repository + (data.input === '.' ? '' : ' / ' + data.input);
     $('repository').title = $('repository').textContent;
-    $('warnings').textContent = data.warnings.join('\n'); $('warnings').hidden = !data.warnings.length;
-    const changed = JSON.stringify(changes) !== JSON.stringify(data.changes);
+    const warnings=[...data.warnings,...(data.failures?.warnings || [])];
+    $('warnings').textContent = warnings.join('\n'); $('warnings').hidden = !warnings.length;
+    const changed = JSON.stringify(changes) !== JSON.stringify(data.changes) || JSON.stringify(failures) !== JSON.stringify(data.failures?.items || []) || JSON.stringify(failureSummary) !== JSON.stringify(data.failures || {});
     changes = data.changes;
+    failureSummary = data.failures || {items:[],caseCount:0,fileCount:0,totalBytes:0,scanning:false,warnings:[]};
+    failures = failureSummary.items || [];
     for (const [id, item] of selected) {
       if (!changes.some(c => c.id === id && c.revision === item.revision && c.ignored === item.ignored)) selected.delete(id);
     }
@@ -736,7 +762,7 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
   async function refresh() {
     if (polling || mutating) return;
     polling = true;
-    try { applyData(await (await request('/api/changes')).json()); }
+    try { applyData(await (await request('/api/changes' + (scope==='failures' ? '?failures=true' : ''))).json()); }
     catch (error) { $('connection').textContent = 'Disconnected'; message(error.message + ' Is the CLI still running?', true); }
     finally { polling = false; }
   }
@@ -744,21 +770,21 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
     activeId = id;
     const item = current();
     if (item) for (const key of collapsedFolders) {
-      const prefix = item.staged ? 'staged:' : 'unstaged:';
+      const prefix = item.failure ? 'failures:' : item.staged ? 'staged:' : 'unstaged:';
       if (key.startsWith(prefix) && item.path.startsWith(key.slice(prefix.length)+'/')) collapsedFolders.delete(key);
     }
     renderList(); loadCurrent();
   }
   function clearImage() {
     loadSequence++; loadedRevision = loadingRevision = null; before = after = diffImage = diffMask = diffBounds = null; paintKey = null;
-    $('filename').textContent = 'Image changes'; $('context').textContent = 'Choose an image to compare';
+    $('filename').textContent = scope==='failures' ? 'Failure artifacts' : 'Image changes'; $('context').textContent = 'Choose an image to compare';
     $('metrics').textContent = ''; $('side').hidden = $('combined').hidden = true; $('empty').hidden = false;
-    $('empty').firstElementChild.textContent = 'No image selected'; $('empty').lastElementChild.textContent = 'Changes appear here automatically.';
+    $('empty').firstElementChild.textContent = 'No image selected'; $('empty').lastElementChild.textContent = scope==='failures' ? 'Generated failures appear here automatically.' : 'Changes appear here automatically.';
     updateButtons();
   }
   async function loadImage(item, side) {
     if (!item[side === 'before' ? 'hasBefore' : 'hasAfter']) return null;
-    const params = new URLSearchParams({id:item.id, revision:item.revision, side});
+    const params = new URLSearchParams({id:item.id, revision:item.revision, side, ...(item.failure ? {failure:'true'} : {})});
     const blob = await (await request('/api/image?' + params)).blob();
     const url = URL.createObjectURL(blob);
     try {
@@ -780,8 +806,8 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
         throw new Error('Preview exceeds the 16 megapixel limit. Open this image in an external viewer.');
       }
       loadedRevision = item.revision; loadingRevision = null;
-      $('before-label').textContent = item.staged ? 'HEAD' : 'Index';
-      $('after-label').textContent = item.staged ? 'Index' : 'Working tree';
+      $('before-label').textContent = item.failure ? 'Expected' : item.staged ? 'HEAD' : 'Index';
+      $('after-label').textContent = item.failure ? 'Actual' : item.staged ? 'Index' : 'Working tree';
       $('before-size').textContent = dimensions(before); $('after-size').textContent = dimensions(after);
       $('empty').hidden = true; render(); updateButtons();
     } catch (error) {
@@ -903,7 +929,8 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
     $('zoom-fit').setAttribute('aria-pressed',String(zoomMode==='fit'));
     $('zoom-width').setAttribute('aria-pressed',String(zoomMode==='width'));
     $('zoom-actual').setAttribute('aria-pressed',String(zoomMode==='manual' && scale===1));
-    $('combined-label').textContent = mode === 'diff' ? 'Changed pixels in pink' : mode === 'split' ? 'Before ← | → After' : 'After over Before';
+    const failure=!!current()?.failure;
+    $('combined-label').textContent = mode === 'diff' ? 'Changed pixels in pink' : mode === 'split' ? (failure ? 'Expected ← | → Actual' : 'Before ← | → After') : (failure ? 'Actual over Expected' : 'After over Before');
     $('metrics').textContent = dimensions(before) + ' → ' + dimensions(after) + (before && after && (before.naturalWidth!==after.naturalWidth || before.naturalHeight!==after.naturalHeight) ? ' · Dimensions changed' : '') + (mode === 'diff' || highlight ? diffSummary : '');
   }
   function confirmRevert(items) {
@@ -914,8 +941,32 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
     $('revert-untracked').textContent=untracked.size ? untracked.size+' untracked '+(untracked.size===1 ? 'file will' : 'files will')+' be permanently deleted.' : 'No untracked files will be deleted.';
     $('revert-dialog').showModal();
   }
+  function formatBytes(bytes) {
+    if(bytes<1024) return bytes+' B';
+    const units=['KiB','MiB','GiB']; let value=bytes/1024,index=0;
+    while(value>=1024 && index<units.length-1) {value/=1024;index++;}
+    return value.toFixed(value>=10 ? 1 : 2)+' '+units[index];
+  }
+  function confirmDeleteFailures() {
+    if(mutating || testActive() || !failureSummary.fileCount || failureSummary.scanning) return;
+    $('delete-failures-summary').textContent='Delete '+failureSummary.fileCount+' generated image '+(failureSummary.fileCount===1 ? 'file' : 'files')+' ('+formatBytes(failureSummary.totalBytes)+') across '+failureSummary.caseCount+' failure '+(failureSummary.caseCount===1 ? 'comparison' : 'comparisons')+'.';
+    $('delete-failures-dialog').showModal();
+  }
+  async function deleteFailures() {
+    if(mutating || testActive() || !failureSummary.fileCount) return;
+    const count=failureSummary.fileCount;
+    mutating=true; updateButtons();
+    message('Deleting '+count+' generated failure '+(count===1 ? 'image' : 'images')+'…');
+    try {
+      const data=await (await request('/api/failures/delete',{})).json();
+      applyData(data);
+      const deleted=data.deletedFailureFiles || 0;
+      message('Deleted '+deleted+' generated failure '+(deleted===1 ? 'image' : 'images')+'. Git baselines and the index were not changed.');
+    } catch(error) {message(error.message,true);}
+    finally {mutating=false;renderList();await refresh();}
+  }
   async function mutate(action, items) {
-    if (mutating || !items.length) return;
+    if (mutating || !items.length || items.some(item=>item.failure)) return;
     closeMenu();
     mutating = true; updateButtons();
     const imageCount = items.length + ' ' + (items.length === 1 ? 'image' : 'images');
@@ -946,7 +997,9 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
   $('file-view-options').addEventListener('keydown',event=>{if(event.key==='ArrowDown'){event.preventDefault();openViewOptions();}});
   $('file-scope').addEventListener('change',() => {
     scope=$('file-scope').value;
+    closeMenu();
     const items=visible(); if (!items.some(c=>c.id===activeId)) choose(items[0]?.id || null); else renderList();
+    refresh();
   });
   document.querySelectorAll('[data-layout]').forEach(button=>button.addEventListener('click',()=>{
     fileLayout=button.dataset.layout; document.querySelectorAll('[data-layout]').forEach(b=>b.setAttribute('aria-pressed',String(b===button))); renderList();
@@ -968,7 +1021,10 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
   $('cancel-revert').addEventListener('click',()=>{$('revert-dialog').close();pendingRevert=[];});
   $('confirm-revert').addEventListener('click',()=>{const items=pendingRevert;pendingRevert=[];$('revert-dialog').close();mutate('revert',items);});
   $('revert-dialog').addEventListener('cancel',()=>{pendingRevert=[];});
-  function fileContext() { const item=current(); return {items:item ? [item] : [],title:item ? (item.staged ? 'Staged · ' : 'Unstaged · ')+item.path : 'Image actions'}; }
+  $('delete-failures').addEventListener('click',confirmDeleteFailures);
+  $('cancel-delete-failures').addEventListener('click',()=>$('delete-failures-dialog').close());
+  $('confirm-delete-failures').addEventListener('click',()=>{$('delete-failures-dialog').close();deleteFailures();});
+  function fileContext() { const item=current(); return {items:item && !item.failure ? [item] : [],title:item && !item.failure ? (item.staged ? 'Staged · ' : 'Unstaged · ')+item.path : 'Image actions'}; }
   for(const [id,getContext] of [['file-actions',fileContext],['selection-actions',selectionContext]]) {
     const button=$(id);
     const open=()=>{const context=getContext();openMenu(context.items,{...context,origin:button});};
@@ -976,7 +1032,7 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
     button.addEventListener('keydown',event=>{if(event.key==='ArrowDown'){event.preventDefault();open();}});
   }
   bindContextMenu($('viewer'),fileContext,$('file-actions'));
-  bindContextMenu(document.querySelector('.selection'),selectionContext,$('selection-actions'));
+  bindContextMenu($('git-selection'),selectionContext,$('selection-actions'));
   $('action-menu').addEventListener('contextmenu',event=>event.preventDefault());
   $('action-menu').addEventListener('keydown',event=>{
     event.stopPropagation();

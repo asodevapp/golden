@@ -3,7 +3,10 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:path/path.dart' as path;
+
 import 'diff_viewer.dart';
+import 'failure_artifact_review.dart';
 import 'git_image_difference.dart';
 import 'git_image_review.dart';
 import 'review_test_catalog.dart';
@@ -17,6 +20,15 @@ final class DiffReviewServer {
     _tests = ReviewTestCatalog(repository);
     _runner = ReviewTestRunner(_tests, flutterExecutable: flutterExecutable);
     _differences = GitImageDifferenceQueue(repository);
+    final inputDirectory = Directory(path.joinAll([
+      repository.directory.path,
+      ...repository.input.split('/'),
+    ]));
+    _failureRepository = FailureImageRepository(
+      inputDirectory: inputDirectory,
+      repositoryPathPrefix: repository.input == '.' ? '' : repository.input,
+    );
+    _failureDifferences = FailureImageDifferenceQueue(_failureRepository);
   }
   final GitImageRepository repository;
   final HttpServer _server;
@@ -27,6 +39,13 @@ final class DiffReviewServer {
   late final ReviewTestCatalog _tests;
   late final ReviewTestRunner _runner;
   late final GitImageDifferenceQueue _differences;
+  late final FailureImageRepository _failureRepository;
+  late final FailureImageDifferenceQueue _failureDifferences;
+  FailureImageSnapshot _failureSnapshot = const FailureImageSnapshot.empty();
+  Future<void>? _failureRefresh;
+  DateTime? _failureRefreshedAt;
+
+  static const _failureRefreshInterval = Duration(seconds: 5);
 
   Uri get uri =>
       Uri(scheme: 'http', host: '127.0.0.1', port: _server.port, path: '/');
@@ -46,6 +65,7 @@ final class DiffReviewServer {
         flutterExecutable: flutterExecutable, openTestFile: openTestFile)
       .._snapshot = snapshot
       .._differences.schedule(snapshot);
+    unawaited(viewer._refreshFailures(force: true));
     server.listen((request) {
       // Polling, reads, index and ignore-list writes share a session queue.
       viewer._pending = viewer._pending.then((_) => viewer._handle(request));
@@ -58,6 +78,8 @@ final class DiffReviewServer {
     await _pending;
     await _runner.close();
     await _differences.close();
+    await _failureRefresh;
+    await _failureDifferences.close();
   }
 
   Future<void> _handle(HttpRequest request) async {
@@ -86,7 +108,10 @@ final class DiffReviewServer {
         return;
       }
       if (request.method == 'GET' && request.uri.path == '/api/changes') {
-        await _refresh(response);
+        await _refresh(
+          response,
+          awaitFailures: request.uri.queryParameters['failures'] == 'true',
+        );
       } else if (request.method == 'GET' && request.uri.path == '/api/tests') {
         await _tests.refresh();
         final images = _snapshot.changes
@@ -199,22 +224,61 @@ final class DiffReviewServer {
           _runner.stop(body['runId'] as String);
           _json(response, 200, _runner.snapshot());
         }
+      } else if (request.method == 'POST' &&
+          request.uri.path == '/api/failures/delete') {
+        final body = await _readBody(request);
+        if (body is! Map || body.isNotEmpty) {
+          throw const FormatException('Expected an empty request.');
+        }
+        if (_runner.active) {
+          throw const GitReviewException(
+            'Stop the running golden tests before deleting failure images.',
+            conflict: true,
+          );
+        }
+        await _refreshFailures(force: true);
+        final result = await _failureRepository.cleaner.clean();
+        await _refreshFailures(force: true);
+        await _refresh(
+          response,
+          deletedFailureFiles: result.fileCount,
+          deletedFailureBytes: result.totalBytes,
+        );
       } else if (request.method == 'GET' && request.uri.path == '/api/image') {
         final query = request.uri.queryParameters;
-        final matches = _snapshot.changes.where((c) => c.id == query['id']);
-        if (matches.isEmpty || matches.single.revision != query['revision']) {
-          throw const GitReviewException(
-              'Image changed. Refresh the comparison.',
-              conflict: true);
-        }
         if (query['side'] != 'before' && query['side'] != 'after') {
           _json(response, 400, {'error': 'Expected before or after.'});
           return;
         }
-        final change = matches.single;
-        final bytes = await repository.readImage(change,
-            before: query['side'] == 'before');
-        final extension = change.path.split('.').last.toLowerCase();
+        late final List<int> bytes;
+        late final String extension;
+        if (query['failure'] == 'true') {
+          final matches =
+              _failureSnapshot.changes.where((c) => c.id == query['id']);
+          if (matches.isEmpty || matches.single.revision != query['revision']) {
+            throw const GitReviewException(
+              'Failure image changed. Refresh the comparison.',
+              conflict: true,
+            );
+          }
+          final change = matches.single;
+          bytes = await _failureRepository.readImage(
+            change,
+            before: query['side'] == 'before',
+          );
+          extension = 'png';
+        } else {
+          final matches = _snapshot.changes.where((c) => c.id == query['id']);
+          if (matches.isEmpty || matches.single.revision != query['revision']) {
+            throw const GitReviewException(
+                'Image changed. Refresh the comparison.',
+                conflict: true);
+          }
+          final change = matches.single;
+          bytes = await repository.readImage(change,
+              before: query['side'] == 'before');
+          extension = change.path.split('.').last.toLowerCase();
+        }
         response.headers.contentType = ContentType(
             'image',
             switch (extension) {
@@ -303,9 +367,17 @@ final class DiffReviewServer {
   Future<void> _refresh(HttpResponse response,
       {bool removedStaleIndexLock = false,
       int restoredWorkingFiles = 0,
-      int deletedUntrackedFiles = 0}) async {
+      int deletedUntrackedFiles = 0,
+      int deletedFailureFiles = 0,
+      int deletedFailureBytes = 0,
+      bool awaitFailures = false}) async {
     _snapshot = await repository.scan();
     _differences.schedule(_snapshot);
+    if (awaitFailures) {
+      await _refreshFailures();
+    } else {
+      unawaited(_refreshFailures());
+    }
     _json(response, 200, {
       'repository': repository.directory.path,
       'input': repository.input,
@@ -315,13 +387,62 @@ final class DiffReviewServer {
                 'difference': _differences.stateFor(change).toJson(),
               })
           .toList(),
+      'failures': {
+        'items': _failureSnapshot.changes
+            .map((change) => {
+                  ...change.toJson(),
+                  'difference': _failureDifferences.stateFor(change).toJson(),
+                })
+            .toList(),
+        'caseCount': _failureSnapshot.changes.length,
+        'fileCount': _failureSnapshot.fileCount,
+        'totalBytes': _failureSnapshot.totalBytes,
+        'scanning': _failureRefresh != null,
+        'warnings': _failureSnapshot.warnings,
+      },
       'warnings': _snapshot.warnings,
       if (removedStaleIndexLock) 'removedStaleIndexLock': true,
       if (restoredWorkingFiles > 0)
         'restoredWorkingFiles': restoredWorkingFiles,
       if (deletedUntrackedFiles > 0)
         'deletedUntrackedFiles': deletedUntrackedFiles,
+      if (deletedFailureFiles > 0) 'deletedFailureFiles': deletedFailureFiles,
+      if (deletedFailureBytes > 0) 'deletedFailureBytes': deletedFailureBytes,
     });
+  }
+
+  Future<void> _refreshFailures({bool force = false}) async {
+    final active = _failureRefresh;
+    if (active != null) return active;
+    final refreshedAt = _failureRefreshedAt;
+    if (!force &&
+        refreshedAt != null &&
+        DateTime.now().difference(refreshedAt) < _failureRefreshInterval) {
+      return;
+    }
+
+    late final Future<void> refresh;
+    refresh = () async {
+      try {
+        final snapshot = await _failureRepository.scan();
+        _failureSnapshot = snapshot;
+        _failureDifferences.schedule(snapshot);
+        _failureRefreshedAt = DateTime.now();
+      } on Object {
+        _failureSnapshot = FailureImageSnapshot(
+          changes: _failureSnapshot.changes,
+          fileCount: _failureSnapshot.fileCount,
+          totalBytes: _failureSnapshot.totalBytes,
+          warnings: const [
+            'Unable to scan generated failure images. Refresh and try again.',
+          ],
+        );
+      } finally {
+        if (identical(_failureRefresh, refresh)) _failureRefresh = null;
+      }
+    }();
+    _failureRefresh = refresh;
+    return refresh;
   }
 
   static void _json(HttpResponse response, int status, Object value) {

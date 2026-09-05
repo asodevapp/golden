@@ -123,7 +123,7 @@ Run `dart run ff_golden_presenter --help` for the action list and `<action> --he
 
 | Action | Purpose |
 | --- | --- |
-| `diff` | Start a local Git image viewer with selected-file stage/unstage. |
+| `diff` | Review Git image changes and generated Flutter failure artifacts. |
 | `build` | Collect images, optimize staged PNG files, and create `index.html`. |
 | `collect` | Copy supported images recursively while preserving relative paths. |
 | `optimize` | Optimize PNG files already in a staging directory. Requires `--in-place`. |
@@ -147,11 +147,11 @@ directory. Git must be available on `PATH`. Stop the viewer with **Ctrl-C**.
 The sidebar separates **Unstaged** (`index → working tree`, including untracked
 images) and **Staged** (`HEAD → index`) changes. A file can appear in both groups
 with different image versions. The compact sidebar puts search above the Git
-filter (**All changes**, **Unstaged**, **Staged**) and the **Tree** / **List** icon
+filter (**All changes**, **Unstaged**, **Staged**, **Failures**) and the **Tree** / **List** icon
 buttons. **⋯** opens folder expand/collapse commands and **Show ignored**. While
 ignored files are visible, a removable **+ ignored (N)** indicator stays beside
-search. **Shown / unstaged / staged** counts stay above the scrolling tree, so
-the current filter result and both Git groups remain visible. The tree compacts
+search. **Shown / unstaged / staged / failures** counts stay above the scrolling
+tree, so the current filter result and all groups remain visible. The tree compacts
 single-child folders, remembers collapsed folders during live refresh, and
 supports selecting a whole folder. Search shows matching files together with
 their parent folders. File rows show their changed-pixel percentage, and folders
@@ -159,6 +159,15 @@ show a pixel-weighted aggregate of their images. An ellipsis means the Dart
 background isolate is still calculating; an em dash means an image could not be
 decoded within the preview limits. The browser only receives the resulting
 counts and percentages.
+
+The **Failures** filter scans directories named exactly `failures`, independently
+of Git and `.gitignore`. Flutter's `*_masterImage.png`, `*_testImage.png`,
+`*_isolatedDiff.png`, and `*_maskedDiff.png` artifacts are grouped into one tree
+row. The viewer compares **Expected → Actual** and calculates the changed-pixel
+percentage in the same sequential Dart isolate queue. Git actions are hidden in
+this mode. **Delete all failure images (N)** confirms the current file count and
+combined size, reports progress immediately, and deletes only generated images
+below exact `failures` directories; it never changes baselines or the Git index.
 
 Select a file and switch between side-by-side, swipe, overlay, and pixel-diff
 views. In side-by-side, enable **Highlight changes** to overlay changed pixels on
@@ -331,8 +340,9 @@ dart run ff_golden_presenter diff --no-open --port 8088
 | `--flutter` | auto | Flutter executable used by the Tests panel. |
 | `--[no-]open` | on | Open the default browser automatically. |
 
-The diff viewer supports PNG, JPEG, and WebP; it uses original bytes without
-image optimization. Pixel counts are calculated asynchronously by a Dart
+The diff viewer supports PNG, JPEG, and WebP Git changes and Flutter's standard
+PNG failure artifacts; it uses original bytes without image optimization. Pixel
+counts are calculated asynchronously by a Dart
 isolate and remain diagnostics, not the runner's pass/fail result. Previews are
 limited to 32 MiB per image and a combined
 16-megapixel canvas. Git LFS pointers cannot be previewed, symbolic links are
@@ -421,7 +431,8 @@ dart run ff_golden_presenter clean-failures \
   --input test/screens
 ```
 
-The command deletes only configured image extensions below directories named
+The same cleanup is available from the diff viewer's **Failures** filter. The
+command deletes only configured image extensions below directories named
 exactly `failures`. It does not follow symlinks, remove non-image diagnostics,
 or touch files elsewhere. Filesystem root and home-directory inputs are
 rejected. Pass `--extensions png,jpg,jpeg,webp` to change the default PNG-only

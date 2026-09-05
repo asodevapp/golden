@@ -135,7 +135,7 @@ final class GitImageRepository {
     for (final record in unmerged.split('\u0000').where((v) => v.isNotEmpty)) {
       conflicts.add(record.substring(record.indexOf('\t') + 1));
     }
-    for (final file in conflicts.where(_isImage)) {
+    for (final file in conflicts.where(_isReviewImage)) {
       warnings.add('Resolve the Git conflict in your Git client: $file');
     }
     for (final staged in [false, true]) {
@@ -156,7 +156,7 @@ final class GitImageRepository {
       for (var i = 0; i + 1 < records.length; i += 2) {
         final fields = records[i].split(' ');
         final file = records[i + 1];
-        if (!_isImage(file) || conflicts.contains(file)) continue;
+        if (!_isReviewImage(file) || conflicts.contains(file)) continue;
         if (fields.length != 5 || !fields.first.startsWith(':')) {
           throw const GitReviewException('Unexpected Git diff output.');
         }
@@ -188,7 +188,7 @@ final class GitImageRepository {
     }
     final untracked = await _text(
         ['ls-files', '--others', '--exclude-standard', '-z', '--', input]);
-    for (final file in untracked.split('\u0000').where(_isImage)) {
+    for (final file in untracked.split('\u0000').where(_isReviewImage)) {
       final hash =
           await _hashWorkingFile(file, warnings, verify: verifyWorkingBytes);
       if (hash == null) continue;
@@ -552,6 +552,8 @@ final class GitImageRepository {
       RegExp(r'^0+$').hasMatch(value) ? null : value;
   static bool _isImage(String file) => reviewImageExtensions
       .contains(p.extension(file).replaceFirst('.', '').toLowerCase());
+  static bool _isReviewImage(String file) =>
+      _isImage(file) && !p.posix.split(file).contains('failures');
 
   static Future<bool?> _indexLockInUse(String path) async {
     if (Platform.isWindows) return null;

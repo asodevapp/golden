@@ -52,14 +52,14 @@ final class DiffCliOptions {
   }
 
   String get usage => '''
-Review local image changes, stage/unstage selected files, and run golden tests.
+Review Git image changes, generated failure artifacts, and run golden tests.
 
 Usage: ff_golden_presenter diff [options]
 
 ${_parser.usage}
 
 The viewer binds only to 127.0.0.1. Stop it with Ctrl-C.
-PNG, JPEG and WebP are supported. No images are rewritten or committed.
+PNG, JPEG and WebP Git changes are supported. Failure cleanup is explicit and confirmed.
 Tests runs scenario/file/folder queues with filters and live logs on macOS/Linux; no baseline updates.
 
 Example:

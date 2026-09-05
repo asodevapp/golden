@@ -530,7 +530,7 @@ Usage: ff_golden_presenter [options]
        ff_golden_presenter <action> [options]
 
 Actions:
-  diff      Review local Git image changes and stage/unstage selected files.
+  diff      Review Git image changes and generated Flutter failure artifacts.
   report    Generate HTML from images in place (default; legacy compatible).
   collect   Copy project screenshots into a staging directory.
   optimize  Optimize staged PNG files with an explicit profile.
