@@ -1,9 +1,5 @@
-import 'dart:async';
-import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:isolate';
-import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as path;
@@ -19,14 +15,18 @@ final class FailureImageArtifact {
     required this.relativePath,
     required this.byteSize,
     required this.modifiedMicroseconds,
+    this.changedMicroseconds,
   });
 
   final String relativePath;
   final int byteSize;
   final int modifiedMicroseconds;
 
+  /// Metadata change time also detects rewrites that preserve modification time.
+  final int? changedMicroseconds;
+
   String get revisionPart =>
-      '$relativePath\u0000$byteSize\u0000$modifiedMicroseconds';
+      '$relativePath\u0000$byteSize\u0000$modifiedMicroseconds\u0000$changedMicroseconds';
 }
 
 /// One Flutter golden failure, grouping its expected, actual and diff images.
@@ -39,14 +39,19 @@ final class FailureImageChange {
   final String path;
   final Map<FailureArtifactKind, FailureImageArtifact> artifacts;
 
-  String get id => base64Url.encode(utf8.encode('failure\u0000$path'));
-  String get revision => sha256
+  late final String id = base64Url.encode(utf8.encode('failure\u0000$path'));
+  late final String revision = sha256
       .convert(utf8.encode([
         id,
-        for (final entry in artifacts.entries)
-          '${entry.key.name}\u0000${entry.value.revisionPart}',
+        for (final kind in FailureArtifactKind.values)
+          if (artifacts[kind] != null)
+            '${kind.name}\u0000${artifacts[kind]!.revisionPart}',
       ].join('\u0000')))
       .toString();
+  // Generated masks/diffs do not affect the expected-versus-actual percentage.
+  late final String differenceKey =
+      '${artifacts[FailureArtifactKind.expected]?.revisionPart}\u0000'
+      '${artifacts[FailureArtifactKind.actual]?.revisionPart}';
   bool get hasBefore => artifacts.containsKey(FailureArtifactKind.expected);
   bool get hasAfter => artifacts.containsKey(FailureArtifactKind.actual);
 
@@ -122,6 +127,7 @@ final class FailureImageRepository {
         relativePath: file.relativePath,
         byteSize: file.byteSize,
         modifiedMicroseconds: file.modifiedMicroseconds,
+        changedMicroseconds: file.changedMicroseconds,
       );
     }
     final changes = [
@@ -159,7 +165,10 @@ final class FailureImageRepository {
     }
     final stat = await file.stat();
     if (stat.size != artifact.byteSize ||
-        stat.modified.microsecondsSinceEpoch != artifact.modifiedMicroseconds) {
+        stat.modified.microsecondsSinceEpoch != artifact.modifiedMicroseconds ||
+        (artifact.changedMicroseconds != null &&
+            stat.changed.microsecondsSinceEpoch !=
+                artifact.changedMicroseconds)) {
       throw const GitReviewException(
         'Failure image changed. Refresh the comparison.',
         conflict: true,
@@ -168,7 +177,18 @@ final class FailureImageRepository {
     if (stat.size > reviewMaxImageBytes) {
       throw const GitReviewException('Image exceeds the 32 MiB preview limit.');
     }
-    return file.readAsBytes();
+    final bytes = await file.readAsBytes();
+    final after = await file.stat();
+    if (bytes.length != stat.size ||
+        after.size != stat.size ||
+        after.modified != stat.modified ||
+        after.changed != stat.changed) {
+      throw const GitReviewException(
+        'Failure image changed. Refresh the comparison.',
+        conflict: true,
+      );
+    }
+    return bytes;
   }
 
   String _absolutePath(String relativePath) {
@@ -192,93 +212,24 @@ final class FailureImageRepository {
 
 /// Calculates failure percentages sequentially outside the server isolate.
 final class FailureImageDifferenceQueue {
-  FailureImageDifferenceQueue(this.repository);
+  FailureImageDifferenceQueue(this.repository) {
+    _queue = ImageDifferenceQueue((change) => readImageDifference(
+          hasBefore: change.hasBefore,
+          hasAfter: change.hasAfter,
+          read: (before) => repository.readImage(change, before: before),
+        ));
+  }
 
   final FailureImageRepository repository;
-  final Queue<FailureImageChange> _queue = ListQueue();
-  final Set<String> _queuedRevisions = {};
-  final Map<String, GitImageDifference> _states = {};
-  Set<String> _activeRevisions = {};
-  Future<void>? _worker;
-  bool _closed = false;
+  late final ImageDifferenceQueue<FailureImageChange> _queue;
 
   GitImageDifference stateFor(FailureImageChange change) =>
-      _states[change.revision] ?? const GitImageDifference.pending();
+      _queue.stateFor(change.differenceKey);
 
-  void schedule(FailureImageSnapshot snapshot) {
-    if (_closed) return;
-    _activeRevisions =
-        snapshot.changes.map((change) => change.revision).toSet();
-    _states.removeWhere((revision, _) => !_activeRevisions.contains(revision));
-    for (final change in snapshot.changes) {
-      if (_states.containsKey(change.revision) ||
-          !_queuedRevisions.add(change.revision)) {
-        continue;
-      }
-      _states[change.revision] = const GitImageDifference.pending();
-      _queue.add(change);
-    }
-    _startWorker();
-  }
+  void schedule(FailureImageSnapshot snapshot) => _queue.schedule({
+        for (final change in snapshot.changes) change.differenceKey: change,
+      });
 
-  Future<void> close() async {
-    _closed = true;
-    _queue.clear();
-    _queuedRevisions.clear();
-    await _worker;
-  }
-
-  void _startWorker() {
-    if (_closed || _worker != null || _queue.isEmpty) return;
-    _worker = _drain();
-  }
-
-  Future<void> _drain() async {
-    try {
-      while (!_closed && _queue.isNotEmpty) {
-        final change = _queue.removeFirst();
-        _queuedRevisions.remove(change.revision);
-        if (!_activeRevisions.contains(change.revision)) continue;
-        try {
-          final before = change.hasBefore
-              ? TransferableTypedData.fromList([
-                  Uint8List.fromList(
-                    await repository.readImage(change, before: true),
-                  ),
-                ])
-              : null;
-          final after = change.hasAfter
-              ? TransferableTypedData.fromList([
-                  Uint8List.fromList(
-                    await repository.readImage(change, before: false),
-                  ),
-                ])
-              : null;
-          final result = await Isolate.run(
-            () => calculateGitImageDifference(
-              before?.materialize().asUint8List(),
-              after?.materialize().asUint8List(),
-            ),
-          );
-          if (_activeRevisions.contains(change.revision)) {
-            _states[change.revision] = GitImageDifference.ready(
-              changedPixels: result.changedPixels,
-              totalPixels: result.totalPixels,
-            );
-          }
-        } on Object catch (error) {
-          if (_activeRevisions.contains(change.revision)) {
-            _states[change.revision] = GitImageDifference.unavailable(
-              error is GitReviewException
-                  ? error.message
-                  : 'Unable to decode this image for pixel comparison.',
-            );
-          }
-        }
-      }
-    } finally {
-      _worker = null;
-      _startWorker();
-    }
-  }
+  Future<void> get idle => _queue.idle;
+  Future<void> close() => _queue.close();
 }

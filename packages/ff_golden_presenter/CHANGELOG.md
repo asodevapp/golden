@@ -1,3 +1,16 @@
+## 1.1.8
+
+- Preserved open tree menus, focus, selection, collapsed folders, and scroll
+  position during automatic refresh and background metric updates. Folder
+  percentages now update incrementally without rebuilding unchanged rows.
+- Reused image difference results by comparison identity with bounded caches,
+  deduplicated queued calculations, and retries for transient file changes.
+  Updating generated failure masks no longer recalculates expected/actual diffs.
+- Displayed new Git images in one full-width pane with a **new** badge, including
+  staged additions. Returning to a modified image restores comparison settings.
+- Added browser regression coverage for polling, menu state, metric updates, and
+  new-image display, with a dedicated CI job.
+
 ## 1.1.7
 
 - Added a dedicated **Failures** filter that groups Flutter's expected, actual,

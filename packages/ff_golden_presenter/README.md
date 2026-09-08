@@ -160,6 +160,15 @@ background isolate is still calculating; an em dash means an image could not be
 decoded within the preview limits. The browser only receives the resulting
 counts and percentages.
 
+Live refresh updates percentages in place and keeps open menus, folder state,
+selection, focus, and sidebar scroll position. Adding or removing files reuses
+the remaining rows. Open actions retain their reviewed revisions, so stale
+mutations are still rejected. Folder percentages are updated from file deltas.
+The sequential calculation queues share results by comparison identity and
+retain up to 256 inactive results each for reuse during a review session.
+Changing generated failure masks alone does not recalculate expected/actual
+percentages.
+
 The **Failures** filter scans directories named exactly `failures`, independently
 of Git and `.gitignore`. Flutter's `*_masterImage.png`, `*_testImage.png`,
 `*_isolatedDiff.png`, and `*_maskedDiff.png` artifacts are grouped into one tree
@@ -173,6 +182,10 @@ Select a file and switch between side-by-side, swipe, overlay, and pixel-diff
 views. In side-by-side, enable **Highlight changes** to overlay changed pixels on
 the new version only, keeping the old version unchanged; the intensity slider
 controls the highlight opacity.
+
+New Git images open in a single full-width pane marked **new**. The empty
+before pane and comparison-only controls are hidden; returning to a modified
+image restores the selected comparison mode and highlight setting.
 
 Zoom with **− / +**, an editable percentage (1–800%), **Fit**, **Width**, or
 **100%**. **Changes** zooms directly to the bounding area of changed pixels.
@@ -642,6 +655,18 @@ flutter test
 The workspace contains the Flutter-based `ff_golden` package, so repository
 scripts use the Flutter-aware Pub runner. Consumer projects still invoke the
 installed executable with `dart run ff_golden_presenter` as shown above.
+
+Browser regressions run the actual diff page with controlled API responses,
+including timer polls, open menus, changed revisions, and failure metrics:
+
+```shell
+cd packages/ff_golden_presenter/test/browser
+npm ci
+npx playwright install chromium
+npm test
+```
+
+Use Node.js 20 or newer. `CHROME_PATH` can point to an existing Chrome executable.
 
 The public library entrypoint is `package:ff_golden_presenter/ff_golden_presenter.dart`; CLI implementation details live under `lib/src/`.
 

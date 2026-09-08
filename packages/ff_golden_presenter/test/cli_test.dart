@@ -38,7 +38,7 @@ void main() {
     );
 
     expect(code, 0);
-    expect(output.toString(), 'ff_golden_presenter 1.1.7\n');
+    expect(output.toString(), 'ff_golden_presenter 1.1.8\n');
   });
 
   test('generates a report end to end', () async {

@@ -62,6 +62,22 @@ jobs:
           --title "FF Golden Presenter demo"
         working-directory: packages/ff_golden_presenter
 
+  presenter-browser:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/ff_golden_presenter/test/browser
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: packages/ff_golden_presenter/test/browser/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm test
+
   runner-presenter-integration:
     runs-on: macos-latest
     steps:

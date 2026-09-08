@@ -5,7 +5,40 @@ import 'package:ff_golden_presenter/src/git_image_review.dart';
 import 'package:image/image.dart' as image;
 import 'package:test/test.dart';
 
+import 'helpers/git_fixture.dart';
+
 void main() {
+  test('reuses content metrics across files and invalidates changed bytes',
+      () async {
+    final fixture = await GitFixture.create();
+    addTearDown(() => fixture.directory.delete(recursive: true));
+    final bytes = _png(2, 2, const {});
+    await fixture.write('a.png', bytes);
+    await fixture.write('b.png', bytes);
+    final repository =
+        await GitImageRepository.open(project: fixture.directory);
+    final queue = GitImageDifferenceQueue(repository);
+    addTearDown(queue.close);
+    final initial = await repository.scan();
+    queue.schedule(initial);
+    await queue.idle;
+    final result = queue.stateFor(initial.changes.first);
+    expect(result.status, GitImageDifferenceStatus.ready);
+    expect(queue.stateFor(initial.changes.last), same(result));
+    queue.schedule(await repository.scan());
+    expect(queue.stateFor(initial.changes.first), same(result));
+    await fixture.write('a.png', _png(3, 2, const {}));
+    final changed = await repository.scan();
+    queue.schedule(changed);
+    await queue.idle;
+    expect(queue.stateFor(changed.changes.first).totalPixels, 6);
+    expect(queue.stateFor(changed.changes.last), same(result));
+    await fixture.write('a.png', bytes);
+    final restored = await repository.scan();
+    queue.schedule(restored);
+    expect(queue.stateFor(restored.changes.first), same(result));
+  });
+
   test('counts exact changed RGBA pixels', () {
     final before = _png(2, 2, const {});
     final after = _png(2, 2, const {

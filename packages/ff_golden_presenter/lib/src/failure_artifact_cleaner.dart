@@ -9,6 +9,7 @@ final class FailureArtifactFile {
     required this.relativePath,
     required this.byteSize,
     required this.modifiedMicroseconds,
+    this.changedMicroseconds,
   });
 
   /// Path relative to the configured cleanup input, using `/` separators.
@@ -19,6 +20,9 @@ final class FailureArtifactFile {
 
   /// Last modification time captured during the scan.
   final int modifiedMicroseconds;
+
+  /// Metadata change time also detects rewrites that preserve modification time.
+  final int? changedMicroseconds;
 }
 
 /// The result of scanning for or deleting golden comparison failure images.
@@ -98,6 +102,7 @@ final class FailureArtifactCleaner {
             .join('/'),
         byteSize: stat.size,
         modifiedMicroseconds: stat.modified.microsecondsSinceEpoch,
+        changedMicroseconds: stat.changed.microsecondsSinceEpoch,
       ));
     }
     files

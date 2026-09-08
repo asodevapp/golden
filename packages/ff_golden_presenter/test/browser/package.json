@@ -1,0 +1,10 @@
+{
+  "name": "ff-golden-presenter-browser-tests",
+  "private": true,
+  "scripts": {
+    "test": "node --test diff_viewer_test.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
+}

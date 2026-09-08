@@ -51,13 +51,16 @@ final class GitImageChange {
   final String? workingHash;
   final bool ignored;
 
-  String get id =>
+  late final String id =
       base64Url.encode(utf8.encode('${staged ? 'index' : 'work'}\u0000$path'));
-  String get revision => sha256
+  late final String revision = sha256
       .convert(utf8.encode(
         '$id\u0000$status\u0000$beforeBlob\u0000$afterBlob\u0000$workingHash',
       ))
       .toString();
+  // Content identity is independent of file path, status and review UI state.
+  late final String differenceKey =
+      '$beforeBlob\u0000$afterBlob\u0000$workingHash';
   bool get hasBefore => beforeBlob != null;
   bool get hasAfter => afterBlob != null || workingHash != null;
 
@@ -206,6 +209,11 @@ final class GitImageRepository {
       if (a.staged != b.staged) return a.staged ? 1 : -1;
       return a.path.compareTo(b.path);
     });
+    final workingPaths = changes
+        .where((change) => change.workingHash != null)
+        .map((change) => change.path)
+        .toSet();
+    _hashCache.removeWhere((file, _) => !workingPaths.contains(file));
     return GitImageSnapshot(changes, warnings);
   }
 
@@ -513,6 +521,13 @@ final class GitImageRepository {
       final cached = _hashCache[file];
       if (!verify && cached?.stamp == stamp) return cached!.hash;
       final hash = (await sha256.bind(source.openRead()).first).toString();
+      final after = await source.stat();
+      if (after.size != stat.size ||
+          after.modified != stat.modified ||
+          after.changed != stat.changed) {
+        throw const GitReviewException(
+            'Image changed while hashing; refresh to retry.');
+      }
       _hashCache[file] = (stamp: stamp, hash: hash);
       return hash;
     } on FileSystemException {

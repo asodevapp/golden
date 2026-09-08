@@ -60,6 +60,8 @@ input[type=search] { width:100%; min-width:0; height:30px; color:inherit; backgr
 #viewer { flex:1; min-height:0; position:relative; margin:0 16px 16px; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:#14191f; }
 #empty { position:absolute; inset:0; display:grid; place-content:center; text-align:center; padding:30px; color:var(--muted); gap:8px; } #empty strong { color:#e1e8ef; font-size:20px; font-weight:550; }
 .panels { height:100%; display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--line); } .pane { display:flex; flex-direction:column; min-width:0; min-height:0; background:var(--bg); }
+.panels.single-image { grid-template-columns:minmax(0,1fr); }
+.pane-source { display:flex; align-items:center; gap:8px; } .new-image-badge { padding:1px 7px; border:1px solid #397f69; border-radius:4px; background:#213d3b; color:#a5f4d4; font-size:10px; font-weight:650; }
 .pane-label { padding:9px 12px; color:var(--muted); font-size:11px; background:var(--panel); display:flex; justify-content:space-between; }
 .viewport { flex:1; min-height:0; overflow:auto; padding:16px; overscroll-behavior:contain; } .viewport canvas { display:block; max-width:none; margin-inline:auto; box-shadow:0 0 0 1px #39414b; background-color:#20262c; background-image:conic-gradient(#2b333c 25%, transparent 0 50%, #2b333c 0 75%, transparent 0); background-size:16px 16px; cursor:grab; touch-action:none; user-select:none; }
 .viewport.dragging canvas { cursor:grabbing; }
@@ -109,8 +111,8 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
 </aside>
 <section class="review" aria-label="Image comparison">
   <div class="detail"><div class="detail-text"><h1 id="filename">Image changes</h1><div id="context">Choose an image to compare</div></div><button id="previous" aria-label="Previous image" disabled>←</button><button id="next" aria-label="Next image" disabled>→</button><button id="toggle-stage" class="primary" disabled>Stage file</button><button id="revert-file" class="danger" disabled>Revert changes</button><button id="file-actions" aria-label="File actions" title="File actions · also available with right-click" aria-haspopup="menu" aria-expanded="false" aria-controls="action-menu" disabled>⋯</button></div>
-  <div class="toolbar">
-    <label>View <select id="mode"><option value="side">Side by side</option><option value="split">Swipe</option><option value="overlay">Overlay</option><option value="diff">Pixel diff</option></select></label>
+  <div class="toolbar" id="comparison-toolbar">
+    <label id="mode-control">View <select id="mode"><option value="side">Side by side</option><option value="split">Swipe</option><option value="overlay">Overlay</option><option value="diff">Pixel diff</option></select></label>
     <label id="highlight-control" class="highlight-control" title="Highlight changed pixels on the new version only"><input id="highlight" type="checkbox">Highlight changes</label>
     <label id="highlight-strength-control" class="highlight-control" hidden>Intensity <input id="highlight-strength" type="range" min="10" max="100" value="55" aria-label="Highlight intensity"></label>
     <label id="mix-control" hidden><span id="mix-label">Position</span><input id="mix" type="range" min="0" max="100" value="50" aria-label="Comparison mix"><span id="mix-value">50%</span></label>
@@ -124,8 +126,8 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
   <div id="viewer">
     <div id="empty"><strong>No image selected</strong><span>Changes appear here automatically.</span></div>
     <div id="side" class="panels" hidden>
-      <div class="pane"><div class="pane-label"><span id="before-label">Before</span><span id="before-size"></span></div><div class="viewport" id="before-viewport"><canvas id="before-canvas"></canvas></div></div>
-      <div class="pane"><div class="pane-label"><span id="after-label">After</span><span id="after-size"></span></div><div class="viewport" id="after-viewport"><canvas id="after-canvas"></canvas></div></div>
+      <div class="pane" id="before-pane"><div class="pane-label"><span id="before-label">Before</span><span id="before-size"></span></div><div class="viewport" id="before-viewport"><canvas id="before-canvas"></canvas></div></div>
+      <div class="pane" id="after-pane"><div class="pane-label"><span class="pane-source"><span id="after-label">After</span><span id="new-image-badge" class="new-image-badge" hidden>new</span></span><span id="after-size"></span></div><div class="viewport" id="after-viewport"><canvas id="after-canvas"></canvas></div></div>
     </div>
     <div id="combined" hidden><div class="pane-label"><span id="combined-label">Before / After</span><span>Top-left aligned · original pixels</span></div><div class="viewport" id="combined-viewport"><canvas id="combined-canvas"></canvas></div></div>
   </div>
@@ -173,12 +175,15 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
   let changes = [], failures = [], failureSummary = {caseCount:0,fileCount:0,totalBytes:0,scanning:true,warnings:[]};
   let activeId = null, scope = 'all', selected = new Map();
   let fileLayout = 'tree', showIgnored = false, selectionControls = [], collapsedFolders = new Set();
+  let itemsById = new Map(), treeRenderKey = null;
+  const treeNodes = new Map(), differenceDependents = new Map();
   let menuState = null, pendingRevert = [];
   let before = null, after = null, loadedRevision = null, loadingRevision = null, loadSequence = 0;
   let polling = false, mutating = false, diffImage = null, diffMask = null, diffBounds = null, diffSummary = '', diffAttempted = false;
   let zoomMode = 'fit', manualScale = 1, renderedScale = 1, renderedMode = 'side', paintKey = null, synchronizing = false;
   const reviewItems = () => scope === 'failures' ? failures : changes;
   const current = () => reviewItems().find(c => c.id === activeId);
+  const isNewImage = item => !!item && !item.failure && !item.hasBefore && item.hasAfter;
   const visible = () => reviewItems().filter(c =>
     (c.failure || !c.ignored || showIgnored) &&
     (c.failure || scope === 'all' || (scope === 'staged') === c.staged) &&
@@ -507,21 +512,27 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
     syncSelectionControls();
   }
   function syncSelectionControls() {
-    for (const {check,items} of selectionControls) {
-      const count = items.filter(item => selected.has(item.id)).length;
-      check.checked = count === items.length;
-      check.indeterminate = count > 0 && count < items.length;
+    for (const check of selectionControls) {
+      const count = check.reviewIds.filter(id => selected.has(id)).length;
+      check.checked = count === check.reviewIds.length;
+      check.indeterminate = count > 0 && count < check.reviewIds.length;
       check.disabled = mutating;
     }
   }
-  function selectionCheckbox(items,label) {
-    const check = document.createElement('input'); check.type = 'checkbox'; check.setAttribute('aria-label',label);
-    selectionControls.push({check,items});
-    check.addEventListener('click',event => event.stopPropagation());
-    check.addEventListener('change',() => {
-      for (const item of items) { if(check.checked) selected.set(item.id,item); else selected.delete(item.id); }
-      updateButtons();
-    });
+  function selectionCheckbox(items,label,check) {
+    if (!check) {
+      check = document.createElement('input'); check.type = 'checkbox';
+      check.addEventListener('click',event => event.stopPropagation());
+      check.addEventListener('change',() => {
+        for (const id of check.reviewIds) {
+          const item=itemsById.get(id);
+          if(check.checked && item) selected.set(id,item); else selected.delete(id);
+        }
+        updateButtons();
+      });
+    }
+    check.setAttribute('aria-label',label); check.reviewIds=items.map(item=>item.id);
+    selectionControls.push(check);
     return check;
   }
   function closeMenu(restoreFocus=false) {
@@ -532,7 +543,7 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
     document.querySelectorAll('[aria-controls=action-menu]').forEach(el=>el.setAttribute('aria-expanded','false'));
     if (restoreFocus) (origin?.isConnected && !origin.disabled ? origin : $('search')).focus({preventScroll:true});
   }
-  function positionMenu(origin,x,y) {
+  function positionMenu(origin,x,y,focus=true) {
     const menu=$('action-menu'); menu.hidden=false;
     const box=origin.getBoundingClientRect();
     const left=x ?? (origin.hasAttribute('aria-controls') ? box.right-menu.offsetWidth : box.left);
@@ -540,7 +551,7 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
     menu.style.left=Math.max(8,Math.min(left,innerWidth-menu.offsetWidth-8))+'px';
     menu.style.top=Math.max(8,Math.min(top,innerHeight-menu.offsetHeight-8))+'px';
     const first=menu.querySelector('button[role^=menuitem]:not(:disabled)');
-    if(first) {first.tabIndex=0;first.focus({preventScroll:true});}
+    if(first && focus) {first.tabIndex=0;first.focus({preventScroll:true});}
   }
   function openViewOptions() {
     closeMenu();
@@ -629,40 +640,82 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
   function selectionContext() {
     const items=[...selected.values()]; return {items,title:'Selection · '+items.length+' changes',selection:true};
   }
-  function differenceSummary(items) {
-    const differences=items.map(item=>item.difference);
-    if(differences.some(value=>!value || value.status==='pending')) return {text:'…',className:'pending',title:'Calculating pixel difference in Dart…'};
-    const unavailable=differences.find(value=>value.status!=='ready');
-    if(unavailable) return {text:'—',className:'unavailable',title:unavailable.error || 'Pixel difference is unavailable.'};
-    const changed=differences.reduce((sum,value)=>sum+value.changedPixels,0);
-    const total=differences.reduce((sum,value)=>sum+value.totalPixels,0);
-    const percent=total ? changed/total*100 : 0;
+  function addDifference(control,value,direction) {
+    if(!value || value.status==='pending') control.pending+=direction;
+    else if(value.status!=='ready') {
+      const error=value.error || 'Pixel difference is unavailable.';
+      const count=(control.errors.get(error) || 0)+direction;
+      if(count) control.errors.set(error,count); else control.errors.delete(error);
+    } else {control.changed+=direction*value.changedPixels;control.total+=direction*value.totalPixels;}
+  }
+  function differenceSummary(control) {
+    if(control.pending) return {text:'…',className:'pending',title:'Calculating pixel difference in Dart…'};
+    if(control.errors.size) return {text:'—',className:'unavailable',title:control.errors.keys().next().value};
+    const {changed,total}=control, percent=total ? changed/total*100 : 0;
     const text=percent===0 ? '0%' : percent===100 ? '100%' : percent<.01 ? '<0.01%' : percent.toFixed(2)+'%';
     return {text,className:'ready',title:'Pixel difference: '+changed.toLocaleString()+' / '+total.toLocaleString()+' pixels ('+text+')'};
   }
-  function differenceValue(items) {
-    const summary=differenceSummary(items), value=document.createElement('span');
-    value.className='difference-value '+summary.className; value.textContent=summary.text; value.title=summary.title;
-    value.setAttribute('aria-label',summary.title); return value;
+  function updateDifference(control) {
+    const summary=differenceSummary(control);
+    if(control.value.title===summary.title) return;
+    control.value.className='difference-value '+summary.className;
+    control.value.textContent=summary.text; control.value.title=summary.title;
+    control.value.setAttribute('aria-label',summary.title);
+  }
+  function trackDifference(value,items) {
+    const control={value,pending:0,changed:0,total:0,errors:new Map()};
+    for(const item of items) {
+      if(!differenceDependents.has(item.id)) differenceDependents.set(item.id,new Set());
+      differenceDependents.get(item.id).add(control); addDifference(control,item.difference,1);
+    }
+    updateDifference(control);
+  }
+  function updateDifferences(updates) {
+    const dirty=new Set();
+    // Delta updates touch only the changed file and its displayed ancestors.
+    for(const {id,before,after} of updates) for(const control of differenceDependents.get(id) || []) {
+      addDifference(control,before,-1); addDifference(control,after,1); dirty.add(control);
+    }
+    for(const control of dirty) updateDifference(control);
+  }
+  // Only move/insert changed siblings. Existing rows, details, focus and menu
+  // anchors remain connected when a background refresh changes the tree.
+  function syncChildren(parent,children) {
+    let cursor=parent.firstChild;
+    for(const child of children) {
+      if(child===cursor) cursor=cursor.nextSibling;
+      else parent.insertBefore(child,cursor);
+    }
+    while(cursor) {const next=cursor.nextSibling;cursor.remove();cursor=next;}
+  }
+  function treeNode(key,create) {
+    if(!treeNodes.has(key)) treeNodes.set(key,create());
+    const record=treeNodes.get(key); record.used=true; return record;
   }
   function fileRow(item) {
-    const row = document.createElement('div'); row.className = 'file' + (item.id === activeId ? ' active' : '');
-    const check = item.failure ? null : selectionCheckbox([item],'Select ' + item.path + (item.staged ? ' staged' : ' unstaged'));
-    const button = document.createElement('button'); button.title = item.path;
-    const badge = document.createElement('span'); badge.className = 'badge' + (item.status === 'D' ? ' deleted' : ['A','?'].includes(item.status) ? ' added' : '');
-    if(item.failure) badge.classList.add('deleted');
-    badge.textContent = item.failure ? 'F' : item.status;
-    const text = document.createElement('span'); text.className = 'file-text';
-    const name = document.createElement('span'); name.className = 'file-name'; name.textContent = item.path.split('/').pop(); text.append(name);
-    if (fileLayout === 'list') {
-      const directory = document.createElement('span'); directory.className = 'file-dir'; directory.textContent = item.path.includes('/') ? item.path.slice(0,item.path.lastIndexOf('/')) : '/';
-      text.append(directory);
+    const record=treeNode('file:'+item.id,()=>{
+      const row=document.createElement('div'); row.className='file';
+      const button=document.createElement('button'), badge=document.createElement('span');
+      const text=document.createElement('span'); text.className='file-text';
+      const name=document.createElement('span'); name.className='file-name';
+      const directory=document.createElement('span'); directory.className='file-dir';
+      const ignored=document.createElement('span'); ignored.className='ignored-label'; ignored.textContent='Ignored';
+      const difference=document.createElement('span'); text.append(name,directory,ignored); button.append(badge,text,difference);
+      row.append(button); button.addEventListener('click',()=>choose(item.id));
+      if(!item.failure) bindContextMenu(row,()=>selected.has(item.id) ? selectionContext() : {items:[itemsById.get(item.id)],title:(item.staged ? 'Staged · ' : 'Unstaged · ')+item.path},button);
+      return {element:row,button,badge,name,directory,ignored,difference,check:null};
+    });
+    const {element:row,button,badge,name,directory,ignored,difference}=record;
+    row.classList.toggle('active',item.id===activeId); button.title=item.path;
+    badge.className='badge'+(item.failure || item.status==='D' ? ' deleted' : ['A','?'].includes(item.status) ? ' added' : '');
+    badge.textContent=item.failure ? 'F' : item.status; name.textContent=item.path.split('/').pop();
+    directory.hidden=fileLayout!=='list'; directory.textContent=item.path.includes('/') ? item.path.slice(0,item.path.lastIndexOf('/')) : '/';
+    ignored.hidden=!item.ignored;
+    if(!item.failure) {
+      record.check=selectionCheckbox([item],'Select '+item.path+(item.staged ? ' staged' : ' unstaged'),record.check);
+      if(record.check.parentNode!==row) row.prepend(record.check);
     }
-    if (item.ignored) { const ignored = document.createElement('span'); ignored.className='ignored-label'; ignored.textContent='Ignored'; text.append(ignored); }
-    button.append(badge,text,differenceValue([item])); button.addEventListener('click',() => choose(item.id));
-    if(check) row.append(check); row.append(button);
-    if(!item.failure) bindContextMenu(row,()=>selected.has(item.id) ? selectionContext() : {items:[item],title:(item.staged ? 'Staged · ' : 'Unstaged · ')+item.path},button);
-    return row;
+    trackDifference(difference,[item]); return row;
   }
   function fileTree(items,staged) {
     const failure = !!items[0]?.failure;
@@ -677,38 +730,46 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
       }
       branch.files.push(item);
     }
-    function children(branch,parent) {
+    function children(branch) {
+      const result=[];
       for (const [name,original] of [...branch.folders].sort(([a],[b]) => a.localeCompare(b,undefined,{numeric:true}))) {
         let folder = original, label = name;
-        // Compact single-child folders, while retaining the complete literal path.
         while (!folder.files.length && folder.folders.size === 1) {
           const [nextName,next] = folder.folders.entries().next().value; label += ' / ' + nextName; folder = next;
         }
         const key = (failure ? 'failures:' : staged ? 'staged:' : 'unstaged:') + folder.path;
-        const details = document.createElement('details'); details.className = 'folder'; details.dataset.folderKey = key;
-        details.open = !!$('search').value.trim() || !collapsedFolders.has(key);
-        const summary = document.createElement('summary'); summary.title = folder.path;
-        const check = failure ? null : selectionCheckbox(folder.items,'Select folder ' + folder.path + (staged ? ' staged' : ' unstaged'));
-        const text = document.createElement('span'); text.className = 'folder-name'; text.textContent = label;
-        const count = document.createElement('span'); count.className = 'folder-count'; count.textContent = folder.items.length;
-        if(check) summary.append(check); summary.append(text,count,differenceValue(folder.items));
-        if(!failure) bindContextMenu(summary,()=>({items:folder.items,folder:folder.path,title:folder.path+' · '+folder.items.length+' image(s)'}));
-        const content = document.createElement('div'); content.className = 'folder-children'; children(folder,content);
-        details.append(summary,content);
-        details.addEventListener('toggle',() => {
-          if (!details.isConnected || $('search').value.trim()) return;
-          if(details.open) collapsedFolders.delete(key); else collapsedFolders.add(key);
+        const record=treeNode('folder:'+key,()=>{
+          const details=document.createElement('details'); details.className='folder'; details.dataset.folderKey=key;
+          details.open=!!$('search').value.trim() || !collapsedFolders.has(key);
+          const summary=document.createElement('summary'), text=document.createElement('span'), count=document.createElement('span'), difference=document.createElement('span');
+          text.className='folder-name'; count.className='folder-count'; summary.append(text,count,difference);
+          const content=document.createElement('div'); content.className='folder-children'; details.append(summary,content);
+          const record={element:details,summary,text,count,difference,content,check:null,ids:[],searching:!!$('search').value.trim()};
+          if(!failure) bindContextMenu(summary,()=>({items:record.ids.map(id=>itemsById.get(id)),folder:folder.path,title:folder.path+' · '+record.ids.length+' image(s)'}));
+          details.addEventListener('toggle',()=>{
+            if(!details.isConnected || $('search').value.trim()) return;
+            if(details.open) collapsedFolders.delete(key); else collapsedFolders.add(key);
+          });
+          return record;
         });
-        parent.append(details);
+        const searching=!!$('search').value.trim();
+        if(record.searching!==searching) record.element.open=searching || !collapsedFolders.has(key);
+        record.searching=searching; record.ids=folder.items.map(item=>item.id);
+        record.summary.title=folder.path; record.text.textContent=label; record.count.textContent=folder.items.length;
+        if(!failure) {
+          record.check=selectionCheckbox(folder.items,'Select folder '+folder.path+(staged ? ' staged' : ' unstaged'),record.check);
+          if(record.check.parentNode!==record.summary) record.summary.prepend(record.check);
+        }
+        trackDifference(record.difference,folder.items);
+        syncChildren(record.content,children(folder)); result.push(record.element);
       }
-      for (const item of branch.files) parent.append(fileRow(item));
+      for (const item of branch.files) result.push(fileRow(item));
+      return result;
     }
-    const fragment = document.createDocumentFragment(); children(root,fragment); return fragment;
+    return children(root);
   }
   function renderList() {
-    closeMenu();
-    const fragment = document.createDocumentFragment(), items = visible();
-    const available = changes.filter(c=>!c.ignored || showIgnored);
+    const items = visible(), available = changes.filter(c=>!c.ignored || showIgnored);
     const counts = [items.length,available.filter(c=>!c.staged).length,available.filter(c=>c.staged).length,failures.length];
     for(const [id,value] of [['shown-count',counts[0]],['unstaged-count',counts[1]],['staged-count',counts[2]],['failure-count',counts[3]]]) {
       if($(id).textContent!==String(value)) $(id).textContent=String(value);
@@ -718,26 +779,45 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
       : 'Showing '+counts[0]+' of '+available.length+' changes: '+counts[1]+' unstaged and '+counts[2]+' staged. '+counts[3]+' failure comparisons are available.';
     if($('file-count').getAttribute('aria-label')!==countLabel) $('file-count').setAttribute('aria-label',countLabel);
     const ignoredCount = new Set(changes.filter(c=>c.ignored).map(c=>c.path)).size;
-    selectionControls = [];
-    for (const staged of (scope==='failures' ? [false] : [false, true])) {
-      const group = scope==='failures' ? items : items.filter(c => c.staged === staged);
-      if (!group.length) continue;
-      const title = document.createElement('div'); title.className = 'group-title';
-      title.textContent = (scope==='failures' ? 'Failure artifacts' : staged ? 'Staged' : 'Unstaged') + ' · ' + group.length; fragment.append(title);
-      if(scope!=='failures') {title.tabIndex=0; bindContextMenu(title,()=>({items:group,title:(staged ? 'Staged' : 'Unstaged')+' · '+group.length+' images'}));}
-      if (fileLayout === 'tree') fragment.append(fileTree(group,staged));
-      else for (const item of group) fragment.append(fileRow(item));
+    // Revisions and metrics are data, not structure. Hidden failure scans and
+    // completed pixel calculations must never rebuild the visible tree.
+    const key=JSON.stringify([fileLayout,scope,!!$('search').value.trim(),showIgnored,
+      items.map(c=>[c.id,c.path,c.status,c.ignored]),
+      !items.length && [failureSummary.scanning,changes.length,failures.length,ignoredCount]]);
+    const rebuilt=key!==treeRenderKey;
+    if(rebuilt) {
+      const top=$('files').scrollTop, left=$('files').scrollLeft, focus=document.activeElement;
+      treeRenderKey=key; selectionControls=[]; differenceDependents.clear();
+      for(const record of treeNodes.values()) record.used=false;
+      const children=[];
+      for (const staged of (scope==='failures' ? [false] : [false, true])) {
+        const group = scope==='failures' ? items : items.filter(c => c.staged === staged);
+        if (!group.length) continue;
+        const record=treeNode('group:'+(scope==='failures' ? 'failures' : staged),()=>{
+          const title=document.createElement('div'); title.className='group-title';
+          const record={element:title,ids:[]};
+          if(scope!=='failures') {title.tabIndex=0; bindContextMenu(title,()=>({items:record.ids.map(id=>itemsById.get(id)),title:(staged ? 'Staged' : 'Unstaged')+' · '+record.ids.length+' images'}));}
+          return record;
+        });
+        record.ids=group.map(item=>item.id);
+        record.element.textContent=(scope==='failures' ? 'Failure artifacts' : staged ? 'Staged' : 'Unstaged')+' · '+group.length; children.push(record.element);
+        children.push(...(fileLayout==='tree' ? fileTree(group,staged) : group.map(fileRow)));
+      }
+      if (!items.length) {
+        const empty = document.createElement('div'); empty.className = 'empty-list';
+        empty.textContent = scope==='failures'
+          ? (failureSummary.scanning ? 'Scanning generated failure images…' : failures.length ? 'No failure comparisons match this search.' : 'No generated Flutter golden failure images found.')
+          : changes.length ? 'No images match this filter.' + (ignoredCount && !showIgnored ? ' Use ⋯ → Show ignored to review excluded files.' : '') : 'No changed PNG, JPEG or WebP images. Regenerate your goldens to start reviewing.';
+        children.push(empty);
+      }
+      syncChildren($('files'),children);
+      for(const [key,record] of treeNodes) if(!record.used) treeNodes.delete(key);
+      if(focus?.isConnected && document.activeElement!==focus) focus.focus({preventScroll:true});
+      $('files').scrollTop=top; $('files').scrollLeft=left;
+      if(menuState && !menuState.origin.isConnected) closeMenu(true);
     }
-    if (!items.length) {
-      const empty = document.createElement('div'); empty.className = 'empty-list';
-      empty.textContent = scope==='failures'
-        ? (failureSummary.scanning ? 'Scanning generated failure images…' : failures.length ? 'No failure comparisons match this search.' : 'No generated Flutter golden failure images found.')
-        : changes.length ? 'No images match this filter.' + (ignoredCount && !showIgnored ? ' Use ⋯ → Show ignored to review excluded files.' : '') : 'No changed PNG, JPEG or WebP images. Regenerate your goldens to start reviewing.';
-      fragment.append(empty);
-    }
-    $('files').replaceChildren(fragment);
-    updateViewOptions();
-    updateButtons();
+    for(const [key,record] of treeNodes) if(key.startsWith('file:')) record.element.classList.toggle('active',key==='file:'+activeId);
+    updateViewOptions(); updateButtons(); return rebuilt;
   }
   function applyData(data) {
     const previousPath = current()?.path;
@@ -745,16 +825,22 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
     $('repository').title = $('repository').textContent;
     const warnings=[...data.warnings,...(data.failures?.warnings || [])];
     $('warnings').textContent = warnings.join('\n'); $('warnings').hidden = !warnings.length;
-    const changed = JSON.stringify(changes) !== JSON.stringify(data.changes) || JSON.stringify(failures) !== JSON.stringify(data.failures?.items || []) || JSON.stringify(failureSummary) !== JSON.stringify(data.failures || {});
     changes = data.changes;
     failureSummary = data.failures || {items:[],caseCount:0,fileCount:0,totalBytes:0,scanning:false,warnings:[]};
     failures = failureSummary.items || [];
+    const nextItems=new Map([...changes,...failures].map(item=>[item.id,item]));
+    const changedDifferences=[];
+    for(const [id,item] of nextItems) {
+      if(JSON.stringify(itemsById.get(id)?.difference)!==JSON.stringify(item.difference)) changedDifferences.push({id,before:itemsById.get(id)?.difference,after:item.difference});
+    }
+    itemsById=nextItems;
     for (const [id, item] of selected) {
-      if (!changes.some(c => c.id === id && c.revision === item.revision && c.ignored === item.ignored)) selected.delete(id);
+      const next=itemsById.get(id);
+      if (!next || next.revision!==item.revision || next.ignored!==item.ignored) selected.delete(id);
     }
     const items = visible();
     if (!items.some(c => c.id === activeId)) activeId = items.find(c => c.path === previousPath)?.id || items[0]?.id || null;
-    if (changed) renderList();
+    if(!renderList()) updateDifferences(changedDifferences);
     if (current()?.revision !== loadedRevision && current()?.revision !== loadingRevision) loadCurrent();
     if (!current()) clearImage();
     $('connection').textContent = 'Live · refreshes every 2s';
@@ -771,7 +857,7 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
     const item = current();
     if (item) for (const key of collapsedFolders) {
       const prefix = item.failure ? 'failures:' : item.staged ? 'staged:' : 'unstaged:';
-      if (key.startsWith(prefix) && item.path.startsWith(key.slice(prefix.length)+'/')) collapsedFolders.delete(key);
+      if (key.startsWith(prefix) && item.path.startsWith(key.slice(prefix.length)+'/')) {collapsedFolders.delete(key); const folder=treeNodes.get('folder:'+key); if(folder) folder.element.open=true;}
     }
     renderList(); loadCurrent();
   }
@@ -851,7 +937,7 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
     diffSummary = ' · ' + changed.toLocaleString() + ' / ' + total.toLocaleString() + ' pixels changed (' + (total ? changed/total*100 : 0).toFixed(2) + '%) · browser diagnostic';
   }
   function imageSize() { return {width:Math.max(before?.naturalWidth || 0,after?.naturalWidth || 0),height:Math.max(before?.naturalHeight || 0,after?.naturalHeight || 0)}; }
-  function viewports(mode=renderedMode) { return mode==='side' ? [$('before-viewport'),$('after-viewport')] : [$('combined-viewport')]; }
+  function viewports(mode=renderedMode) { return mode==='side' ? ($('before-pane').hidden ? [$('after-viewport')] : [$('before-viewport'),$('after-viewport')]) : [$('combined-viewport')]; }
   function captureAnchor(viewport=viewports()[0],clientX,clientY) {
     if (!loadedRevision) return null;
     const box=viewport.getBoundingClientRect(), canvas=viewport.querySelector('canvas').getBoundingClientRect();
@@ -892,27 +978,31 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
   function render() {
     if (!loadedRevision) return;
     const {width,height}=imageSize();
-    const mode = $('mode').value, side = mode === 'side', mix = Number($('mix').value)/100;
-    const highlight=side && $('highlight').checked, intensity=Number($('highlight-strength').value)/100;
+    const added=isNewImage(current());
+    const mode = added ? 'side' : $('mode').value, side = mode === 'side', mix = Number($('mix').value)/100;
+    const highlight=side && !added && $('highlight').checked, intensity=Number($('highlight-strength').value)/100;
     $('side').hidden = !side; $('combined').hidden = side;
-    $('highlight-control').hidden = !side; $('highlight-strength-control').hidden = !highlight;
+    $('before-pane').hidden=added; $('side').classList.toggle('single-image',added); $('new-image-badge').hidden=!added;
+    $('comparison-toolbar').hidden=added;
+    $('mode-control').hidden=added; $('highlight-control').hidden = !side || added; $('highlight-strength-control').hidden = !highlight;
+    $('zoom-changes').hidden=added;
     $('mix-control').hidden = mode !== 'split' && mode !== 'overlay';
     $('mix-label').textContent = mode === 'split' ? 'Position' : 'Opacity'; $('mix-value').textContent = $('mix').value + '%';
-    const viewport = $(side ? 'before-viewport' : 'combined-viewport');
+    const viewport = viewports(mode)[0];
     const fit = Math.min((viewport.clientWidth-32)/width,(viewport.clientHeight-32)/height,1);
     const scale = zoomMode==='manual' ? manualScale : Math.max(.01,zoomMode==='width' ? Math.min((viewport.clientWidth-32)/width,8) : fit);
     const nextPaintKey=[loadedRevision,mode,mix,highlight,intensity,mode==='split' ? scale : ''].join('|');
     const repaint=paintKey!==nextPaintKey;
     if ((mode==='diff' || highlight) && repaint) buildDiff(width,height);
-    const canvases = side ? [$('before-canvas'),$('after-canvas')] : [$('combined-canvas')];
-    canvases.forEach((canvas,index) => {
+    const canvases = viewports(mode).map(viewport=>viewport.querySelector('canvas'));
+    canvases.forEach(canvas => {
       sizeCanvas(canvas,width,height); canvas.style.width = width*scale + 'px'; canvas.style.height = height*scale + 'px';
       canvas.style.imageRendering = scale>=1 ? 'pixelated' : 'auto';
       if (!repaint) return;
       const ctx = canvas.getContext('2d'); ctx.clearRect(0,0,width,height);
       if (side) {
-        const image = index === 0 ? before : after; if (image) ctx.drawImage(image,0,0);
-        if (highlight && index === 1) { ctx.save(); ctx.globalAlpha=intensity; ctx.drawImage(diffMask,0,0); ctx.restore(); }
+        const image = canvas.id === 'before-canvas' ? before : after; if (image) ctx.drawImage(image,0,0);
+        if (highlight && canvas.id === 'after-canvas') { ctx.save(); ctx.globalAlpha=intensity; ctx.drawImage(diffMask,0,0); ctx.restore(); }
       }
       else if (mode === 'diff') { ctx.putImageData(diffImage,0,0); }
       else {
@@ -931,7 +1021,7 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
     $('zoom-actual').setAttribute('aria-pressed',String(zoomMode==='manual' && scale===1));
     const failure=!!current()?.failure;
     $('combined-label').textContent = mode === 'diff' ? 'Changed pixels in pink' : mode === 'split' ? (failure ? 'Expected ← | → Actual' : 'Before ← | → After') : (failure ? 'Actual over Expected' : 'After over Before');
-    $('metrics').textContent = dimensions(before) + ' → ' + dimensions(after) + (before && after && (before.naturalWidth!==after.naturalWidth || before.naturalHeight!==after.naturalHeight) ? ' · Dimensions changed' : '') + (mode === 'diff' || highlight ? diffSummary : '');
+    $('metrics').textContent = added ? dimensions(after) : dimensions(before) + ' → ' + dimensions(after) + (before && after && (before.naturalWidth!==after.naturalWidth || before.naturalHeight!==after.naturalHeight) ? ' · Dimensions changed' : '') + (mode === 'diff' || highlight ? diffSummary : '');
   }
   function confirmRevert(items) {
     pendingRevert=items.filter(item=>!item.staged);
@@ -1051,7 +1141,7 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
   document.addEventListener('pointerdown',event=>{
     if(menuState && !$('action-menu').contains(event.target) && !menuState.origin.contains(event.target)) closeMenu();
   },true);
-  document.addEventListener('scroll',event=>{if(menuState && !$('action-menu').contains(event.target)) closeMenu();},true);
+  document.addEventListener('scroll',event=>{if(menuState && event.target.contains?.(menuState.origin)) positionMenu(menuState.origin,undefined,undefined,false);},true);
   window.addEventListener('resize',()=>closeMenu());
   window.addEventListener('blur',()=>closeMenu());
   for (const [source,target] of [['before-viewport','after-viewport'],['after-viewport','before-viewport']]) {
