@@ -454,7 +454,6 @@ test('large cleanup lists scroll without moving confirmation buttons out of a sh
     return {visible:confirm.top>=0 && confirm.bottom<=innerHeight && cancel.bottom<=innerHeight,scrolls:list.scrollHeight>list.clientHeight,lines:list.textContent.split('\n').length};
   });
   assert.deepEqual(dimensions,{visible:true,scrolls:true,lines:5000});
-  await page.screenshot({path:'/private/tmp/golden-failure-cleanup-dialog.png'});
   await page.locator('#cancel-delete-failures').click();
   await page.locator('#action-progress').waitFor({state:'hidden'});
   assert.deepEqual(deletions,[]);
