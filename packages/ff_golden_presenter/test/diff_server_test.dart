@@ -261,11 +261,15 @@ void main() {
     await fixture.write('.git/info/exclude', utf8.encode('**/failures/\n'));
     final expected = _png(redPixel: false);
     final actual = _png(redPixel: true);
+    final isolated =
+        image_package.encodePng(image_package.Image(width: 3, height: 1));
+    final masked =
+        image_package.encodePng(image_package.Image(width: 1, height: 3));
     const prefix = 'test/screens/auth/failures/login';
     await fixture.write('${prefix}_masterImage.png', expected);
     await fixture.write('${prefix}_testImage.png', actual);
-    await fixture.write('${prefix}_isolatedDiff.png', actual);
-    await fixture.write('${prefix}_maskedDiff.png', actual);
+    await fixture.write('${prefix}_isolatedDiff.png', isolated);
+    await fixture.write('${prefix}_maskedDiff.png', masked);
     await fixture.write(
       'test/screens/auth/golden/login.png',
       expected,
@@ -296,7 +300,8 @@ void main() {
     expect(data['changes'], hasLength(1));
     expect(summary['caseCount'], 1);
     expect(summary['fileCount'], 4);
-    expect(summary['totalBytes'], expected.length + actual.length * 3);
+    expect(summary['totalBytes'],
+        expected.length + actual.length + isolated.length + masked.length);
     expect(failure?['path'], 'test/screens/auth/failures/login.png');
     expect(failure?['artifactCount'], 4);
     expect(failure?['hasBefore'], isTrue);
@@ -306,18 +311,43 @@ void main() {
     expect((failure?['difference'] as Map)['status'], 'ready');
     expect((failure?['difference'] as Map)['percent'], 25);
 
-    final query = Uri(queryParameters: {
+    final parameters = {
       'id': failure!['id'] as String,
       'revision': failure['revision'] as String,
-      'side': 'before',
       'failure': 'true',
+    };
+    for (final entry in {
+      'before': expected,
+      'after': actual,
+      'isolatedDiff': isolated,
+      'maskedDiff': masked,
+    }.entries) {
+      final query =
+          Uri(queryParameters: {...parameters, 'side': entry.key}).query;
+      final response = await request('/api/image?$query');
+      expect(response.statusCode, 200);
+      expect(
+          await response
+              .fold<List<int>>([], (bytes, chunk) => bytes..addAll(chunk)),
+          entry.value);
+    }
+    for (final extra in [
+      {'side': '../../outside.png'},
+      {'side': 'isolatedDiff', 'failure': 'false'},
+    ]) {
+      final query = Uri(queryParameters: {...parameters, ...extra}).query;
+      final response = await request('/api/image?$query');
+      expect(response.statusCode, 400);
+      await response.drain<void>();
+    }
+    await fixture.write('${prefix}_isolatedDiff.png', actual);
+    final staleQuery = Uri(queryParameters: {
+      ...parameters,
+      'side': 'isolatedDiff',
     }).query;
-    final image = await request('/api/image?$query');
-    expect(image.statusCode, 200);
-    expect(
-      await image.fold<List<int>>([], (bytes, chunk) => bytes..addAll(chunk)),
-      expected,
-    );
+    final stale = await request('/api/image?$staleQuery');
+    expect(stale.statusCode, 409);
+    await stale.drain<void>();
 
     final invalidDelete = await request(
       '/api/failures/delete',
@@ -327,16 +357,68 @@ void main() {
     await invalidDelete.drain<void>();
     expect(await fixture.file('${prefix}_masterImage.png').exists(), isTrue);
 
-    final deleted = await json(await request('/api/failures/delete', body: {}));
+    final plan = await json(
+        await request('/api/failures/prepare-delete', body: {'all': true}));
+    expect(plan['fileCount'], 4);
+    await fixture.write('${prefix}_new.png', actual);
+    final deleted = await json(await request('/api/failures/delete',
+        body: {'planId': plan['planId']}));
     expect(deleted['deletedFailureFiles'], 4);
     expect((deleted['failures'] as Map)['items'], isEmpty);
     expect(await fixture.file('${prefix}_masterImage.png').exists(), isFalse);
     expect(await fixture.file('${prefix}_testImage.png').exists(), isFalse);
     expect(await fixture.file('${prefix}_isolatedDiff.png').exists(), isFalse);
     expect(await fixture.file('${prefix}_maskedDiff.png').exists(), isFalse);
+    expect(await fixture.file('${prefix}_new.png').exists(), isTrue);
     expect(await fixture.file('test/screens/auth/golden/login.png').exists(),
         isTrue);
     expect(await fixture.blob(':image.png'), [0, 255, 128]);
+  });
+
+  test(
+      'failure actions validate revisions, preserve siblings and do not accept a reused deletion plan',
+      () async {
+    final png = _png(redPixel: true);
+    await fixture.write('failures/a_testImage.png', png);
+    await fixture.write('failures/b_testImage.png', png);
+    final planAll = await json(
+        await request('/api/failures/prepare-delete', body: {'all': true}));
+    final data = await json(await request('/api/changes?failures=true'));
+    final a = ((data['failures'] as Map)['items'] as List).first as Map;
+    final revisions = {a['id']: a['revision']};
+    for (final endpoint in ['prepare-delete', 'ignore']) {
+      final stale = await request('/api/failures/$endpoint', body: {
+        'revisions': {a['id']: 'old-revision'}
+      });
+      expect(stale.statusCode, 409);
+      expect((await json(stale))['error'], contains('selection changed'));
+    }
+    expect(await fixture.file('failures/a_testImage.png').exists(), true);
+    expect(await fixture.file('.golden_ignore').exists(), false);
+    final ignored = await json(
+        await request('/api/failures/ignore', body: {'revisions': revisions}));
+    expect(
+        ((ignored['failures'] as Map)['items'] as List).first['ignored'], true);
+    expect(await fixture.file('.golden_ignore').readAsString(),
+        contains('/failures/a.png'));
+    final restored = await json(await request('/api/failures/unignore',
+        body: {'revisions': revisions}));
+    expect(((restored['failures'] as Map)['items'] as List).first['ignored'],
+        false);
+    final selected = await json(await request('/api/failures/prepare-delete',
+        body: {'revisions': revisions}));
+    expect(selected['paths'], ['failures/a_testImage.png']);
+    final deleted = await json(await request('/api/failures/delete',
+        body: {'planId': selected['planId']}));
+    expect(deleted['deletedFailureFiles'], 1);
+    expect(await fixture.file('failures/b_testImage.png').exists(), true);
+    for (final id in [selected['planId'], planAll['planId']]) {
+      final rejected =
+          await request('/api/failures/delete', body: {'planId': id});
+      expect(rejected.statusCode, 409);
+      await rejected.drain<void>();
+    }
+    expect(await fixture.file('failures/b_testImage.png').exists(), true);
   });
 
   test('rejects stale mutations and arbitrary image paths', () async {

@@ -128,6 +128,45 @@ void main() {
     expect(result.fileCount, 1);
     expect(await failureImage.exists(), isFalse);
   });
+
+  test(
+      'confirmed cleanup keeps new and unselected files and rejects a rewrite before deleting anything',
+      () async {
+    final first =
+        await _writeFile(temporaryDirectory, 'failures/a.png', [1, 2]);
+    final second =
+        await _writeFile(temporaryDirectory, 'failures/b.png', [3, 4]);
+    final cleaner = FailureArtifactCleaner(inputDirectory: temporaryDirectory);
+    final plan = await cleaner.prepare(await cleaner.scan());
+    final added = await _writeFile(temporaryDirectory, 'failures/new.png', [5]);
+    final modified = (await second.stat()).modified;
+    await second.writeAsBytes([6, 7]);
+    await second.setLastModified(modified);
+    await expectLater(cleaner.cleanPrepared(plan),
+        throwsA(isA<FailureArtifactCleanupException>()));
+    expect(await first.exists(), isTrue);
+    expect(await added.exists(), isTrue);
+    final selected = await cleaner.prepare((await cleaner.scan())
+        .where((file) => file.relativePath == 'failures/a.png'));
+    expect((await cleaner.cleanPrepared(selected)).fileCount, 1);
+    expect(await first.exists(), isFalse);
+    expect(await second.exists(), isTrue);
+    expect(await added.exists(), isTrue);
+  });
+
+  test('cleanup refuses a failure directory replaced by a symbolic link',
+      () async {
+    await _writeFile(temporaryDirectory, 'failures/a.png', [1]);
+    final cleaner = FailureArtifactCleaner(inputDirectory: temporaryDirectory);
+    final plan = await cleaner.prepare(await cleaner.scan());
+    final original = Directory(path.join(temporaryDirectory.path, 'failures'));
+    final moved =
+        await original.rename(path.join(temporaryDirectory.path, 'preserved'));
+    await Link(original.path).create(moved.path);
+    await expectLater(cleaner.cleanPrepared(plan),
+        throwsA(isA<FailureArtifactCleanupException>()));
+    expect(await File(path.join(moved.path, 'a.png')).exists(), isTrue);
+  });
 }
 
 Future<File> _writeFile(

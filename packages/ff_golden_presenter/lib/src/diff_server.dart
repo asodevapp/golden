@@ -6,6 +6,7 @@ import 'dart:math';
 import 'package:path/path.dart' as path;
 
 import 'diff_viewer.dart';
+import 'failure_artifact_cleaner.dart';
 import 'failure_artifact_review.dart';
 import 'git_image_difference.dart';
 import 'git_image_review.dart';
@@ -44,6 +45,8 @@ final class DiffReviewServer {
   FailureImageSnapshot _failureSnapshot = const FailureImageSnapshot.empty();
   Future<void>? _failureRefresh;
   DateTime? _failureRefreshedAt;
+  final _cleanupPlans =
+      <String, ({FailureArtifactCleanupPlan plan, DateTime created})>{};
 
   static const _failureRefreshInterval = Duration(seconds: 5);
 
@@ -225,28 +228,96 @@ final class DiffReviewServer {
           _json(response, 200, _runner.snapshot());
         }
       } else if (request.method == 'POST' &&
+          request.uri.path == '/api/failures/prepare-delete') {
+        final body = await _readBody(request);
+        _requireIdleTests();
+        if (body is! Map ||
+            body.length != 1 ||
+            !(body['all'] == true || body['revisions'] is Map)) {
+          throw const FormatException(
+              'Expected all or a selected failure revisions map.');
+        }
+        await _refreshFailures(force: true);
+        final selected =
+            body['all'] == true ? null : _failureSelection(body['revisions']);
+        final paths = selected
+            ?.expand((change) =>
+                change.artifacts.values.map((file) => file.relativePath))
+            .toSet();
+        final files = _failureSnapshot.files.where(
+            (file) => paths == null || paths.contains(file.relativePath));
+        final plan = await _failureRepository.cleaner.prepare(files);
+        if (plan.files.isEmpty) {
+          throw const GitReviewException('No failure images selected.');
+        }
+        final now = DateTime.now();
+        _cleanupPlans.removeWhere((_, entry) =>
+            now.difference(entry.created) > const Duration(minutes: 10));
+        while (_cleanupPlans.length >= 16) {
+          _cleanupPlans.remove(_cleanupPlans.keys.first);
+        }
+        final random = Random.secure();
+        final id =
+            base64Url.encode(List.generate(24, (_) => random.nextInt(256)));
+        _cleanupPlans[id] = (plan: plan, created: now);
+        _json(response, 200, {
+          'planId': id,
+          'fileCount': plan.files.length,
+          'totalBytes': plan.totalBytes,
+          'paths': plan.files
+              .map((file) => path.posix.normalize(
+                  path.posix.join(repository.input, file.relativePath)))
+              .toList()
+        });
+      } else if (request.method == 'POST' &&
           request.uri.path == '/api/failures/delete') {
         final body = await _readBody(request);
-        if (body is! Map || body.isNotEmpty) {
-          throw const FormatException('Expected an empty request.');
+        _requireIdleTests();
+        if (body is! Map || body.length != 1 || body['planId'] is! String) {
+          throw const FormatException('Expected a confirmed cleanup plan.');
         }
-        if (_runner.active) {
+        final entry = _cleanupPlans.remove(body['planId']);
+        if (entry == null ||
+            DateTime.now().difference(entry.created) >
+                const Duration(minutes: 10)) {
           throw const GitReviewException(
-            'Stop the running golden tests before deleting failure images.',
-            conflict: true,
-          );
+              'Cleanup selection expired. Review and confirm again.',
+              conflict: true);
+        }
+        late final FailureArtifactCleanupResult result;
+        try {
+          result = await _failureRepository.cleaner.cleanPrepared(entry.plan);
+        } finally {
+          await _refreshFailures(force: true);
+        }
+        await _refresh(response,
+            deletedFailureFiles: result.fileCount,
+            deletedFailureBytes: result.totalBytes);
+      } else if (request.method == 'POST' &&
+          ['/api/failures/ignore', '/api/failures/unignore']
+              .contains(request.uri.path)) {
+        final body = await _readBody(request);
+        if (body is! Map || body.length != 1) {
+          throw const FormatException('Expected failure revisions.');
         }
         await _refreshFailures(force: true);
-        final result = await _failureRepository.cleaner.clean();
-        await _refreshFailures(force: true);
-        await _refresh(
-          response,
-          deletedFailureFiles: result.fileCount,
-          deletedFailureBytes: result.totalBytes,
-        );
+        final selected = _failureSelection(body['revisions']);
+        await repository.setIgnoredPaths(
+            selected.map((change) => change.path).toSet(),
+            ignored: request.uri.path.endsWith('/ignore'));
+        await _refresh(response);
       } else if (request.method == 'GET' && request.uri.path == '/api/image') {
         final query = request.uri.queryParameters;
-        if (query['side'] != 'before' && query['side'] != 'after') {
+        final failureKind = switch (query['side']) {
+          'before' => FailureArtifactKind.expected,
+          'after' => FailureArtifactKind.actual,
+          'isolatedDiff' => FailureArtifactKind.isolatedDiff,
+          'maskedDiff' => FailureArtifactKind.maskedDiff,
+          _ => null,
+        };
+        if (query['failure'] == 'true'
+            ? failureKind == null
+            : query['side'] != 'before' && query['side'] != 'after') {
           _json(response, 400, {'error': 'Expected before or after.'});
           return;
         }
@@ -262,10 +333,7 @@ final class DiffReviewServer {
             );
           }
           final change = matches.single;
-          bytes = await _failureRepository.readImage(
-            change,
-            before: query['side'] == 'before',
-          );
+          bytes = await _failureRepository.readArtifact(change, failureKind!);
           extension = 'png';
         } else {
           final matches = _snapshot.changes.where((c) => c.id == query['id']);
@@ -328,6 +396,8 @@ final class DiffReviewServer {
       } else {
         _json(response, 404, {'error': 'Not found.'});
       }
+    } on FailureArtifactCleanupException catch (error) {
+      _json(response, 409, {'error': error.message});
     } on GitReviewException catch (error) {
       _json(response, error.conflict ? 409 : 400, {'error': error.message});
     } on FormatException catch (error) {
@@ -348,6 +418,37 @@ final class DiffReviewServer {
         // Closing a browser tab must not stop the local server.
       }
     }
+  }
+
+  void _requireIdleTests() {
+    if (_runner.active) {
+      throw const GitReviewException(
+          'Stop the running golden tests before deleting failure images.',
+          conflict: true);
+    }
+  }
+
+  List<FailureImageChange> _failureSelection(Object? value) {
+    if (value is! Map ||
+        value.isEmpty ||
+        value.length > 500 ||
+        !value.entries
+            .every((entry) => entry.key is String && entry.value is String)) {
+      throw const FormatException(
+          'Select between 1 and 500 failure comparisons.');
+    }
+    final available = {
+      for (final change in _failureSnapshot.changes) change.id: change
+    };
+    return value.entries.map((entry) {
+      final change = available[entry.key];
+      if (change == null || change.revision != entry.value) {
+        throw const GitReviewException(
+            'Failure selection changed. Refresh and try again.',
+            conflict: true);
+      }
+      return change;
+    }).toList();
   }
 
   static Future<Object?> _readBody(HttpRequest request) async {
@@ -372,6 +473,7 @@ final class DiffReviewServer {
       int deletedFailureBytes = 0,
       bool awaitFailures = false}) async {
     _snapshot = await repository.scan();
+    final ignored = await repository.ignoredPaths();
     _differences.schedule(_snapshot);
     if (awaitFailures) {
       await _refreshFailures();
@@ -391,6 +493,7 @@ final class DiffReviewServer {
         'items': _failureSnapshot.changes
             .map((change) => {
                   ...change.toJson(),
+                  'ignored': ignored.contains(change.path),
                   'difference': _failureDifferences.stateFor(change).toJson(),
                 })
             .toList(),
@@ -433,6 +536,7 @@ final class DiffReviewServer {
           changes: _failureSnapshot.changes,
           fileCount: _failureSnapshot.fileCount,
           totalBytes: _failureSnapshot.totalBytes,
+          files: _failureSnapshot.files,
           warnings: const [
             'Unable to scan generated failure images. Refresh and try again.',
           ],

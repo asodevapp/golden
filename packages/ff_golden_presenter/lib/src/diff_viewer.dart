@@ -27,6 +27,8 @@ input[type=search] { width:100%; min-width:0; height:30px; color:inherit; backgr
 .file-tools>button { font-size:20px; } .file-layout [aria-pressed=true],[aria-pressed=true] { color:var(--accent); border-color:var(--accent); background:#213d3b; }
 #ignored-active { height:30px; padding:3px 7px; font-size:11px; white-space:nowrap; color:var(--accent); border-color:#397f69; background:#213d3b; } .ignored-label { color:var(--muted); font-size:10px; }
 .file-count { display:flex; min-width:0; padding-top:2px; color:var(--muted); font-size:10px; } .file-count span { flex:1; min-width:0; text-align:center; white-space:nowrap; } .file-count span+span { border-left:1px solid var(--line); } .file-count strong { margin-right:3px; color:#cbd5df; font-size:11px; font-variant-numeric:tabular-nums; }
+.file-count button { padding:1px 4px; font-size:10px; color:#f0a8cc; background:transparent; border-color:transparent; } .file-count button[aria-pressed=true] { border-color:#87516d; background:#392a35; }
+.status-filter { width:100%; min-width:0; height:28px; padding:3px 6px; font-size:11px; } .failure-summary { color:var(--muted); font-size:11px; padding:2px 1px; }
 #files { flex:1; overflow:auto; padding:6px 8px 16px; } .group-title { margin:14px 8px 6px; display:flex; justify-content:space-between; color:var(--muted); font-size:11px; font-weight:650; letter-spacing:.08em; text-transform:uppercase; }
 .folder { margin:4px 0; } .folder summary { display:flex; align-items:center; gap:6px; padding:7px 5px; cursor:pointer; color:#bdcbd7; font-size:12px; list-style:none; }
 .folder summary::-webkit-details-marker { display:none; } .folder summary::before { content:'▸'; width:10px; flex-shrink:0; color:var(--muted); } .folder[open]>summary::before { content:'▾'; }
@@ -37,10 +39,18 @@ input[type=search] { width:100%; min-width:0; height:30px; color:inherit; backgr
 .file input { accent-color:var(--accent); flex-shrink:0; } .file button { flex:1; min-width:0; background:none; border:0; text-align:left; padding:7px 0; display:flex; gap:9px; align-items:center; }
 .file-name { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; } .file-dir { display:block; color:var(--muted); font-size:10px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .file-text { min-width:0; flex:1; } .badge { font:700 11px ui-monospace,monospace; color:#edc984; border:1px solid #64563b; border-radius:4px; width:22px; text-align:center; padding:2px; }
-.badge.added { color:#91d9b1; border-color:#3d634f; } .badge.deleted { color:#f6a6a6; border-color:#744747; }
+.badge.added { color:#91d9b1; border-color:#3d634f; background:#21352b; } .badge.deleted { color:#f6a6a6; border-color:#744747; background:#3c272c; }
+.badge.failure { color:#f0a8cc; border-color:#87516d; background:#392a35; }
+.file[data-change=added] .file-name { color:#91d9b1; } .file[data-change=deleted] .file-name { color:#f6a6a6; text-decoration:line-through; }
+.file[data-change=modified] .file-name { color:#edc984; } .file[data-change=failure] .file-name { color:#f0a8cc; }
+.failure-detail { display:block; color:var(--muted); font-size:10px; } .failure-detail.incomplete { color:#edc984; }
 .selection { border-top:1px solid var(--line); padding:10px; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)) 28px 28px; gap:6px; } .selection button { font-size:12px; padding:7px 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .selection .icon-button { padding:4px; font-size:17px; } .context-target { outline:1px solid var(--accent); outline-offset:-1px; border-radius:6px; }
 .failure-selection { border-top:1px solid var(--line); padding:10px; } .failure-selection button { width:100%; font-size:12px; }
+.failure-selection { display:grid; gap:6px; } .row-actions { display:flex; gap:2px; flex-shrink:0; opacity:0; pointer-events:none; }
+.file:hover .row-actions,.file:focus-within .row-actions,summary:hover .row-actions,summary:focus-within .row-actions,.group-title:hover .row-actions,.group-title:focus-within .row-actions { opacity:1; pointer-events:auto; }
+.row-actions button,.file .row-actions button { flex:none; display:block; width:24px; padding:2px; text-align:center; font-size:16px; }
+#action-progress { padding:6px 16px; color:var(--accent); border-top:1px solid var(--line); font-size:12px; }
 .danger { color:#ffc2c2; border-color:#744747; background:#482a2e; } button.danger:hover:not(:disabled) { border-color:#e78383; }
 .context-menu { position:fixed; z-index:10; width:250px; max-width:calc(100vw - 16px); max-height:calc(100vh - 16px); overflow:auto; padding:6px; border:1px solid #46525f; border-radius:10px; background:#20272f; box-shadow:0 12px 36px #0008; }
 .context-title { padding:7px 9px 9px; font-size:11px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -88,6 +98,9 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
 #test-log-hint { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .test-output-bar label { display:flex; gap:5px; align-items:center; white-space:nowrap; } #test-logs { flex:1; min-height:0; overflow:auto; overflow-anchor:none; white-space:pre-wrap; overflow-wrap:anywhere; padding:12px; margin:0; font:11px/1.6 ui-monospace,SFMono-Regular,monospace; }
 #test-copy-dialog { color:#edf1f5; background:var(--panel); border:1px solid var(--line); border-radius:10px; width:min(800px,85vw); padding:18px; } #test-copy-dialog::backdrop { background:#0009; } #test-copy-dialog h2 { margin:0 0 8px; font-size:16px; } #test-copy-text { box-sizing:border-box; width:100%; height:50vh; margin:12px 0; background:var(--bg); color:#edf1f5; border:1px solid var(--line); padding:12px; font:12px/1.5 ui-monospace,monospace; }
 #revert-dialog,#delete-failures-dialog { color:#edf1f5; background:var(--panel); border:1px solid #744747; border-radius:10px; width:min(520px,85vw); padding:20px; } #revert-dialog::backdrop,#delete-failures-dialog::backdrop { background:#0009; } #revert-dialog h2,#delete-failures-dialog h2 { margin:0 0 10px; font-size:17px; } #revert-dialog p,#delete-failures-dialog p { color:var(--muted); } .dialog-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:18px; }
+#delete-failures-dialog[open] { display:flex; flex-direction:column; max-height:calc(100dvh - 32px); overflow:hidden; }
+.cleanup-body { overflow:auto; min-height:0; } #delete-failures-paths { max-height:30vh; overflow:auto; padding:8px; background:var(--bg); font-size:11px; white-space:pre-wrap; overflow-wrap:anywhere; }
+#delete-failures-dialog .dialog-actions { flex-shrink:0; flex-wrap:wrap; }
 @media(max-width:850px) { .tests-body { grid-template-columns:310px minmax(0,1fr); } .test-settings { padding:10px; } }
 @media(max-width:1050px) { #test-log-hint { flex-basis:100%; } .test-output-actions { margin-left:0; } }
 @media(max-width:850px) { main { grid-template-columns:240px minmax(0,1fr); } header { padding:12px; } .local { display:none; } .toolbar,.detail { padding:10px; } .detail { flex-wrap:wrap; } #viewer { margin:0 8px 8px; } }
@@ -103,15 +116,19 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
       <div class="file-layout" role="group" aria-label="File layout"><button data-layout="tree" aria-label="Tree" title="Tree view" aria-pressed="true"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 3v12h5M4 7h5M10 5h6v4h-6zM10 13h6v4h-6z"/></svg></button><button data-layout="list" aria-label="List" title="List view" aria-pressed="false"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h1m3 0h10M3 10h1m3 0h10M3 15h1m3 0h10"/></svg></button></div>
       <button id="file-view-options" aria-label="File view options" title="File view options · folders and ignored files" aria-haspopup="menu" aria-expanded="false" aria-controls="action-menu">⋯</button>
     </div>
-    <div id="file-count" class="file-count" role="status"><span><strong id="shown-count">0</strong>shown</span><span><strong id="unstaged-count">0</strong>unstaged</span><span><strong id="staged-count">0</strong>staged</span><span><strong id="failure-count">0</strong>failures</span></div>
+    <select id="change-filter" class="status-filter" aria-label="Git change type"><option value="all">All change types</option><option value="added">New files</option><option value="modified">Modified files</option><option value="deleted">Deleted files</option></select>
+    <select id="failure-filter" class="status-filter" aria-label="Failure result filter" hidden><option value="all">All failures</option><option value="changed">With pixel changes</option><option value="unchanged">No pixel changes</option><option value="incomplete">Missing expected or actual</option><option value="pending">Calculating</option><option value="unavailable">Comparison unavailable</option></select>
+    <div id="file-count" class="file-count" role="status"><span><strong id="shown-count">0</strong>shown</span><span><strong id="unstaged-count">0</strong>unstaged</span><span><strong id="staged-count">0</strong>staged</span><span><button id="show-failures" title="Review generated failure images" aria-pressed="false"><strong id="failure-count">0</strong>failures</button></span></div>
+    <div id="failure-summary" class="failure-summary" role="status" hidden></div>
   </div>
   <div id="files"></div><div id="warnings" hidden></div>
   <div id="git-selection" class="selection"><button id="stage-selected" disabled>Stage (0)</button><button id="unstage-selected" disabled>Unstage (0)</button><button id="revert-selected" class="danger" disabled>Revert (0)</button><button id="clear-selected" class="icon-button" aria-label="Clear selection" title="Clear selection" disabled>×</button><button id="selection-actions" class="icon-button" aria-label="Selection actions" title="Selection actions" aria-haspopup="menu" aria-expanded="false" aria-controls="action-menu" disabled>⋯</button></div>
-  <div id="failure-selection" class="failure-selection" hidden><button id="delete-failures" class="danger" disabled>Delete all failure images</button></div>
+  <div id="failure-selection" class="failure-selection" hidden><button id="delete-selected-failures" class="danger" disabled>Delete selected failures</button><button id="delete-failures" class="danger" disabled>Delete all failure images</button></div>
 </aside>
 <section class="review" aria-label="Image comparison">
   <div class="detail"><div class="detail-text"><h1 id="filename">Image changes</h1><div id="context">Choose an image to compare</div></div><button id="previous" aria-label="Previous image" disabled>←</button><button id="next" aria-label="Next image" disabled>→</button><button id="toggle-stage" class="primary" disabled>Stage file</button><button id="revert-file" class="danger" disabled>Revert changes</button><button id="file-actions" aria-label="File actions" title="File actions · also available with right-click" aria-haspopup="menu" aria-expanded="false" aria-controls="action-menu" disabled>⋯</button></div>
   <div class="toolbar" id="comparison-toolbar">
+    <label id="failure-view-control" hidden>Artifact <select id="failure-view" aria-label="Failure artifact"><option value="compare">Expected ↔ Actual</option><option value="before">Expected</option><option value="after">Actual</option><option value="isolatedDiff">Isolated diff</option><option value="maskedDiff">Masked diff</option></select></label>
     <label id="mode-control">View <select id="mode"><option value="side">Side by side</option><option value="split">Swipe</option><option value="overlay">Overlay</option><option value="diff">Pixel diff</option></select></label>
     <label id="highlight-control" class="highlight-control" title="Highlight changed pixels on the new version only"><input id="highlight" type="checkbox">Highlight changes</label>
     <label id="highlight-strength-control" class="highlight-control" hidden>Intensity <input id="highlight-strength" type="range" min="10" max="100" value="55" aria-label="Highlight intensity"></label>
@@ -164,9 +181,10 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
 </section>
 <dialog id="test-copy-dialog" aria-labelledby="test-copy-title"><h2 id="test-copy-title">Copy for AI</h2><p class="test-note">Clipboard access is unavailable. Press ⌘C / Ctrl+C to copy the selected report. Nothing is sent automatically; review logs for secrets before sharing.</p><textarea id="test-copy-text" aria-label="Test report to copy" readonly></textarea><button id="close-test-copy">Close copy preview</button></dialog>
 <dialog id="revert-dialog" aria-labelledby="revert-title"><h2 id="revert-title">Revert working-tree changes?</h2><p><strong id="revert-count"></strong> Modified or deleted tracked images will be restored from the Git index. <span id="revert-untracked"></span></p><p>Staged changes remain staged. FF Golden cannot undo this action.</p><div class="dialog-actions"><button id="cancel-revert">Cancel</button><button id="confirm-revert" class="danger">Revert changes</button></div></dialog>
-<dialog id="delete-failures-dialog" aria-labelledby="delete-failures-title"><h2 id="delete-failures-title">Delete generated failure images?</h2><p id="delete-failures-summary"></p><p>Only image files below directories named exactly <code>failures</code> will be deleted. Git baselines and the index are not changed.</p><div class="dialog-actions"><button id="cancel-delete-failures">Cancel</button><button id="confirm-delete-failures" class="danger">Delete all</button></div></dialog>
+<dialog id="delete-failures-dialog" aria-labelledby="delete-failures-title"><h2 id="delete-failures-title">Delete generated failure images?</h2><div class="cleanup-body"><p id="delete-failures-summary"></p><p id="delete-failures-scope"></p><p>Only the listed files will be permanently deleted. Changed files cancel cleanup; newly generated files stay. Baselines outside failures and the Git index are preserved.</p><details><summary>View file list</summary><pre id="delete-failures-paths"></pre></details></div><div class="dialog-actions"><button id="cancel-delete-failures">Cancel</button><button id="confirm-delete-failures" class="danger">Delete images</button></div></dialog>
 <div id="action-menu" class="context-menu" role="menu" aria-label="Image actions" tabindex="-1" hidden></div>
 <div id="message" role="status" hidden></div>
+<div id="action-progress" role="status" hidden></div>
 <footer><span>Git actions affect only changes. Failure cleanup deletes generated images only from exact failures directories.</span><span id="connection">Connecting…</span></footer>
 <script nonce="__SESSION_TOKEN__">
 (() => {
@@ -178,19 +196,84 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
   let itemsById = new Map(), treeRenderKey = null;
   const treeNodes = new Map(), differenceDependents = new Map();
   let menuState = null, pendingRevert = [];
+  let pendingCleanup = null, cleanupConfirmation = null;
+  const actionQueue = [], actionTasks = new Map();
   let before = null, after = null, loadedRevision = null, loadingRevision = null, loadSequence = 0;
   let polling = false, mutating = false, diffImage = null, diffMask = null, diffBounds = null, diffSummary = '', diffAttempted = false;
   let zoomMode = 'fit', manualScale = 1, renderedScale = 1, renderedMode = 'side', paintKey = null, synchronizing = false;
+  let failureView = 'compare', loadedFailureView = 'compare';
+  const artifactFlags = {before:'hasBefore',after:'hasAfter',isolatedDiff:'hasIsolatedDiff',maskedDiff:'hasMaskedDiff'};
+  const artifactLabels = {before:'Expected',after:'Actual',isolatedDiff:'Isolated diff',maskedDiff:'Masked diff'};
   const reviewItems = () => scope === 'failures' ? failures : changes;
   const current = () => reviewItems().find(c => c.id === activeId);
   const isNewImage = item => !!item && !item.failure && !item.hasBefore && item.hasAfter;
+  const changeKind = item => item.failure ? 'failure' : isNewImage(item) ? 'added' : item.hasBefore && !item.hasAfter ? 'deleted' : 'modified';
+  function failureResult(item) {
+    if (!item.hasBefore || !item.hasAfter) return 'incomplete';
+    const difference = item.difference;
+    return !difference || difference.status==='pending' ? 'pending' : difference.status!=='ready' ? 'unavailable' : difference.changedPixels ? 'changed' : 'unchanged';
+  }
+  function failureDetail(item) {
+    const missing = [!item.hasBefore && 'expected',!item.hasAfter && 'actual'].filter(Boolean);
+    const count=item.artifactCount || 0;
+    return count+' '+(count===1 ? 'artifact' : 'artifacts')+(missing.length ? ' · Missing '+missing.join(' and ') : '');
+  }
+  function availableFailureView(item,view) { return !!item?.failure && (view==='compare' ? item.hasBefore || item.hasAfter : item[artifactFlags[view]]); }
+  function effectiveFailureView(item) {
+    if (!item?.failure) return 'compare';
+    return [failureView,'compare',...Object.keys(artifactFlags)].find(view=>availableFailureView(item,view)) || 'compare';
+  }
   const visible = () => reviewItems().filter(c =>
-    (c.failure || !c.ignored || showIgnored) &&
+    (!c.ignored || showIgnored) &&
     (c.failure || scope === 'all' || (scope === 'staged') === c.staged) &&
+    (c.failure ? $('failure-filter').value==='all' || failureResult(c)===$('failure-filter').value : $('change-filter').value==='all' || changeKind(c)===$('change-filter').value) &&
     c.path.toLocaleLowerCase().includes($('search').value.trim().toLocaleLowerCase()));
 
   function message(text, error = false) {
     $('message').textContent = text; $('message').classList.toggle('error', error); $('message').hidden = !text;
+  }
+  function enqueueAction(key,label,run) {
+    if(actionTasks.has(key)) return actionTasks.get(key).promise;
+    let resolve; const promise=new Promise(done=>resolve=done);
+    const task={key,label,run,promise,resolve}; actionTasks.set(key,task); actionQueue.push(task);
+    updateActionProgress(); if(!mutating) drainActions(); return promise;
+  }
+  function updateActionProgress() {
+    const first=actionQueue[0]; $('action-progress').hidden=!first;
+    $('action-progress').textContent=first ? first.label+(actionQueue.length>1 ? ' · '+(actionQueue.length-1)+' queued' : '') : '';
+  }
+  async function drainActions() {
+    mutating=true; const errors=[];
+    while(actionQueue.length) {
+      const task=actionQueue[0]; updateActionProgress();
+      try { await task.run(); } catch(error) { errors.push(task.label+': '+error.message); message(error.message,true); }
+      finally { actionQueue.shift(); actionTasks.delete(task.key); task.resolve(); updateActionProgress(); updateButtons(); }
+    }
+    mutating=false;
+    if(errors.length) message(errors.join('\n'),true);
+    await refresh();
+  }
+  function capturedItems(items) { return [...new Map(items.filter(Boolean).map(item=>[item.id,{...item}])).values()]; }
+  function actionKey(action,items) { return JSON.stringify([action,items.map(item=>[item.id,item.revision,!!item.ignored]).sort((a,b)=>a[0].localeCompare(b[0]))]); }
+  function quickActions(getItems) {
+    const span=document.createElement('span');span.className='row-actions';
+    const action=document.createElement('button'),other=document.createElement('button');span.append(action,other);
+    const values=()=>getItems().filter(Boolean);
+    span.update=()=>{
+      const items=values(),item=items[0],failure=!!item?.failure;
+      const symbol=failure ? '⌫' : item?.staged ? '−' : '+';
+      if(action.textContent!==symbol) action.textContent=symbol;
+      action.title=failure ? 'Delete selected failure images' : item?.staged ? 'Unstage images' : 'Stage images';
+      const otherSymbol=failure ? '⊘' : '↶';
+      if(other.textContent!==otherSymbol) other.textContent=otherSymbol;
+      other.title=failure ? (items.every(c=>c.ignored) ? 'Stop ignoring failures' : 'Ignore failures') : 'Revert images';
+      action.setAttribute('aria-label',action.title);other.setAttribute('aria-label',other.title);
+      action.disabled=!items.length || (failure ? testActive() : items.every(c=>c.ignored));
+      other.hidden=!failure && !!item?.staged;other.disabled=!items.length;
+    };
+    action.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();const items=values();if(items[0]?.failure) confirmDeleteFailures(items);else mutate(items[0]?.staged ? 'unstage' : 'stage',items.filter(c=>!c.ignored));});
+    other.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();const items=values();if(items[0]?.failure) mutate(items.every(c=>c.ignored) ? 'unignore' : 'ignore',items);else confirmRevert(items);});
+    span.update();return span;
   }
   async function request(path, body) {
     const response = await fetch(path, {
@@ -438,7 +521,7 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
       const job=data.plan.commands[data.currentIndex];
       $('test-log-hint').textContent=$('test-log-hint').title=job ? '['+(data.currentIndex+1)+'/'+data.total+'] '+job.file : 'Preparing queue…';
     }
-    testButtons(); if(finished) {refresh();scheduleTestPlan();}
+    testButtons(); updateButtons(); if(finished) {refresh();scheduleTestPlan();}
   }
   async function pollTest() {
     if(testPolling) return; testPolling=true; const generation=testGeneration;
@@ -481,31 +564,51 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
   pollTest();
   function updateButtons() {
     const failureMode = scope === 'failures';
-    const values = [...selected.values()];
-    const included = values.filter(c => !c.ignored);
+    const values = selectionContext().items;
+    const included = values.filter(c => !c.ignored && !c.failure);
     const unstaged = included.filter(c => !c.staged).length, staged = included.filter(c => c.staged).length;
-    const revertable = values.filter(c => !c.staged).length;
+    const revertable = values.filter(c => !c.staged && !c.failure).length;
     $('stage-selected').textContent = $('stage-selected').title = 'Stage (' + unstaged + ')';
     $('unstage-selected').textContent = $('unstage-selected').title = 'Unstage (' + staged + ')';
     $('revert-selected').textContent = $('revert-selected').title = 'Revert (' + revertable + ')';
-    $('stage-selected').disabled = !unstaged || mutating;
-    $('unstage-selected').disabled = !staged || mutating;
-    $('revert-selected').disabled = !revertable || mutating;
-    $('clear-selected').disabled = !values.length || mutating;
-    $('selection-actions').disabled = !values.length || mutating;
+    $('stage-selected').disabled = !unstaged;
+    $('unstage-selected').disabled = !staged;
+    $('revert-selected').disabled = !revertable;
+    $('clear-selected').disabled = !values.length;
+    $('selection-actions').disabled = !values.length;
     const item = current();
+    $('comparison-toolbar').hidden = isNewImage(item);
     $('git-selection').hidden = failureMode;
     $('failure-selection').hidden = !failureMode;
-    $('toggle-stage').hidden = $('revert-file').hidden = $('file-actions').hidden = failureMode;
+    $('change-filter').hidden = failureMode; $('failure-filter').hidden = !failureMode;
+    $('show-failures').setAttribute('aria-pressed',String(failureMode));
+    $('failure-summary').hidden = !failureMode;
+    const failureInfo = failureSummary.caseCount+' comparisons · '+failureSummary.fileCount+' images · '+formatBytes(failureSummary.totalBytes)+(failureSummary.scanning ? ' · Scanning…' : '');
+    if ($('failure-summary').textContent!==failureInfo) $('failure-summary').textContent=failureInfo;
+    $('failure-view-control').hidden = !item?.failure;
+    $('failure-view').disabled = !item?.failure || !!loadingRevision;
+    for (const option of $('failure-view').options) {
+      const disabled=!availableFailureView(item,option.value);
+      if (option.disabled!==disabled) option.disabled=disabled;
+    }
+    const failureViewValue=effectiveFailureView(item);
+    if ($('failure-view').value!==failureViewValue) $('failure-view').value=failureViewValue;
+    $('toggle-stage').hidden = failureMode; $('revert-file').hidden = $('file-actions').hidden = false;
+    $('revert-file').textContent = failureMode ? 'Delete artifacts…' : 'Revert changes';
+    $('delete-selected-failures').disabled = !values.some(c=>c.failure) || testActive();
+    $('delete-selected-failures').textContent = 'Delete selected failures ('+values.filter(c=>c.failure).length+')';
+    document.querySelectorAll('.row-actions').forEach(actions=>actions.update());
     $('delete-failures').textContent = 'Delete all failure images (' + failureSummary.fileCount + ')';
     $('delete-failures').title = testActive() ? 'Stop the running golden tests before cleanup' : $('delete-failures').textContent;
-    $('delete-failures').disabled = !failureSummary.fileCount || failureSummary.scanning || mutating || testActive();
+    $('delete-failures').disabled = !failureSummary.fileCount || failureSummary.scanning || testActive();
+    $('confirm-delete-failures').disabled = !pendingCleanup || testActive();
+
     $('toggle-stage').textContent = item?.staged ? 'Unstage file' : 'Stage file';
-    $('toggle-stage').disabled = failureMode || !item || item.ignored || loadedRevision !== item.revision || mutating;
-    $('revert-file').disabled = failureMode || !item || item.staged || loadedRevision !== item.revision || mutating;
-    $('file-actions').disabled = failureMode || !item || mutating;
+    $('toggle-stage').disabled = failureMode || !item || item.ignored || loadedRevision !== item.revision;
+    $('revert-file').disabled = !item || (failureMode ? testActive() : item.staged || loadedRevision !== item.revision);
+    $('file-actions').disabled = !item;
     if (item) $('context').textContent = item.failure
-      ? 'Generated failure · Expected → Actual · ' + item.artifactCount + ' artifact' + (item.artifactCount===1 ? '' : 's')
+      ? 'Generated failure · '+failureDetail(item)
       : (item.staged ? 'Staged · HEAD → Index' : 'Unstaged · Index → Working tree') + (item.ignored ? ' · Ignored by .golden_ignore' : '');
     $('previous').disabled = $('next').disabled = visible().length < 2;
     document.querySelectorAll('.zoom-bar button, #zoom-percent, #highlight, #highlight-strength').forEach(control => { control.disabled = !loadedRevision; });
@@ -516,7 +619,7 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
       const count = check.reviewIds.filter(id => selected.has(id)).length;
       check.checked = count === check.reviewIds.length;
       check.indeterminate = count > 0 && count < check.reviewIds.length;
-      check.disabled = mutating;
+      check.disabled = false;
     }
   }
   function selectionCheckbox(items,label,check) {
@@ -566,16 +669,14 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
     const noFolders=fileLayout!=='tree' || !document.querySelector('details.folder');
     command('collapse-folders','Collapse all folders',()=>document.querySelectorAll('details.folder').forEach(folder=>{collapsedFolders.add(folder.dataset.folderKey);folder.open=false;}),{disabled:noFolders});
     command('expand-folders','Expand all folders',()=>{collapsedFolders.clear();document.querySelectorAll('details.folder').forEach(folder=>{folder.open=true;});},{disabled:noFolders});
-    if(scope!=='failures') {
-      const separator=document.createElement('div');separator.setAttribute('role','separator');menu.append(separator);
-      command('show-ignored','',()=>setShowIgnored(!showIgnored),{checked:showIgnored});
-    }
+    const separator=document.createElement('div');separator.setAttribute('role','separator');menu.append(separator);
+    command('show-ignored','',()=>setShowIgnored(!showIgnored),{checked:showIgnored});
     updateViewOptions();positionMenu(origin);
   }
   function updateViewOptions() {
-    const count=new Set(changes.filter(c=>c.ignored).map(c=>c.path)).size;
-    $('ignored-active').hidden=scope==='failures' || !showIgnored;$('ignored-active').textContent='+ ignored ('+count+') ×';
-    $('file-view-options').title=scope==='failures' ? 'File view options · folders' : 'File view options · '+count+' ignored file(s)'+(showIgnored ? ' shown' : ' hidden');
+    const count=new Set(reviewItems().filter(c=>c.ignored).map(c=>c.path)).size;
+    $('ignored-active').hidden=!showIgnored;$('ignored-active').textContent='+ ignored ('+count+') ×';
+    $('file-view-options').title='File view options · '+count+' ignored file(s)'+(showIgnored ? ' shown' : ' hidden');
     if($('show-ignored')) {
       $('show-ignored').textContent=(showIgnored ? '✓ ' : '')+'Show ignored ('+count+')';
       $('show-ignored').setAttribute('aria-checked',String(showIgnored));
@@ -589,7 +690,7 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
   }
   function openMenu(items,{origin,title,selection=false,folder,x,y}) {
     closeMenu();
-    if (mutating || !items.length) return;
+    if (!items.length) return;
     // Keep the reviewed revisions captured here; mutations still reject stale data.
     const menu=$('action-menu'); menu.replaceChildren();
     menuState={origin}; origin.classList.add('context-target');
@@ -605,6 +706,13 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
       button.addEventListener('click',()=>{closeMenu(true);run();}); menu.append(button);
     }
     function separator() { const line=document.createElement('div'); line.setAttribute('role','separator'); menu.append(line); }
+    if(items[0]?.failure) {
+      command('Delete failure images',items.reduce((sum,c)=>sum+c.artifactCount,0),()=>confirmDeleteFailures(items),'Delete only the captured artifacts',true);
+      const included=items.filter(c=>!c.ignored),excluded=items.filter(c=>c.ignored);
+      if(included.length) command('Ignore',included.length,()=>mutate('ignore',included),'Hide these comparisons using .golden_ignore');
+      if(excluded.length) command('Stop ignoring',excluded.length,()=>mutate('unignore',excluded));
+      positionMenu(origin,x,y);return;
+    }
     const staged=items.filter(c=>c.staged && !c.ignored), unstaged=items.filter(c=>!c.staged && !c.ignored);
     const revertable=items.filter(c=>!c.staged);
     const included=items.filter(c=>!c.ignored), excluded=items.filter(c=>c.ignored);
@@ -638,7 +746,7 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
     element.addEventListener('keydown',event=>{if(event.key==='ContextMenu' || (event.shiftKey && event.key==='F10')) open(event,true);});
   }
   function selectionContext() {
-    const items=[...selected.values()]; return {items,title:'Selection · '+items.length+' changes',selection:true};
+    const items=[...selected.values()].filter(c=>!!c.failure===(scope==='failures')); return {items,title:'Selection · '+items.length+' changes',selection:true};
   }
   function addDifference(control,value,direction) {
     if(!value || value.status==='pending') control.pending+=direction;
@@ -700,21 +808,25 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
       const name=document.createElement('span'); name.className='file-name';
       const directory=document.createElement('span'); directory.className='file-dir';
       const ignored=document.createElement('span'); ignored.className='ignored-label'; ignored.textContent='Ignored';
-      const difference=document.createElement('span'); text.append(name,directory,ignored); button.append(badge,text,difference);
+      const detail=document.createElement('span'); detail.className='failure-detail';
+      const difference=document.createElement('span'); text.append(name,directory,ignored,detail); button.append(badge,text,difference);
       row.append(button); button.addEventListener('click',()=>choose(item.id));
-      if(!item.failure) bindContextMenu(row,()=>selected.has(item.id) ? selectionContext() : {items:[itemsById.get(item.id)],title:(item.staged ? 'Staged · ' : 'Unstaged · ')+item.path},button);
-      return {element:row,button,badge,name,directory,ignored,difference,check:null};
+      bindContextMenu(row,()=>selected.has(item.id) ? selectionContext() : {items:[itemsById.get(item.id)],title:(item.failure ? 'Failure · ' : item.staged ? 'Staged · ' : 'Unstaged · ')+item.path},button);
+      row.append(quickActions(()=>[itemsById.get(item.id)]));
+      return {element:row,button,badge,name,directory,ignored,detail,difference,check:null};
     });
-    const {element:row,button,badge,name,directory,ignored,difference}=record;
+    const {element:row,button,badge,name,directory,ignored,detail,difference}=record;
     row.classList.toggle('active',item.id===activeId); button.title=item.path;
-    badge.className='badge'+(item.failure || item.status==='D' ? ' deleted' : ['A','?'].includes(item.status) ? ' added' : '');
-    badge.textContent=item.failure ? 'F' : item.status; name.textContent=item.path.split('/').pop();
+    const kind=changeKind(item); row.dataset.change=kind; badge.className='badge '+kind;
+    badge.textContent=item.failure ? 'F' : item.status==='?' ? 'U' : item.status;
+    badge.title=item.failure ? 'Generated failure artifacts' : item.status==='?' ? 'Untracked new file' : kind==='added' ? 'Added file' : kind==='deleted' ? 'Deleted file' : 'Modified file';
+    badge.setAttribute('aria-label',badge.title); name.textContent=item.path.split('/').pop();
+    detail.hidden=!item.failure; detail.textContent=item.failure ? failureDetail(item) : '';
+    detail.classList.toggle('incomplete',!!item.failure && (!item.hasBefore || !item.hasAfter));
     directory.hidden=fileLayout!=='list'; directory.textContent=item.path.includes('/') ? item.path.slice(0,item.path.lastIndexOf('/')) : '/';
     ignored.hidden=!item.ignored;
-    if(!item.failure) {
-      record.check=selectionCheckbox([item],'Select '+item.path+(item.staged ? ' staged' : ' unstaged'),record.check);
-      if(record.check.parentNode!==row) row.prepend(record.check);
-    }
+    record.check=selectionCheckbox([item],'Select '+item.path+(item.failure ? ' failure' : item.staged ? ' staged' : ' unstaged'),record.check);
+    if(record.check.parentNode!==row) row.prepend(record.check);
     trackDifference(difference,[item]); return row;
   }
   function fileTree(items,staged) {
@@ -745,7 +857,8 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
           text.className='folder-name'; count.className='folder-count'; summary.append(text,count,difference);
           const content=document.createElement('div'); content.className='folder-children'; details.append(summary,content);
           const record={element:details,summary,text,count,difference,content,check:null,ids:[],searching:!!$('search').value.trim()};
-          if(!failure) bindContextMenu(summary,()=>({items:record.ids.map(id=>itemsById.get(id)),folder:folder.path,title:folder.path+' · '+record.ids.length+' image(s)'}));
+          bindContextMenu(summary,()=>({items:record.ids.map(id=>itemsById.get(id)),folder:folder.path,title:folder.path+' · '+record.ids.length+' image(s)'}));
+          summary.append(quickActions(()=>record.ids.map(id=>itemsById.get(id))));
           details.addEventListener('toggle',()=>{
             if(!details.isConnected || $('search').value.trim()) return;
             if(details.open) collapsedFolders.delete(key); else collapsedFolders.add(key);
@@ -756,10 +869,8 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
         if(record.searching!==searching) record.element.open=searching || !collapsedFolders.has(key);
         record.searching=searching; record.ids=folder.items.map(item=>item.id);
         record.summary.title=folder.path; record.text.textContent=label; record.count.textContent=folder.items.length;
-        if(!failure) {
-          record.check=selectionCheckbox(folder.items,'Select folder '+folder.path+(staged ? ' staged' : ' unstaged'),record.check);
-          if(record.check.parentNode!==record.summary) record.summary.prepend(record.check);
-        }
+        record.check=selectionCheckbox(folder.items,'Select folder '+folder.path+(failure ? ' failures' : staged ? ' staged' : ' unstaged'),record.check);
+        if(record.check.parentNode!==record.summary) record.summary.prepend(record.check);
         trackDifference(record.difference,folder.items);
         syncChildren(record.content,children(folder)); result.push(record.element);
       }
@@ -782,8 +893,8 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
     // Revisions and metrics are data, not structure. Hidden failure scans and
     // completed pixel calculations must never rebuild the visible tree.
     const key=JSON.stringify([fileLayout,scope,!!$('search').value.trim(),showIgnored,
-      items.map(c=>[c.id,c.path,c.status,c.ignored]),
-      !items.length && [failureSummary.scanning,changes.length,failures.length,ignoredCount]]);
+      items.map(c=>[c.id,c.path,c.status,c.ignored,c.hasBefore,c.hasAfter,c.artifactCount]),
+      !items.length && [failureSummary.scanning,failureSummary.fileCount,changes.length,failures.length,ignoredCount]]);
     const rebuilt=key!==treeRenderKey;
     if(rebuilt) {
       const top=$('files').scrollTop, left=$('files').scrollLeft, focus=document.activeElement;
@@ -795,18 +906,20 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
         if (!group.length) continue;
         const record=treeNode('group:'+(scope==='failures' ? 'failures' : staged),()=>{
           const title=document.createElement('div'); title.className='group-title';
-          const record={element:title,ids:[]};
-          if(scope!=='failures') {title.tabIndex=0; bindContextMenu(title,()=>({items:record.ids.map(id=>itemsById.get(id)),title:(staged ? 'Staged' : 'Unstaged')+' · '+record.ids.length+' images'}));}
+          const text=document.createElement('span');title.append(text);
+          const record={element:title,text,ids:[]};
+          title.tabIndex=0; bindContextMenu(title,()=>({items:record.ids.map(id=>itemsById.get(id)),title:(scope==='failures' ? 'Failures' : staged ? 'Staged' : 'Unstaged')+' · '+record.ids.length+' images'}));
+          title.append(quickActions(()=>record.ids.map(id=>itemsById.get(id))));
           return record;
         });
         record.ids=group.map(item=>item.id);
-        record.element.textContent=(scope==='failures' ? 'Failure artifacts' : staged ? 'Staged' : 'Unstaged')+' · '+group.length; children.push(record.element);
+        record.text.textContent=(scope==='failures' ? 'Failure artifacts' : staged ? 'Staged' : 'Unstaged')+' · '+group.length; children.push(record.element);
         children.push(...(fileLayout==='tree' ? fileTree(group,staged) : group.map(fileRow)));
       }
       if (!items.length) {
         const empty = document.createElement('div'); empty.className = 'empty-list';
         empty.textContent = scope==='failures'
-          ? (failureSummary.scanning ? 'Scanning generated failure images…' : failures.length ? 'No failure comparisons match this search.' : 'No generated Flutter golden failure images found.')
+          ? (failureSummary.scanning ? 'Scanning generated failure images…' : failures.length ? 'No failure comparisons match this search or filter.' : failureSummary.fileCount ? 'Only ungrouped failure images were found. Delete all includes these files.' : 'No generated Flutter golden failure images found.')
           : changes.length ? 'No images match this filter.' + (ignoredCount && !showIgnored ? ' Use ⋯ → Show ignored to review excluded files.' : '') : 'No changed PNG, JPEG or WebP images. Regenerate your goldens to start reviewing.';
         children.push(empty);
       }
@@ -846,7 +959,7 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
     $('connection').textContent = 'Live · refreshes every 2s';
   }
   async function refresh() {
-    if (polling || mutating) return;
+    if (polling) return;
     polling = true;
     try { applyData(await (await request('/api/changes' + (scope==='failures' ? '?failures=true' : ''))).json()); }
     catch (error) { $('connection').textContent = 'Disconnected'; message(error.message + ' Is the CLI still running?', true); }
@@ -869,7 +982,7 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
     updateButtons();
   }
   async function loadImage(item, side) {
-    if (!item[side === 'before' ? 'hasBefore' : 'hasAfter']) return null;
+    if (!item[artifactFlags[side]]) return null;
     const params = new URLSearchParams({id:item.id, revision:item.revision, side, ...(item.failure ? {failure:'true'} : {})});
     const blob = await (await request('/api/image?' + params)).blob();
     const url = URL.createObjectURL(blob);
@@ -880,20 +993,21 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
   }
   async function loadCurrent() {
     const item = current(); if (!item) return clearImage();
+    const artifact=effectiveFailureView(item);
     const sequence = ++loadSequence; loadedRevision = null; loadingRevision = item.revision; updateButtons();
     $('filename').textContent = item.path;
     $('empty').firstElementChild.textContent = 'Loading comparison…'; $('empty').lastElementChild.textContent = '';
     $('empty').hidden = false; $('side').hidden = $('combined').hidden = true;
     try {
-      const pair = await Promise.all([loadImage(item,'before'),loadImage(item,'after')]);
+      const pair = artifact==='compare' ? await Promise.all([loadImage(item,'before'),loadImage(item,'after')]) : [null,await loadImage(item,artifact)];
       if (sequence !== loadSequence) return;
       [before,after] = pair; diffImage = diffMask = diffBounds = null; diffSummary = ''; diffAttempted = false; paintKey = null;
       if (Math.max(before?.naturalWidth || 0,after?.naturalWidth || 0) * Math.max(before?.naturalHeight || 0,after?.naturalHeight || 0) > 16000000) {
         throw new Error('Preview exceeds the 16 megapixel limit. Open this image in an external viewer.');
       }
-      loadedRevision = item.revision; loadingRevision = null;
+      loadedRevision = item.revision; loadingRevision = null; loadedFailureView=artifact;
       $('before-label').textContent = item.failure ? 'Expected' : item.staged ? 'HEAD' : 'Index';
-      $('after-label').textContent = item.failure ? 'Actual' : item.staged ? 'Index' : 'Working tree';
+      $('after-label').textContent = item.failure ? artifactLabels[artifact] || 'Actual' : item.staged ? 'Index' : 'Working tree';
       $('before-size').textContent = dimensions(before); $('after-size').textContent = dimensions(after);
       $('empty').hidden = true; render(); updateButtons();
     } catch (error) {
@@ -979,19 +1093,20 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
     if (!loadedRevision) return;
     const {width,height}=imageSize();
     const added=isNewImage(current());
-    const mode = added ? 'side' : $('mode').value, side = mode === 'side', mix = Number($('mix').value)/100;
-    const highlight=side && !added && $('highlight').checked, intensity=Number($('highlight-strength').value)/100;
+    const single=added || !!current()?.failure && loadedFailureView!=='compare';
+    const mode = single ? 'side' : $('mode').value, side = mode === 'side', mix = Number($('mix').value)/100;
+    const highlight=side && !single && $('highlight').checked, intensity=Number($('highlight-strength').value)/100;
     $('side').hidden = !side; $('combined').hidden = side;
-    $('before-pane').hidden=added; $('side').classList.toggle('single-image',added); $('new-image-badge').hidden=!added;
+    $('before-pane').hidden=single; $('side').classList.toggle('single-image',single); $('new-image-badge').hidden=!added;
     $('comparison-toolbar').hidden=added;
-    $('mode-control').hidden=added; $('highlight-control').hidden = !side || added; $('highlight-strength-control').hidden = !highlight;
-    $('zoom-changes').hidden=added;
+    $('mode-control').hidden=single; $('highlight-control').hidden = !side || single; $('highlight-strength-control').hidden = !highlight;
+    $('zoom-changes').hidden=single;
     $('mix-control').hidden = mode !== 'split' && mode !== 'overlay';
     $('mix-label').textContent = mode === 'split' ? 'Position' : 'Opacity'; $('mix-value').textContent = $('mix').value + '%';
     const viewport = viewports(mode)[0];
     const fit = Math.min((viewport.clientWidth-32)/width,(viewport.clientHeight-32)/height,1);
     const scale = zoomMode==='manual' ? manualScale : Math.max(.01,zoomMode==='width' ? Math.min((viewport.clientWidth-32)/width,8) : fit);
-    const nextPaintKey=[loadedRevision,mode,mix,highlight,intensity,mode==='split' ? scale : ''].join('|');
+    const nextPaintKey=[loadedRevision,loadedFailureView,mode,mix,highlight,intensity,mode==='split' ? scale : ''].join('|');
     const repaint=paintKey!==nextPaintKey;
     if ((mode==='diff' || highlight) && repaint) buildDiff(width,height);
     const canvases = viewports(mode).map(viewport=>viewport.querySelector('canvas'));
@@ -1021,11 +1136,11 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
     $('zoom-actual').setAttribute('aria-pressed',String(zoomMode==='manual' && scale===1));
     const failure=!!current()?.failure;
     $('combined-label').textContent = mode === 'diff' ? 'Changed pixels in pink' : mode === 'split' ? (failure ? 'Expected ← | → Actual' : 'Before ← | → After') : (failure ? 'Actual over Expected' : 'After over Before');
-    $('metrics').textContent = added ? dimensions(after) : dimensions(before) + ' → ' + dimensions(after) + (before && after && (before.naturalWidth!==after.naturalWidth || before.naturalHeight!==after.naturalHeight) ? ' · Dimensions changed' : '') + (mode === 'diff' || highlight ? diffSummary : '');
+    $('metrics').textContent = single ? dimensions(after) : dimensions(before) + ' → ' + dimensions(after) + (before && after && (before.naturalWidth!==after.naturalWidth || before.naturalHeight!==after.naturalHeight) ? ' · Dimensions changed' : '') + (mode === 'diff' || highlight ? diffSummary : '');
   }
   function confirmRevert(items) {
-    pendingRevert=items.filter(item=>!item.staged);
-    if(!pendingRevert.length || mutating) return;
+    pendingRevert=capturedItems(items.filter(item=>!item.staged && !item.failure));
+    if(!pendingRevert.length) return;
     const paths=new Set(pendingRevert.map(item=>item.path)), untracked=new Set(pendingRevert.filter(item=>item.status==='?').map(item=>item.path));
     $('revert-count').textContent='Revert '+paths.size+' '+(paths.size===1 ? 'image' : 'images')+'.';
     $('revert-untracked').textContent=untracked.size ? untracked.size+' untracked '+(untracked.size===1 ? 'file will' : 'files will')+' be permanently deleted.' : 'No untracked files will be deleted.';
@@ -1037,44 +1152,48 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
     while(value>=1024 && index<units.length-1) {value/=1024;index++;}
     return value.toFixed(value>=10 ? 1 : 2)+' '+units[index];
   }
-  function confirmDeleteFailures() {
-    if(mutating || testActive() || !failureSummary.fileCount || failureSummary.scanning) return;
-    $('delete-failures-summary').textContent='Delete '+failureSummary.fileCount+' generated image '+(failureSummary.fileCount===1 ? 'file' : 'files')+' ('+formatBytes(failureSummary.totalBytes)+') across '+failureSummary.caseCount+' failure '+(failureSummary.caseCount===1 ? 'comparison' : 'comparisons')+'.';
-    $('delete-failures-dialog').showModal();
+  function confirmDeleteFailures(items=null) {
+    if(testActive()) {message('Stop the running golden tests before cleanup.',true);return;}
+    const selected=items ? capturedItems(items) : null;
+    if(selected && !selected.length) return;
+    const key=selected ? actionKey('deleteFailures',selected) : 'deleteAllFailures';
+    return enqueueAction(key,'Review failure cleanup…',async()=>{
+      const body=selected ? {revisions:Object.fromEntries(selected.map(c=>[c.id,c.revision]))} : {all:true};
+      const plan=await (await request('/api/failures/prepare-delete',body)).json();
+      pendingCleanup=plan;
+      $('delete-failures-summary').textContent='Delete '+plan.fileCount+' generated image files ('+formatBytes(plan.totalBytes)+').';
+      $('delete-failures-scope').textContent=selected ? 'Only artifacts belonging to the selected comparisons are included.' : 'This selection includes files hidden by search or filters.';
+      $('delete-failures-paths').textContent=plan.paths.map(path=>JSON.stringify(path)).join('\n');
+      $('delete-failures-dialog').querySelector('details').open=false;
+      updateButtons();
+      const confirmed=await new Promise(resolve=>{cleanupConfirmation=resolve;$('delete-failures-dialog').showModal();});
+      pendingCleanup=null;cleanupConfirmation=null;
+      if(!confirmed) return;
+      actionQueue[0].label='Deleting '+plan.fileCount+' failure images…';updateActionProgress();
+      const data=await (await request('/api/failures/delete',{planId:plan.planId})).json();
+      applyData(data);message('Deleted '+(data.deletedFailureFiles || 0)+' generated failure images.');
+    });
   }
-  async function deleteFailures() {
-    if(mutating || testActive() || !failureSummary.fileCount) return;
-    const count=failureSummary.fileCount;
-    mutating=true; updateButtons();
-    message('Deleting '+count+' generated failure '+(count===1 ? 'image' : 'images')+'…');
-    try {
-      const data=await (await request('/api/failures/delete',{})).json();
-      applyData(data);
-      const deleted=data.deletedFailureFiles || 0;
-      message('Deleted '+deleted+' generated failure '+(deleted===1 ? 'image' : 'images')+'. Git baselines and the index were not changed.');
-    } catch(error) {message(error.message,true);}
-    finally {mutating=false;renderList();await refresh();}
+  function finishCleanupConfirmation(confirmed) {
+    $('delete-failures-dialog').close();cleanupConfirmation?.(confirmed);
   }
-  async function mutate(action, items) {
-    if (mutating || !items.length || items.some(item=>item.failure)) return;
+  function mutate(action, input) {
+    const items=capturedItems(input);
+    if(!items.length || items.some(c=>c.failure) && !['ignore','unignore'].includes(action)) return;
     closeMenu();
-    mutating = true; updateButtons();
-    const imageCount = items.length + ' ' + (items.length === 1 ? 'image' : 'images');
-    if (action === 'stage' || action === 'unstage') {
-      message((action === 'stage' ? 'Staging ' : 'Unstaging ') + imageCount + '…');
-    } else if(action === 'revert') message('Reverting '+imageCount+'…');
-    try {
-      const revisions = Object.fromEntries(items.map(c => [c.id,c.revision]));
-      const data = await (await request('/api/' + action,{revisions})).json();
-      items.forEach(c => selected.delete(c.id)); applyData(data);
-      if (action === 'ignore' || action === 'unignore') {
-        message((action === 'ignore' ? 'Added ' : 'Removed ') + new Set(items.map(c=>c.path)).size + ' file(s) ' + (action === 'ignore' ? 'to' : 'from') + ' .golden_ignore. Git and golden tests were not changed.');
-      } else if(action === 'revert') {
-        const restored=data.restoredWorkingFiles || 0, deleted=data.deletedUntrackedFiles || 0;
-        message('Reverted '+(restored+deleted)+' '+(restored+deleted===1 ? 'image' : 'images')+'. '+(deleted ? 'Deleted '+deleted+' untracked '+(deleted===1 ? 'file' : 'files')+'. ' : '')+'Staged changes were preserved.');
-      } else message((data.removedStaleIndexLock ? 'Removed stale Git index.lock and retried. ' : '') + (action === 'stage' ? 'Staged ' : 'Unstaged ') + imageCount + '. Working files were not rewritten.');
-    } catch (error) { message(error.message,true); }
-    finally { mutating = false; renderList(); await refresh(); }
+    return enqueueAction(actionKey(action,items),(action==='stage' ? 'Staging ' : action==='unstage' ? 'Unstaging ' : action+' · ')+items.length+' images',async()=>{
+      const revisions=Object.fromEntries(items.map(c=>[c.id,c.revision]));
+      const prefix=items[0].failure ? '/api/failures/' : '/api/';
+      const data=await (await request(prefix+action,{revisions})).json();
+      for(const item of items) if(selected.get(item.id)?.revision===item.revision) selected.delete(item.id);
+      applyData(data);
+      if(action==='ignore' || action==='unignore') {
+        message((action==='ignore' ? 'Added ' : 'Removed ')+new Set(items.map(c=>c.path)).size+' paths '+(action==='ignore' ? 'to' : 'from')+' .golden_ignore.');
+      } else if(action==='revert') {
+        const restored=data.restoredWorkingFiles || 0,deleted=data.deletedUntrackedFiles || 0;
+        message('Reverted '+(restored+deleted)+' images. '+(deleted ? 'Deleted '+deleted+' untracked files. ' : '')+'Staged changes were preserved.');
+      } else message((data.removedStaleIndexLock ? 'Removed stale Git index.lock and retried. ' : '')+(action==='stage' ? 'Staged ' : 'Unstaged ')+items.length+' images.');
+    });
   }
   function step(direction) {
     const items = visible(); if (!items.length) return;
@@ -1085,12 +1204,18 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
   $('ignored-active').addEventListener('click',()=>setShowIgnored(false));
   $('file-view-options').addEventListener('click',()=>{if(menuState?.origin===$('file-view-options')) closeMenu(true);else openViewOptions();});
   $('file-view-options').addEventListener('keydown',event=>{if(event.key==='ArrowDown'){event.preventDefault();openViewOptions();}});
-  $('file-scope').addEventListener('change',() => {
-    scope=$('file-scope').value;
+  function setScope(value) {
+    scope=value; $('file-scope').value=value;
     closeMenu();
     const items=visible(); if (!items.some(c=>c.id===activeId)) choose(items[0]?.id || null); else renderList();
     refresh();
+  }
+  $('file-scope').addEventListener('change',()=>setScope($('file-scope').value));
+  $('show-failures').addEventListener('click',()=>setScope(scope==='failures' ? 'all' : 'failures'));
+  for (const id of ['change-filter','failure-filter']) $(id).addEventListener('change',()=>{
+    closeMenu(); const items=visible(); if (!items.some(c=>c.id===activeId)) choose(items[0]?.id || null); else renderList();
   });
+  $('failure-view').addEventListener('change',()=>{failureView=$('failure-view').value;loadCurrent();});
   document.querySelectorAll('[data-layout]').forEach(button=>button.addEventListener('click',()=>{
     fileLayout=button.dataset.layout; document.querySelectorAll('[data-layout]').forEach(b=>b.setAttribute('aria-pressed',String(b===button))); renderList();
   }));
@@ -1103,18 +1228,20 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
   $('zoom-percent').addEventListener('change',commitZoom); $('zoom-percent').addEventListener('keydown',event=>{if(event.key==='Enter') {commitZoom();$('zoom-percent').blur();}});
   $('previous').addEventListener('click',()=>step(-1)); $('next').addEventListener('click',()=>step(1));
   $('toggle-stage').addEventListener('click',()=>{const item=current(); if(item && !item.ignored) mutate(item.staged ? 'unstage' : 'stage',[item]);});
-  $('revert-file').addEventListener('click',()=>{const item=current(); if(item && !item.staged) confirmRevert([item]);});
-  $('stage-selected').addEventListener('click',()=>mutate('stage',[...selected.values()].filter(c=>!c.staged && !c.ignored)));
-  $('unstage-selected').addEventListener('click',()=>mutate('unstage',[...selected.values()].filter(c=>c.staged && !c.ignored)));
-  $('revert-selected').addEventListener('click',()=>confirmRevert([...selected.values()].filter(c=>!c.staged)));
+  $('revert-file').addEventListener('click',()=>{const item=current(); if(item?.failure) confirmDeleteFailures([item]);else if(item && !item.staged) confirmRevert([item]);});
+  $('stage-selected').addEventListener('click',()=>mutate('stage',selectionContext().items.filter(c=>!c.staged && !c.ignored)));
+  $('unstage-selected').addEventListener('click',()=>mutate('unstage',selectionContext().items.filter(c=>c.staged && !c.ignored)));
+  $('revert-selected').addEventListener('click',()=>confirmRevert(selectionContext().items.filter(c=>!c.staged)));
   $('clear-selected').addEventListener('click',()=>{selected.clear();renderList();});
   $('cancel-revert').addEventListener('click',()=>{$('revert-dialog').close();pendingRevert=[];});
   $('confirm-revert').addEventListener('click',()=>{const items=pendingRevert;pendingRevert=[];$('revert-dialog').close();mutate('revert',items);});
   $('revert-dialog').addEventListener('cancel',()=>{pendingRevert=[];});
-  $('delete-failures').addEventListener('click',confirmDeleteFailures);
-  $('cancel-delete-failures').addEventListener('click',()=>$('delete-failures-dialog').close());
-  $('confirm-delete-failures').addEventListener('click',()=>{$('delete-failures-dialog').close();deleteFailures();});
-  function fileContext() { const item=current(); return {items:item && !item.failure ? [item] : [],title:item && !item.failure ? (item.staged ? 'Staged · ' : 'Unstaged · ')+item.path : 'Image actions'}; }
+  $('delete-failures').addEventListener('click',()=>confirmDeleteFailures());
+  $('delete-selected-failures').addEventListener('click',()=>confirmDeleteFailures(selectionContext().items.filter(c=>c.failure)));
+  $('cancel-delete-failures').addEventListener('click',()=>finishCleanupConfirmation(false));
+  $('delete-failures-dialog').addEventListener('cancel',event=>{event.preventDefault();finishCleanupConfirmation(false);});
+  $('confirm-delete-failures').addEventListener('click',()=>finishCleanupConfirmation(true));
+  function fileContext() { const item=current(); return {items:item ? [item] : [],title:item && !item.failure ? (item.staged ? 'Staged · ' : 'Unstaged · ')+item.path : 'Image actions'}; }
   for(const [id,getContext] of [['file-actions',fileContext],['selection-actions',selectionContext]]) {
     const button=$(id);
     const open=()=>{const context=getContext();openMenu(context.items,{...context,origin:button});};

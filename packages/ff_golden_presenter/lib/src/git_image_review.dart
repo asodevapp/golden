@@ -431,7 +431,6 @@ final class GitImageRepository {
     if (revisions.isEmpty || revisions.length > 500) {
       throw const GitReviewException('Select between 1 and 500 images.');
     }
-    final original = await _readIgnoreFile();
     final snapshot = await scan(verifyWorkingBytes: true);
     final current = {for (final change in snapshot.changes) change.id: change};
     final paths = <String>{};
@@ -449,6 +448,25 @@ final class GitImageRepository {
       }
       paths.add(change.path);
     }
+    await setIgnoredPaths(paths, ignored: ignored);
+  }
+
+  /// Exact catalogued paths, also used for logical failure comparison paths.
+  Future<Set<String>> ignoredPaths() async =>
+      _ignorePaths(await _readIgnoreFile());
+
+  Future<void> setIgnoredPaths(Set<String> paths,
+      {required bool ignored}) async {
+    if (paths.isEmpty ||
+        paths.length > 500 ||
+        paths.any((file) =>
+            p.posix.isAbsolute(file) ||
+            file.split('/').contains('..') ||
+            file.contains(RegExp(r'[\r\n]')))) {
+      throw const GitReviewException(
+          'Select between 1 and 500 valid image paths.');
+    }
+    final original = await _readIgnoreFile();
     late final String updated;
     if (ignored) {
       final additions = paths.difference(_ignorePaths(original)).toList()

@@ -1,3 +1,20 @@
+## 1.1.9
+
+- Added quick actions for files, folders, and groups, and a sequential command
+  queue that deduplicates pending actions, preserves captured revisions, and
+  continues after cancellation or errors without blocking tree interaction.
+- Added selected failure cleanup and Ignore/Stop ignoring actions backed by
+  `.golden_ignore`, alongside full cleanup including hidden and ungrouped files.
+- Fixed cleanup confirmation to capture an exact file list and verify content
+  before deletion. New files stay untouched; changed files reject stale plans.
+  Large confirmation lists scroll while their action buttons remain visible.
+- Distinguished added, untracked, deleted, and failure images visually, with
+  composable Git status and failure result filters that survive live refresh.
+- Added separate expected, actual, isolated-diff, and masked-diff previews for
+  failure artifacts, including incomplete groups and corrupt-image recovery.
+- Expanded server and browser regressions for action queues, stable menus,
+  failure filtering, revision guards, and large cleanup dialogs.
+
 ## 1.1.8
 
 - Preserved open tree menus, focus, selection, collapsed folders, and scroll

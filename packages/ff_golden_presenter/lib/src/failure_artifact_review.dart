@@ -75,18 +75,21 @@ final class FailureImageSnapshot {
     required this.fileCount,
     required this.totalBytes,
     this.warnings = const [],
+    this.files = const [],
   });
 
   const FailureImageSnapshot.empty()
       : changes = const [],
         fileCount = 0,
         totalBytes = 0,
+        files = const [],
         warnings = const [];
 
   final List<FailureImageChange> changes;
   final int fileCount;
   final int totalBytes;
   final List<String> warnings;
+  final List<FailureArtifactFile> files;
 }
 
 /// Scans Flutter's generated `failures` directories independently of Git.
@@ -136,6 +139,7 @@ final class FailureImageRepository {
     ]..sort((left, right) => left.path.compareTo(right.path));
     return FailureImageSnapshot(
       changes: changes,
+      files: List.unmodifiable(files),
       fileCount: files.length,
       totalBytes: files.fold(0, (sum, file) => sum + file.byteSize),
       warnings: unmatched == 0
@@ -149,9 +153,19 @@ final class FailureImageRepository {
   Future<List<int>> readImage(
     FailureImageChange change, {
     required bool before,
-  }) async {
-    final artifact = change.artifacts[
-        before ? FailureArtifactKind.expected : FailureArtifactKind.actual];
+  }) =>
+      readArtifact(
+        change,
+        before ? FailureArtifactKind.expected : FailureArtifactKind.actual,
+      );
+
+  /// Reads one of the catalogued artifacts with the same revision guards used
+  /// by expected/actual comparisons. No caller-supplied path is accepted.
+  Future<List<int>> readArtifact(
+    FailureImageChange change,
+    FailureArtifactKind kind,
+  ) async {
+    final artifact = change.artifacts[kind];
     if (artifact == null) {
       throw const GitReviewException('This side of the image does not exist.');
     }

@@ -86,7 +86,7 @@ The equivalent manual dependency is:
 
 ```yaml
 dev_dependencies:
-  ff_golden_presenter: ^1.1.6
+  ff_golden_presenter: ^1.1.9
 ```
 
 For an unreleased repository revision, use the package Git source and
@@ -160,6 +160,12 @@ background isolate is still calculating; an em dash means an image could not be
 decoded within the preview limits. The browser only receives the resulting
 counts and percentages.
 
+New file names and status badges are green (**U** for untracked, **A** for
+added); deleted files are red with a struck-through name (**D**). Modified
+files use amber (**M**). Hover a status badge for its meaning. The file-type
+filter narrows the current Git group to new, modified, or deleted images and
+combines with search. These filters remain selected during live refresh.
+
 Live refresh updates percentages in place and keeps open menus, folder state,
 selection, focus, and sidebar scroll position. Adding or removing files reuses
 the remaining rows. Open actions retain their reviewed revisions, so stale
@@ -172,11 +178,43 @@ percentages.
 The **Failures** filter scans directories named exactly `failures`, independently
 of Git and `.gitignore`. Flutter's `*_masterImage.png`, `*_testImage.png`,
 `*_isolatedDiff.png`, and `*_maskedDiff.png` artifacts are grouped into one tree
-row. The viewer compares **Expected → Actual** and calculates the changed-pixel
-percentage in the same sequential Dart isolate queue. Git actions are hidden in
-this mode. **Delete all failure images (N)** confirms the current file count and
-combined size, reports progress immediately, and deletes only generated images
-below exact `failures` directories; it never changes baselines or the Git index.
+row, with a distinct pink **F** badge. Click the **failures** counter to enter
+or leave this view. Its summary distinguishes comparisons from image files and
+shows their total size. Filter by pixel changes, no pixel changes, a missing
+expected/actual image, calculations in progress, or an unavailable comparison;
+search applies within that result. Incomplete rows identify the missing images.
+
+The viewer compares **Expected → Actual** and calculates the changed-pixel
+percentage in the same sequential Dart isolate queue. The **Artifact** selector
+also opens **Expected**, **Actual**, **Isolated diff**, and **Masked diff** as
+single images. Missing artifacts are disabled; a group containing only a diff
+automatically opens its available image. Git actions are hidden in this mode.
+
+Failure rows, folders, and groups offer **Delete failure images**, **Ignore**, and
+**Stop ignoring** in their context menu. Hover or focus a row to reveal quick
+Delete and Ignore buttons. A file button acts on that comparison; folder/group
+buttons act on their visible comparisons. Check several rows and use
+**Delete selected failures** to clean their artifacts together.
+
+**Delete all failure images (N)** includes images hidden by search, result
+filters, or `.golden_ignore`, and images with unrecognized artifact names.
+Before confirmation, cleanup captures an exact file list, byte count, and content
+fingerprints. The dialog keeps this selection fixed during live updates. Its
+expandable file list scrolls independently, keeping Cancel and Delete visible
+even for thousands of files. Cancel or Escape leaves the files unchanged.
+
+Confirmed cleanup permanently deletes only those captured files below exact
+`failures` directories. Newly generated files stay. Changed or replaced files
+reject the selection before deletion starts; changes detected during deletion
+stop it and report how many files were removed. Baselines outside `failures`
+and the Git index are preserved. Cleanup is unavailable while the integrated
+golden test runner is active; stale confirmations must be reviewed again.
+
+Ignoring a failure stores its comparison path in `.golden_ignore`, for example
+`/test/screens/failures/login.png` for `login_masterImage.png`,
+`login_testImage.png`, and the related diff artifacts. **Show ignored** and
+**Stop ignoring** also work in the Failures view. Ignoring changes only the
+review filter; it does not delete artifacts or change test results.
 
 Select a file and switch between side-by-side, swipe, overlay, and pixel-diff
 views. In side-by-side, enable **Highlight changes** to overlay changed pixels on
@@ -206,6 +244,15 @@ unstaging, the viewer removes it and retries once only after confirming that no
 process holds the file; active or unverifiable locks are left untouched. The
 status area shows progress immediately and reports when this recovery occurs.
 Finish the commit in your usual Git client.
+
+Hover or focus Git rows, folders, and groups to reveal Stage/Unstage and Revert
+shortcuts. Image actions run through a sequential queue with a current-action
+and pending-count indicator. Repeated clicks on the same pending action do not
+add duplicate work. Each queued action retains its selected revisions; a later
+refresh cannot silently replace them. Cancelling cleanup or an action failing
+does not stop subsequent tasks, and errors remain visible after the queue drains.
+Browsing images, selecting files, and live updates remain available while
+commands are pending.
 
 Use **Revert changes** for an unstaged file, folder, or selection. After an
 explicit confirmation, tracked files are restored from the current Git index,

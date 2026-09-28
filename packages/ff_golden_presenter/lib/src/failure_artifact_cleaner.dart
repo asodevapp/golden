@@ -1,6 +1,23 @@
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as path;
+
+/// A fixed, verified set of files awaiting explicit cleanup confirmation.
+final class FailureArtifactCleanupPlan {
+  FailureArtifactCleanupPlan._(this.files, this._hashes);
+  final List<FailureArtifactFile> files;
+  final Map<String, String> _hashes;
+  int get totalBytes => files.fold(0, (sum, file) => sum + file.byteSize);
+}
+
+/// Includes partial completion when a file becomes unavailable during cleanup.
+final class FailureArtifactCleanupException implements Exception {
+  const FailureArtifactCleanupException(this.message);
+  final String message;
+  @override
+  String toString() => message;
+}
 
 /// A generated image found below a directory named `failures`.
 final class FailureArtifactFile {
@@ -68,16 +85,95 @@ final class FailureArtifactCleaner {
   /// Finds failure images and deletes them unless [dryRun] is true.
   Future<FailureArtifactCleanupResult> clean({bool dryRun = false}) async {
     final files = await scan();
-    for (final artifact in files) {
-      if (!dryRun) {
-        await File(_absolutePath(artifact.relativePath)).delete();
+    if (dryRun) {
+      return FailureArtifactCleanupResult(
+        fileCount: files.length,
+        totalBytes: files.fold(0, (sum, file) => sum + file.byteSize),
+      );
+    }
+    return cleanPrepared(await prepare(files));
+  }
+
+  /// Hash streams instead of decoding images or retaining their bytes.
+  Future<FailureArtifactCleanupPlan> prepare(
+      Iterable<FailureArtifactFile> files) async {
+    await _validateInput();
+    final selected = {for (final file in files) file.relativePath: file}
+        .values
+        .toList()
+      ..sort((a, b) => a.relativePath.compareTo(b.relativePath));
+    final hashes = <String, String>{};
+    for (final file in selected) {
+      hashes[file.relativePath] = await _fingerprint(file);
+    }
+    return FailureArtifactCleanupPlan._(
+        List.unmodifiable(selected), Map.unmodifiable(hashes));
+  }
+
+  /// Never rescans or expands a confirmed selection. Check every file before any delete.
+  Future<FailureArtifactCleanupResult> cleanPrepared(
+      FailureArtifactCleanupPlan plan) async {
+    for (final file in plan.files) {
+      if (await _fingerprint(file) != plan._hashes[file.relativePath]) {
+        throw FailureArtifactCleanupException(
+            'Failure image changed: ${file.relativePath}. Nothing was deleted; review and confirm again.');
       }
     }
+    var removed = 0, bytes = 0;
+    try {
+      for (final artifact in plan.files) {
+        final file = await _validateFile(artifact);
+        await file.delete();
+        removed++;
+        bytes += artifact.byteSize;
+      }
+    } on Object catch (error) {
+      throw FailureArtifactCleanupException(
+          'Deleted $removed/${plan.files.length} failure images. $error');
+    }
+    return FailureArtifactCleanupResult(fileCount: removed, totalBytes: bytes);
+  }
 
-    return FailureArtifactCleanupResult(
-      fileCount: files.length,
-      totalBytes: files.fold(0, (sum, file) => sum + file.byteSize),
-    );
+  Future<String> _fingerprint(FailureArtifactFile artifact) async {
+    final file = await _validateFile(artifact);
+    final hash = (await sha256.bind(file.openRead()).first).toString();
+    await _validateFile(artifact);
+    return hash;
+  }
+
+  Future<File> _validateFile(FailureArtifactFile artifact) async {
+    final absolute = _absolutePath(artifact.relativePath);
+    if (!path.isWithin(inputDirectory.path, absolute) ||
+        !_isFailureImage(absolute)) {
+      throw const FailureArtifactCleanupException(
+          'Invalid failure image path.');
+    }
+    // Check all parents without following links, including a replaced input root.
+    var parent = path.dirname(absolute);
+    while (true) {
+      if (await FileSystemEntity.type(parent, followLinks: false) !=
+          FileSystemEntityType.directory) {
+        throw const FailureArtifactCleanupException(
+            'Failure image directory changed. Review and confirm again.');
+      }
+      if (path.equals(parent, inputDirectory.path)) break;
+      parent = path.dirname(parent);
+    }
+    if (await FileSystemEntity.type(absolute, followLinks: false) !=
+        FileSystemEntityType.file) {
+      throw FailureArtifactCleanupException(
+          'Failure image changed: ${artifact.relativePath}. Review and confirm again.');
+    }
+    final file = File(absolute), stat = await File(absolute).stat();
+    if (stat.size != artifact.byteSize ||
+        stat.modified.microsecondsSinceEpoch != artifact.modifiedMicroseconds ||
+        artifact.changedMicroseconds != null &&
+            stat.changed.microsecondsSinceEpoch !=
+                artifact.changedMicroseconds) {
+      throw FailureArtifactCleanupException(
+          'Failure image changed: ${artifact.relativePath}. Review and confirm again.');
+    }
+    return file;
   }
 
   /// Lists generated failure images without following symbolic links.
