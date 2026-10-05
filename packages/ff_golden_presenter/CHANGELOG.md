@@ -1,3 +1,11 @@
+## 1.1.10
+
+- Added **Stage all deletions (N)** to accept all non-ignored, unstaged image
+  deletions, including files hidden by search or filters. Its count updates live
+  and the button disappears when no eligible deletions remain.
+- Reused the guarded action queue for bulk acceptance, preserving revision
+  checks and preventing duplicate work from repeated clicks.
+
 ## 1.1.9
 
 - Added quick actions for files, folders, and groups, and a sequential command

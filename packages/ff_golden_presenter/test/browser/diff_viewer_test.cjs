@@ -264,6 +264,65 @@ test('Git file colors and type filters distinguish added, untracked and deleted 
   assert.deepEqual(await page.locator('.file .badge').allTextContents(),['D']);
 });
 
+test('stage all deletions appears only for eligible Git deletions and tracks live updates', async t => {
+  const deleted=id=>({...item(id),status:'D',hasAfter:false});
+  const {page,refresh}=await viewer(t,[item('modified'),
+    {...deleted('ignored'),ignored:true},{...deleted('staged'),staged:true},
+    {...item('new'),status:'?',hasBefore:false},
+  ]);
+  const button=page.locator('#stage-deleted');
+  assert.equal(await button.isVisible(),false);
+  await page.getByRole('button',{name:'File view options',exact:true}).click();
+  await page.locator('#show-ignored').click();
+  assert.equal(await button.isVisible(),false);
+  await refresh(data=>{
+    data.changes.push(deleted('one'),deleted('two'));
+    setFailures(data,[failure('missing-actual',{hasAfter:false})]);
+  });
+  assert.equal(await button.innerText(),'Stage all deletions (2)');
+  assert.equal(await button.isVisible(),true);
+  await Promise.all([page.waitForResponse(r=>new URL(r.url()).pathname==='/api/changes'),page.locator('#file-scope').selectOption('failures')]);
+  assert.equal(await button.isVisible(),false);
+  await Promise.all([page.waitForResponse(r=>new URL(r.url()).pathname==='/api/changes'),page.locator('#file-scope').selectOption('staged')]);
+  assert.equal(await button.isVisible(),true);
+  await refresh(data=>{data.changes.find(c=>c.id==='one').staged=true;});
+  assert.equal(await button.innerText(),'Stage all deletions (1)');
+  await refresh(data=>{data.changes.find(c=>c.id==='two').hasAfter=true;});
+  assert.equal(await button.isVisible(),false);
+});
+
+test('stage all deletions includes filtered files, excludes other changes and deduplicates clicks', async t => {
+  const deleted=id=>({...item(id),status:'D',hasAfter:false});
+  const {page,data,actions,hooks}=await viewer(t,[item('modified'),deleted('one'),deleted('two'),
+    {...deleted('ignored'),ignored:true},{...deleted('staged'),staged:true},
+    {...item('new'),status:'?',hasBefore:false},
+  ]);
+  const button=page.locator('#stage-deleted');
+  await page.locator('.file').filter({has:page.locator('button[title="screens/alpha/modified.png"]')}).locator('input').check();
+  await page.locator('#change-filter').selectOption('modified');
+  await page.locator('#search').fill('modified');
+  assert.equal(await page.locator('.file').count(),1);
+  assert.equal(await button.innerText(),'Stage all deletions (2)');
+  await page.setViewportSize({width:800,height:700});
+  assert.equal(await button.evaluate(el=>el.scrollWidth<=el.clientWidth),true);
+  let release;
+  const pending=new Promise(resolve=>release=resolve);
+  t.after(()=>release());
+  hooks.action=async body=>{
+    await pending;
+    data.changes=data.changes.map(c=>Object.hasOwn(body.revisions,c.id) ? {...c,id:'staged-'+c.id,revision:c.revision+'-staged',staged:true} : c);
+  };
+  await Promise.all([page.waitForRequest(r=>new URL(r.url()).pathname==='/api/stage'),button.click()]);
+  await button.click();
+  assert.deepEqual(actions,[{revisions:{one:'one-v1',two:'two-v1'}}]);
+  assert.doesNotMatch(await page.locator('#action-progress').textContent(),/queued/);
+  release();
+  await button.waitFor({state:'hidden'});
+  await page.locator('#action-progress').waitFor({state:'hidden'});
+  assert.equal(actions.length,1);
+  assert.equal(await page.locator('.file input').isChecked(),true);
+});
+
 test('failure filters compose with search and update membership when metrics complete', async t => {
   const {page,refresh}=await viewer(t);
   await refresh(data=>setFailures(data,[

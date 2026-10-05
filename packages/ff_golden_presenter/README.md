@@ -86,7 +86,7 @@ The equivalent manual dependency is:
 
 ```yaml
 dev_dependencies:
-  ff_golden_presenter: ^1.1.9
+  ff_golden_presenter: ^1.1.10
 ```
 
 For an unreleased repository revision, use the package Git source and
@@ -244,6 +244,12 @@ unstaging, the viewer removes it and retries once only after confirming that no
 process holds the file; active or unverifiable locks are left untouched. The
 status area shows progress immediately and reports when this recovery occurs.
 Finish the commit in your usual Git client.
+
+**Stage all deletions (N)** appears below the Git list when non-ignored, unstaged
+deleted images remain. It stages all such deletions in the current review scope,
+including files hidden by search or filters, without requiring a selection or
+staging new or modified images. The count updates live; the button disappears
+when no eligible deletions remain and is hidden in **Failures**.
 
 Hover or focus Git rows, folders, and groups to reveal Stage/Unstage and Revert
 shortcuts. Image actions run through a sequential queue with a current-action

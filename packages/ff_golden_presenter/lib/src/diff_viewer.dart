@@ -45,6 +45,7 @@ input[type=search] { width:100%; min-width:0; height:30px; color:inherit; backgr
 .file[data-change=modified] .file-name { color:#edc984; } .file[data-change=failure] .file-name { color:#f0a8cc; }
 .failure-detail { display:block; color:var(--muted); font-size:10px; } .failure-detail.incomplete { color:#edc984; }
 .selection { border-top:1px solid var(--line); padding:10px; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)) 28px 28px; gap:6px; } .selection button { font-size:12px; padding:7px 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.selection #stage-deleted { grid-column:1/-1; }
 .selection .icon-button { padding:4px; font-size:17px; } .context-target { outline:1px solid var(--accent); outline-offset:-1px; border-radius:6px; }
 .failure-selection { border-top:1px solid var(--line); padding:10px; } .failure-selection button { width:100%; font-size:12px; }
 .failure-selection { display:grid; gap:6px; } .row-actions { display:flex; gap:2px; flex-shrink:0; opacity:0; pointer-events:none; }
@@ -122,7 +123,7 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
     <div id="failure-summary" class="failure-summary" role="status" hidden></div>
   </div>
   <div id="files"></div><div id="warnings" hidden></div>
-  <div id="git-selection" class="selection"><button id="stage-selected" disabled>Stage (0)</button><button id="unstage-selected" disabled>Unstage (0)</button><button id="revert-selected" class="danger" disabled>Revert (0)</button><button id="clear-selected" class="icon-button" aria-label="Clear selection" title="Clear selection" disabled>×</button><button id="selection-actions" class="icon-button" aria-label="Selection actions" title="Selection actions" aria-haspopup="menu" aria-expanded="false" aria-controls="action-menu" disabled>⋯</button></div>
+  <div id="git-selection" class="selection"><button id="stage-deleted" class="primary" title="Stage all non-ignored deleted images in this review, including files hidden by search or filters" hidden>Stage all deletions (0)</button><button id="stage-selected" disabled>Stage (0)</button><button id="unstage-selected" disabled>Unstage (0)</button><button id="revert-selected" class="danger" disabled>Revert (0)</button><button id="clear-selected" class="icon-button" aria-label="Clear selection" title="Clear selection" disabled>×</button><button id="selection-actions" class="icon-button" aria-label="Selection actions" title="Selection actions" aria-haspopup="menu" aria-expanded="false" aria-controls="action-menu" disabled>⋯</button></div>
   <div id="failure-selection" class="failure-selection" hidden><button id="delete-selected-failures" class="danger" disabled>Delete selected failures</button><button id="delete-failures" class="danger" disabled>Delete all failure images</button></div>
 </aside>
 <section class="review" aria-label="Image comparison">
@@ -208,6 +209,7 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
   const current = () => reviewItems().find(c => c.id === activeId);
   const isNewImage = item => !!item && !item.failure && !item.hasBefore && item.hasAfter;
   const changeKind = item => item.failure ? 'failure' : isNewImage(item) ? 'added' : item.hasBefore && !item.hasAfter ? 'deleted' : 'modified';
+  const unstagedDeletions = () => changes.filter(c => !c.staged && !c.ignored && changeKind(c)==='deleted');
   function failureResult(item) {
     if (!item.hasBefore || !item.hasAfter) return 'incomplete';
     const difference = item.difference;
@@ -564,6 +566,10 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
   pollTest();
   function updateButtons() {
     const failureMode = scope === 'failures';
+    const deleted = unstagedDeletions().length;
+    $('stage-deleted').hidden = failureMode || !deleted;
+    const deletionLabel = 'Stage all deletions ('+deleted+')';
+    if ($('stage-deleted').textContent!==deletionLabel) $('stage-deleted').textContent=deletionLabel;
     const values = selectionContext().items;
     const included = values.filter(c => !c.ignored && !c.failure);
     const unstaged = included.filter(c => !c.staged).length, staged = included.filter(c => c.staged).length;
@@ -1230,6 +1236,7 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
   $('toggle-stage').addEventListener('click',()=>{const item=current(); if(item && !item.ignored) mutate(item.staged ? 'unstage' : 'stage',[item]);});
   $('revert-file').addEventListener('click',()=>{const item=current(); if(item?.failure) confirmDeleteFailures([item]);else if(item && !item.staged) confirmRevert([item]);});
   $('stage-selected').addEventListener('click',()=>mutate('stage',selectionContext().items.filter(c=>!c.staged && !c.ignored)));
+  $('stage-deleted').addEventListener('click',()=>mutate('stage',unstagedDeletions()));
   $('unstage-selected').addEventListener('click',()=>mutate('unstage',selectionContext().items.filter(c=>c.staged && !c.ignored)));
   $('revert-selected').addEventListener('click',()=>confirmRevert(selectionContext().items.filter(c=>!c.staged)));
   $('clear-selected').addEventListener('click',()=>{selected.clear();renderList();});
