@@ -86,7 +86,7 @@ The equivalent manual dependency is:
 
 ```yaml
 dev_dependencies:
-  ff_golden_presenter: ^1.1.10
+  ff_golden_presenter: ^1.1.11
 ```
 
 For an unreleased repository revision, use the package Git source and
@@ -250,6 +250,11 @@ deleted images remain. It stages all such deletions in the current review scope,
 including files hidden by search or filters, without requiring a selection or
 staging new or modified images. The count updates live; the button disappears
 when no eligible deletions remain and is hidden in **Failures**.
+Large image actions are queued in batches of at most 500 images and 64 KiB of
+revision data, with no total selection-count limit. Progress shows completed
+images; each batch keeps the captured revisions and is revalidated before it
+runs. Failed batches do not stop later ones. The final status reports confirmed
+and failed counts with error details; remaining changes can be selected again.
 
 Hover or focus Git rows, folders, and groups to reveal Stage/Unstage and Revert
 shortcuts. Image actions run through a sequential queue with a current-action

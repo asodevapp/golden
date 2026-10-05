@@ -271,17 +271,16 @@ final class GitImageRepository {
       paths.add(change.path);
     }
     if (staged) {
-      return _mutateIndex(['add', '--', ...paths]);
+      return _mutateIndex(['add'], paths);
     } else {
       final head = await _git(
           directory.path, ['rev-parse', '--verify', '--quiet', 'HEAD'],
           allowFailure: true);
       if (head.exitCode == 0) {
-        return _mutateIndex(
-            ['restore', '--staged', '--source=HEAD', '--', ...paths]);
+        return _mutateIndex(['restore', '--staged', '--source=HEAD'], paths);
       } else if (head.exitCode == 1) {
         // An unborn branch has no HEAD to restore. --cached preserves the files.
-        return _mutateIndex(['rm', '--cached', '--force', '--', ...paths]);
+        return _mutateIndex(['rm', '--cached', '--force'], paths);
       } else {
         // An interrupted Git process must never be mistaken for an unborn branch.
         throw const GitReviewException(
@@ -345,15 +344,30 @@ final class GitImageRepository {
     return (restored: trackedPaths.length, deleted: untrackedFiles.length);
   }
 
-  Future<bool> _mutateIndex(List<String> arguments) async {
+  Future<bool> _mutateIndex(List<String> arguments, List<String> paths) async {
+    // Keep one index operation without OS command-line length limits. NULs
+    // preserve literal paths containing spaces, quotes and line breaks.
+    final temporary =
+        await Directory.systemTemp.createTemp('ff-golden-pathspec-');
     try {
-      await _text(arguments);
-      return false;
-    } on GitReviewException catch (error) {
-      final recovery = await _recoverStaleIndexLock(error.message);
-      if (!recovery.retry) rethrow;
-      await _text(arguments);
-      return recovery.removed;
+      final pathspec = File(p.join(temporary.path, 'paths'));
+      await pathspec.writeAsString('${paths.join('\u0000')}\u0000');
+      final command = [
+        ...arguments,
+        '--pathspec-from-file=${pathspec.path}',
+        '--pathspec-file-nul',
+      ];
+      try {
+        await _text(command);
+        return false;
+      } on GitReviewException catch (error) {
+        final recovery = await _recoverStaleIndexLock(error.message);
+        if (!recovery.retry) rethrow;
+        await _text(command);
+        return recovery.removed;
+      }
+    } finally {
+      await temporary.delete(recursive: true);
     }
   }
 

@@ -1,3 +1,15 @@
+## 1.1.11
+
+- Fixed large image actions failing with "Request is too large" by queuing
+  batches limited by image count and encoded request size, with no total
+  selection-count limit. Captured revisions stay guarded for every batch.
+- Continued later batches after failures, with progress, confirmed/failed
+  counts, error details, and deduplication of overlapping pending actions.
+- Passed staging paths to Git through NUL-delimited temporary files to avoid
+  command-line length limits while preserving literal file names.
+- Added browser and HTTP/Git regressions for 1500 deletions, long image IDs,
+  partial failures, retries, and bounded request bodies.
+
 ## 1.1.10
 
 - Added **Stage all deletions (N)** to accept all non-ignored, unstaged image

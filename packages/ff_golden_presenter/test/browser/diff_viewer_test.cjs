@@ -50,7 +50,11 @@ async function viewer(t, changes=[item('a'),item('b'),item('c','screens/beta')],
       return route.fulfill({json:data});
     }
     if(url.pathname==='/api/stage') {
-      const body=route.request().postDataJSON();actions.push(body);
+      const body=route.request().postDataJSON();
+      if(Buffer.byteLength(route.request().postData(),'utf8')>128*1024 || Object.keys(body.revisions).length>500) {
+        return route.fulfill({status:400,json:{error:'Request exceeds the server batch limits.'}});
+      }
+      actions.push(body);
       const error=await hooks.action?.(body);
       return route.fulfill(error ? {status:409,json:{error}} : {json:data});
     }
@@ -321,6 +325,68 @@ test('stage all deletions includes filtered files, excludes other changes and de
   await page.locator('#action-progress').waitFor({state:'hidden'});
   assert.equal(actions.length,1);
   assert.equal(await page.locator('.file input').isChecked(),true);
+});
+
+const deletedItems = count => Array.from({length:count},(_,i)=>({...item('deleted-'+i),status:'D',hasAfter:false,revision:'a'.repeat(64)}));
+function stageFixture(data,body) {
+  data.changes=data.changes.map(c=>Object.hasOwn(body.revisions,c.id) ? {...c,id:'staged-'+c.id,revision:c.revision+'-staged',staged:true} : c);
+}
+
+test('1500 deletions run in bounded FIFO batches with progress and no overlapping duplicates', async t => {
+  const {page,data,actions,hooks}=await viewer(t,deletedItems(1500));
+  let release;
+  const pending=new Promise(resolve=>release=resolve);
+  t.after(()=>release());
+  hooks.action=async body=>{if(actions.length===2) await pending;stageFixture(data,body);};
+  await Promise.all([
+    page.waitForRequest(r=>new URL(r.url()).pathname==='/api/stage' && Object.hasOwn(r.postDataJSON().revisions,'deleted-500')),
+    page.locator('#stage-deleted').click(),
+  ]);
+  assert.match(await page.locator('#action-progress').textContent(),/500\/1500 processed/);
+  assert.equal(await page.locator('#stage-deleted').innerText(),'Stage all deletions (1000)');
+  await page.locator('#stage-deleted').click();
+  assert.doesNotMatch(await page.locator('#action-progress').textContent(),/queued/);
+  release();
+  await page.locator('#action-progress').waitFor({state:'hidden'});
+  assert.deepEqual(actions.map(body=>Object.keys(body.revisions).length),[500,500,500]);
+  assert.deepEqual(actions.flatMap(body=>Object.keys(body.revisions)),deletedItems(1500).map(c=>c.id));
+  assert.equal(await page.locator('#stage-deleted').isVisible(),false);
+  assert.equal(await page.locator('#message').textContent(),'Staged 1500 images.');
+});
+
+test('batch sizes also respect encoded JSON bytes for long image IDs', async t => {
+  const items=deletedItems(150).map(c=>({...c,id:c.id+'é🙂"'.repeat(150)}));
+  const {page,data,actions,hooks}=await viewer(t,items);
+  hooks.action=body=>stageFixture(data,body);
+  await page.locator('#stage-deleted').click();
+  await page.locator('#action-progress').waitFor({state:'hidden'});
+  assert.ok(actions.length>1);
+  for(const body of actions) {
+    assert.ok(Buffer.byteLength(JSON.stringify(body),'utf8')<=64*1024);
+    assert.ok(Object.keys(body.revisions).length<=500);
+  }
+  assert.deepEqual(actions.flatMap(body=>Object.keys(body.revisions)),items.map(c=>c.id));
+  assert.equal(await page.locator('#stage-deleted').isVisible(),false);
+});
+
+test('a failed batch does not stop subsequent batches and only remaining files are retried', async t => {
+  const {page,data,actions,hooks}=await viewer(t,deletedItems(1500));
+  hooks.action=body=>{
+    if(actions.length===2) return 'Selection changed. Review the refreshed images and try again.';
+    stageFixture(data,body);
+  };
+  await page.locator('#stage-deleted').click();
+  await page.locator('#action-progress').waitFor({state:'hidden'});
+  assert.equal(actions.length,3);
+  assert.match(await page.locator('#message').textContent(),/1500\/1500 processed/);
+  assert.match(await page.locator('#message').textContent(),/1000 of 1500 images confirmed; 500 failed/);
+  assert.match(await page.locator('#message').textContent(),/Selection changed/);
+  assert.equal(await page.locator('#stage-deleted').innerText(),'Stage all deletions (500)');
+  hooks.action=body=>stageFixture(data,body);
+  await page.locator('#stage-deleted').click();
+  await page.locator('#stage-deleted').waitFor({state:'hidden'});
+  assert.equal(actions.length,4);
+  assert.deepEqual(actions[3],actions[1]);
 });
 
 test('failure filters compose with search and update membership when metrics complete', async t => {

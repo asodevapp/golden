@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:path/path.dart' as path;
 
@@ -452,17 +453,28 @@ final class DiffReviewServer {
   }
 
   static Future<Object?> _readBody(HttpRequest request) async {
+    const maxBytes = 128 * 1024;
     if (request.headers.contentType?.mimeType != 'application/json') {
       throw const FormatException('Expected application/json.');
     }
-    final bytes = <int>[];
+    final bytes = BytesBuilder(copy: false);
+    var tooLarge = false;
     await for (final chunk in request.timeout(const Duration(seconds: 10))) {
-      bytes.addAll(chunk);
-      if (bytes.length > 128 * 1024) {
-        throw const FormatException('Request is too large.');
+      if (tooLarge) continue;
+      if (bytes.length + chunk.length > maxBytes) {
+        // Drain without retaining more bytes so cancelling the request stream
+        // does not close the socket before the JSON error can be sent.
+        tooLarge = true;
+        bytes.clear();
+      } else {
+        bytes.add(chunk);
       }
     }
-    return jsonDecode(utf8.decode(bytes));
+    if (tooLarge) {
+      throw FormatException(
+          'Request is too large (limit: ${maxBytes ~/ 1024} KiB).');
+    }
+    return jsonDecode(utf8.decode(bytes.takeBytes()));
   }
 
   Future<void> _refresh(HttpResponse response,

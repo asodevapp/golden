@@ -285,6 +285,38 @@ void main() {
         throwsA(isA<GitReviewException>()));
   });
 
+  test('large unborn selections use literal paths and preserve working files',
+      () async {
+    final paths = [
+      ...List.generate(497, (i) => 'goldens/image[$i].png'),
+      '-leading.png',
+      "quote's space ü.png",
+      if (!Platform.isWindows) 'line\nbreak.png',
+    ];
+    for (final path in paths) {
+      await fixture.write(path, [1]);
+    }
+    await fixture.write('goldens/image1.png', [2]);
+    await fixture.write('notes.txt', [3]);
+    await fixture.git(['add', '--', 'notes.txt']);
+    final selected = (await repository.scan())
+        .changes
+        .where((c) => c.path != 'goldens/image1.png');
+    await repository
+        .setStaged({for (final c in selected) c.id: c.revision}, staged: true);
+    final staged = (await repository.scan()).changes.where((c) => c.staged);
+    expect(staged.map((c) => c.path), unorderedEquals(paths));
+    await repository
+        .setStaged({for (final c in staged) c.id: c.revision}, staged: false);
+    final index = await fixture.git(['ls-files', '-z']);
+    expect(index.stdout, 'notes.txt\u0000'.codeUnits);
+    expect(await fixture.blob(':notes.txt'), [3]);
+    for (final path in paths) {
+      expect(await fixture.file(path).readAsBytes(), [1]);
+    }
+    expect(await fixture.file('goldens/image1.png').readAsBytes(), [2]);
+  });
+
   test('symlinks are not read or offered for stage', () async {
     await fixture.write('secret.txt', [1]);
     await Link(p.join(fixture.directory.path, 'linked.png'))

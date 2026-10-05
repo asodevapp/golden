@@ -199,6 +199,7 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
   let menuState = null, pendingRevert = [];
   let pendingCleanup = null, cleanupConfirmation = null;
   const actionQueue = [], actionTasks = new Map();
+  const pendingMutations = new Set();
   let before = null, after = null, loadedRevision = null, loadingRevision = null, loadSequence = 0;
   let polling = false, mutating = false, diffImage = null, diffMask = null, diffBounds = null, diffSummary = '', diffAttempted = false;
   let zoomMode = 'fit', manualScale = 1, renderedScale = 1, renderedMode = 'side', paintKey = null, synchronizing = false;
@@ -257,6 +258,21 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
   }
   function capturedItems(items) { return [...new Map(items.filter(Boolean).map(item=>[item.id,{...item}])).values()]; }
   function actionKey(action,items) { return JSON.stringify([action,items.map(item=>[item.id,item.revision,!!item.ignored]).sort((a,b)=>a[0].localeCompare(b[0]))]); }
+  function mutationBatches(items) {
+    // Stay below both API limits (500 items / 128 KiB), including long paths.
+    const encoder=new TextEncoder(), overhead=encoder.encode('{"revisions":{}}').length;
+    const batches=[]; let batch=[],bytes=overhead;
+    for(const item of items) {
+      const size=encoder.encode(JSON.stringify(item.id)+':'+JSON.stringify(item.revision)).length;
+      if(overhead+size>64*1024) throw new Error('An image selection entry is too large.');
+      if(batch.length && (batch.length===500 || bytes+1+size>64*1024)) {
+        batches.push(batch);batch=[];bytes=overhead;
+      }
+      bytes+=size+(batch.length ? 1 : 0);batch.push(item);
+    }
+    if(batch.length) batches.push(batch);
+    return batches;
+  }
   function quickActions(getItems) {
     const span=document.createElement('span');span.className='row-actions';
     const action=document.createElement('button'),other=document.createElement('button');span.append(action,other);
@@ -1184,21 +1200,41 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
     $('delete-failures-dialog').close();cleanupConfirmation?.(confirmed);
   }
   function mutate(action, input) {
-    const items=capturedItems(input);
+    const items=capturedItems(input).filter(item=>!pendingMutations.has(actionKey(action,[item])));
     if(!items.length || items.some(c=>c.failure) && !['ignore','unignore'].includes(action)) return;
     closeMenu();
-    return enqueueAction(actionKey(action,items),(action==='stage' ? 'Staging ' : action==='unstage' ? 'Unstaging ' : action+' · ')+items.length+' images',async()=>{
-      const revisions=Object.fromEntries(items.map(c=>[c.id,c.revision]));
+    const keys=items.map(item=>actionKey(action,[item]));keys.forEach(key=>pendingMutations.add(key));
+    const label=(action==='stage' ? 'Staging ' : action==='unstage' ? 'Unstaging ' : action+' · ')+items.length+' images';
+    return enqueueAction(actionKey(action,items),label,async()=>{
       const prefix=items[0].failure ? '/api/failures/' : '/api/';
-      const data=await (await request(prefix+action,{revisions})).json();
-      for(const item of items) if(selected.get(item.id)?.revision===item.revision) selected.delete(item.id);
-      applyData(data);
+      let completed=0,failed=0,restored=0,deleted=0,removedStaleIndexLock=false;
+      const errors=[];
+      try {
+        const batches=mutationBatches(items);
+        const progress=()=>{actionQueue[0].label=label+(batches.length>1 ? ' · '+(completed+failed)+'/'+items.length+' processed'+(failed ? ' · '+failed+' failed' : '') : '');updateActionProgress();};
+        progress();
+        for(const batch of batches) {
+          try {
+            const revisions=Object.fromEntries(batch.map(c=>[c.id,c.revision]));
+            const data=await (await request(prefix+action,{revisions})).json();
+            completed+=batch.length;restored+=data.restoredWorkingFiles || 0;deleted+=data.deletedUntrackedFiles || 0;
+            removedStaleIndexLock ||= !!data.removedStaleIndexLock;
+            for(const item of batch) if(selected.get(item.id)?.revision===item.revision) selected.delete(item.id);
+            applyData(data);
+          } catch(error) {
+            failed+=batch.length;errors.push(error.message);
+          }
+          progress();
+        }
+      } finally {
+        keys.forEach(key=>pendingMutations.delete(key));
+      }
+      if(errors.length) throw new Error(completed+' of '+items.length+' images confirmed; '+failed+' failed in '+errors.length+' batches. '+[...new Set(errors)].join(' '));
       if(action==='ignore' || action==='unignore') {
         message((action==='ignore' ? 'Added ' : 'Removed ')+new Set(items.map(c=>c.path)).size+' paths '+(action==='ignore' ? 'to' : 'from')+' .golden_ignore.');
       } else if(action==='revert') {
-        const restored=data.restoredWorkingFiles || 0,deleted=data.deletedUntrackedFiles || 0;
         message('Reverted '+(restored+deleted)+' images. '+(deleted ? 'Deleted '+deleted+' untracked files. ' : '')+'Staged changes were preserved.');
-      } else message((data.removedStaleIndexLock ? 'Removed stale Git index.lock and retried. ' : '')+(action==='stage' ? 'Staged ' : 'Unstaged ')+items.length+' images.');
+      } else message((removedStaleIndexLock ? 'Removed stale Git index.lock and retried. ' : '')+(action==='stage' ? 'Staged ' : 'Unstaged ')+items.length+' images.');
     });
   }
   function step(direction) {

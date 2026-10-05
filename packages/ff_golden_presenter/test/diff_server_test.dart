@@ -209,6 +209,77 @@ void main() {
     expect(await fixture.blob(':image.png'), [0, 254, 127]);
   });
 
+  test(
+      'stages and unstages 1500 deletions in bounded requests with revision guards',
+      () async {
+    final folder = 'test/screens/${'long_folder_' * 7}/golden';
+    final paths = List.generate(1500, (i) => '$folder/phone[$i](en US).png');
+    for (final path in paths) {
+      await fixture.write(path, [1]);
+    }
+    await fixture.write('keep-staged.png', [2]);
+    await fixture.commitAll();
+    for (final path in paths) {
+      await fixture.file(path).delete();
+    }
+    await fixture.write('image.png', [9]);
+    await fixture.write('keep-staged.png', [3]);
+    await fixture.git(['add', '--', 'keep-staged.png']);
+    final data = await json(await request('/api/changes'));
+    final revisions = {
+      for (final change in data['changes'] as List)
+        if (change['status'] == 'D' && change['staged'] == false)
+          change['id']: change['revision'],
+    };
+    final body = {'revisions': revisions};
+    expect(revisions, hasLength(1500));
+    expect(utf8.encode(jsonEncode(body)).length, greaterThan(128 * 1024));
+
+    // A stale item rejects its whole batch without touching the index.
+    await fixture.write(paths.first, [1]);
+    final stale = await request('/api/stage', body: {
+      'revisions': Map.fromEntries(revisions.entries.take(300)),
+    });
+    final staleData = await json(stale);
+    expect(stale.statusCode, 409, reason: staleData['error'] as String?);
+    expect(staleData['error'], contains('Selection changed'));
+    final unchanged = await fixture.git(['diff', '--cached', '--name-only']);
+    expect(utf8.decode(unchanged.stdout as List<int>), 'keep-staged.png\n');
+    await fixture.file(paths.first).delete();
+
+    Future<List<dynamic>> applyBatches(String endpoint, Map revisions) async {
+      final entries = revisions.entries.toList();
+      Map<String, dynamic>? latest;
+      for (var offset = 0; offset < entries.length; offset += 300) {
+        final body = {
+          'revisions': Map.fromEntries(entries.skip(offset).take(300)),
+        };
+        expect(utf8.encode(jsonEncode(body)).length, lessThan(128 * 1024));
+        final response = await request(endpoint, body: body);
+        latest = await json(response);
+        expect(response.statusCode, 200, reason: latest['error'] as String?);
+      }
+      return latest!['changes'] as List;
+    }
+
+    final changes = await applyBatches('/api/stage', revisions);
+    final stagedDeletions = changes.where((c) => c['status'] == 'D').toList();
+    expect(stagedDeletions, hasLength(1500));
+    expect(stagedDeletions.every((c) => c['staged'] == true), isTrue);
+    expect(await fixture.blob(':image.png'), [0, 254, 127]);
+    expect(await fixture.blob(':keep-staged.png'), [3]);
+
+    final unstaged = await applyBatches('/api/unstage',
+        {for (final c in stagedDeletions) c['id']: c['revision']});
+    final restored = unstaged.where((c) => c['status'] == 'D').toList();
+    expect(restored, hasLength(1500));
+    expect(restored.every((c) => c['staged'] == false), isTrue);
+    expect(await fixture.blob(':${paths.first}'), [1]);
+    expect(await fixture.blob(':${paths.last}'), [1]);
+    expect(await fixture.blob(':keep-staged.png'), [3]);
+    expect(await fixture.file(paths.first).exists(), isFalse);
+  });
+
   test('reverts a selected working-tree image through the guarded API',
       () async {
     final data = await json(await request('/api/changes'));
@@ -442,6 +513,26 @@ void main() {
     });
     expect(bad.statusCode, 400);
     await bad.drain<void>();
+    final healthy = await request('/api/changes');
+    expect(healthy.statusCode, 200);
+    await healthy.drain<void>();
+  });
+
+  test(
+      'request bodies remain bounded and oversized requests leave Git unchanged',
+      () async {
+    for (final (endpoint, limit) in [
+      ('/api/stage', 128 * 1024),
+      ('/api/unstage', 128 * 1024),
+      ('/api/revert', 128 * 1024),
+    ]) {
+      final response = await request(endpoint, body: {
+        'revisions': {'invalid': 'x' * limit}
+      });
+      expect(response.statusCode, 400);
+      expect((await json(response))['error'], contains('Request is too large'));
+    }
+    expect(await fixture.blob(':image.png'), [0, 255, 128]);
     final healthy = await request('/api/changes');
     expect(healthy.statusCode, 200);
     await healthy.drain<void>();
