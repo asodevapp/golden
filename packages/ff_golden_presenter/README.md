@@ -86,7 +86,7 @@ The equivalent manual dependency is:
 
 ```yaml
 dev_dependencies:
-  ff_golden_presenter: ^1.1.11
+  ff_golden_presenter: ^1.1.12
 ```
 
 For an unreleased repository revision, use the package Git source and

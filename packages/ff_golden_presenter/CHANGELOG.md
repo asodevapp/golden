@@ -1,3 +1,10 @@
+## 1.1.12
+
+- Kept sidebar action buttons in place as queued actions start, finish, or
+  report errors by reserving a fixed-height status area in the footer.
+- Kept long error messages scrollable and added browser layout regressions for
+  compact and wide windows, including changes to the bulk deletion button.
+
 ## 1.1.11
 
 - Fixed large image actions failing with "Request is too large" by queuing

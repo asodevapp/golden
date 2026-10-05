@@ -332,6 +332,40 @@ function stageFixture(data,body) {
   data.changes=data.changes.map(c=>Object.hasOwn(body.revisions,c.id) ? {...c,id:'staged-'+c.id,revision:c.revision+'-staged',staged:true} : c);
 }
 
+for(const width of [1280,800]) test(`sidebar buttons stay in place during actions and status changes at ${width}px`, async t => {
+  const {page,data,refresh,hooks}=await viewer(t);
+  await page.setViewportSize({width,height:600});
+  const controls=['stage-selected','unstage-selected','revert-selected','clear-selected','selection-actions'];
+  const geometry=()=>page.evaluate(ids=>Object.fromEntries(ids.map(id=>{
+    const {x,y,width,height}=document.getElementById(id).getBoundingClientRect();return [id,{x,y,width,height}];
+  })),controls);
+  await page.locator('.file input').first().check();
+  const before=await geometry();
+  await refresh(data=>data.changes.push({...item('deleted'),status:'D',hasAfter:false}));
+  assert.equal(await page.locator('#stage-deleted').isVisible(),true);
+  assert.deepEqual(await geometry(),before);
+  let release;
+  const pending=new Promise(resolve=>release=resolve);
+  t.after(()=>release());
+  hooks.action=async()=>{await pending;return 'Selection changed.\n'+'Review the refreshed images and try again. '.repeat(100);};
+  await Promise.all([page.waitForRequest(r=>new URL(r.url()).pathname==='/api/stage'),page.locator('#stage-selected').click()]);
+  assert.deepEqual(await geometry(),before);
+  release();
+  await page.locator('#action-progress').waitFor({state:'hidden'});
+  assert.match(await page.locator('#message').textContent(),/Selection changed/);
+  assert.deepEqual(await geometry(),before);
+  assert.equal(await page.locator('#message').evaluate(el=>el.scrollHeight>el.clientHeight && el.clientHeight>0),true);
+  hooks.action=body=>stageFixture(data,body);
+  await page.locator('#stage-selected').click();
+  await page.locator('#action-progress').waitFor({state:'hidden'});
+  assert.equal(await page.locator('#message').textContent(),'Staged 1 images.');
+  assert.deepEqual(await geometry(),before);
+  await page.locator('#stage-deleted').click();
+  await page.locator('#stage-deleted').waitFor({state:'hidden'});
+  await page.locator('#action-progress').waitFor({state:'hidden'});
+  assert.deepEqual(await geometry(),before);
+});
+
 test('1500 deletions run in bounded FIFO batches with progress and no overlapping duplicates', async t => {
   const {page,data,actions,hooks}=await viewer(t,deletedItems(1500));
   let release;

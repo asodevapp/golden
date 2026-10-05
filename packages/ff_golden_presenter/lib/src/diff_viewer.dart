@@ -44,14 +44,14 @@ input[type=search] { width:100%; min-width:0; height:30px; color:inherit; backgr
 .file[data-change=added] .file-name { color:#91d9b1; } .file[data-change=deleted] .file-name { color:#f6a6a6; text-decoration:line-through; }
 .file[data-change=modified] .file-name { color:#edc984; } .file[data-change=failure] .file-name { color:#f0a8cc; }
 .failure-detail { display:block; color:var(--muted); font-size:10px; } .failure-detail.incomplete { color:#edc984; }
-.selection { border-top:1px solid var(--line); padding:10px; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)) 28px 28px; gap:6px; } .selection button { font-size:12px; padding:7px 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.selection { flex-shrink:0; border-top:1px solid var(--line); padding:10px; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)) 28px 28px; gap:6px; } .selection button { font-size:12px; padding:7px 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-variant-numeric:tabular-nums; }
 .selection #stage-deleted { grid-column:1/-1; }
 .selection .icon-button { padding:4px; font-size:17px; } .context-target { outline:1px solid var(--accent); outline-offset:-1px; border-radius:6px; }
-.failure-selection { border-top:1px solid var(--line); padding:10px; } .failure-selection button { width:100%; font-size:12px; }
+.failure-selection { flex-shrink:0; border-top:1px solid var(--line); padding:10px; } .failure-selection button { width:100%; font-size:12px; }
 .failure-selection { display:grid; gap:6px; } .row-actions { display:flex; gap:2px; flex-shrink:0; opacity:0; pointer-events:none; }
 .file:hover .row-actions,.file:focus-within .row-actions,summary:hover .row-actions,summary:focus-within .row-actions,.group-title:hover .row-actions,.group-title:focus-within .row-actions { opacity:1; pointer-events:auto; }
 .row-actions button,.file .row-actions button { flex:none; display:block; width:24px; padding:2px; text-align:center; font-size:16px; }
-#action-progress { padding:6px 16px; color:var(--accent); border-top:1px solid var(--line); font-size:12px; }
+#action-progress { flex-shrink:0; padding:0 6px; color:var(--accent); font-size:12px; line-height:18px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-variant-numeric:tabular-nums; }
 .danger { color:#ffc2c2; border-color:#744747; background:#482a2e; } button.danger:hover:not(:disabled) { border-color:#e78383; }
 .context-menu { position:fixed; z-index:10; width:250px; max-width:calc(100vw - 16px); max-height:calc(100vh - 16px); overflow:auto; padding:6px; border:1px solid #46525f; border-radius:10px; background:#20272f; box-shadow:0 12px 36px #0008; }
 .context-title { padding:7px 9px 9px; font-size:11px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -77,8 +77,9 @@ input[type=search] { width:100%; min-width:0; height:30px; color:inherit; backgr
 .viewport { flex:1; min-height:0; overflow:auto; padding:16px; overscroll-behavior:contain; } .viewport canvas { display:block; max-width:none; margin-inline:auto; box-shadow:0 0 0 1px #39414b; background-color:#20262c; background-image:conic-gradient(#2b333c 25%, transparent 0 50%, #2b333c 0 75%, transparent 0); background-size:16px 16px; cursor:grab; touch-action:none; user-select:none; }
 .viewport.dragging canvas { cursor:grabbing; }
 #combined { height:100%; display:flex; flex-direction:column; } #combined .viewport { min-width:0; }
-footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted); font-size:11px; display:flex; gap:20px; } #connection { margin-left:auto; }
-#message { padding:10px 20px; background:#223b35; color:#b1e6ce; font-size:12px; } #message.error { background:#482a2e; color:#ffc2c2; } #warnings { color:#edc984; padding:8px 16px; font-size:11px; white-space:pre-wrap; max-height:100px; overflow:auto; }
+footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); color:var(--muted); font-size:11px; display:flex; align-items:center; gap:20px; } #connection { flex-shrink:0; margin-left:auto; white-space:nowrap; }
+.review-status { flex:1; min-width:0; height:36px; display:flex; flex-direction:column; justify-content:center; } #status-hint { overflow:hidden; }
+#message { flex:1; min-height:0; padding:0 6px; background:#223b35; color:#b1e6ce; font-size:12px; line-height:18px; white-space:pre-wrap; overflow-wrap:anywhere; overflow:auto; } #message.error { background:#482a2e; color:#ffc2c2; } #warnings { color:#edc984; padding:8px 16px; font-size:11px; white-space:pre-wrap; max-height:100px; overflow:auto; }
 .empty-list { padding:24px 12px; color:var(--muted); font-size:12px; text-align:center; } [hidden] { display:none!important; }
 .tests-panel { height:360px; flex-shrink:0; min-height:160px; display:flex; flex-direction:column; background:var(--panel); }
 .tests-resize { height:8px; flex-shrink:0; cursor:ns-resize; touch-action:none; border-top:1px solid #49625f; background:#202b30; position:relative; }
@@ -184,9 +185,7 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
 <dialog id="revert-dialog" aria-labelledby="revert-title"><h2 id="revert-title">Revert working-tree changes?</h2><p><strong id="revert-count"></strong> Modified or deleted tracked images will be restored from the Git index. <span id="revert-untracked"></span></p><p>Staged changes remain staged. FF Golden cannot undo this action.</p><div class="dialog-actions"><button id="cancel-revert">Cancel</button><button id="confirm-revert" class="danger">Revert changes</button></div></dialog>
 <dialog id="delete-failures-dialog" aria-labelledby="delete-failures-title"><h2 id="delete-failures-title">Delete generated failure images?</h2><div class="cleanup-body"><p id="delete-failures-summary"></p><p id="delete-failures-scope"></p><p>Only the listed files will be permanently deleted. Changed files cancel cleanup; newly generated files stay. Baselines outside failures and the Git index are preserved.</p><details><summary>View file list</summary><pre id="delete-failures-paths"></pre></details></div><div class="dialog-actions"><button id="cancel-delete-failures">Cancel</button><button id="confirm-delete-failures" class="danger">Delete images</button></div></dialog>
 <div id="action-menu" class="context-menu" role="menu" aria-label="Image actions" tabindex="-1" hidden></div>
-<div id="message" role="status" hidden></div>
-<div id="action-progress" role="status" hidden></div>
-<footer><span>Git actions affect only changes. Failure cleanup deletes generated images only from exact failures directories.</span><span id="connection">Connecting…</span></footer>
+<footer><div class="review-status"><span id="status-hint">Git actions affect only changes. Failure cleanup deletes generated images only from exact failures directories.</span><div id="message" role="status" tabindex="0" hidden></div><div id="action-progress" role="status" hidden></div></div><span id="connection">Connecting…</span></footer>
 <script nonce="__SESSION_TOKEN__">
 (() => {
   const token = '__SESSION_TOKEN__';
@@ -234,7 +233,9 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
 
   function message(text, error = false) {
     $('message').textContent = text; $('message').classList.toggle('error', error); $('message').hidden = !text;
+    updateStatusHint();
   }
+  function updateStatusHint() { $('status-hint').hidden=!$('message').hidden || !$('action-progress').hidden; }
   function enqueueAction(key,label,run) {
     if(actionTasks.has(key)) return actionTasks.get(key).promise;
     let resolve; const promise=new Promise(done=>resolve=done);
@@ -244,6 +245,8 @@ footer { padding:8px 20px; border-top:1px solid var(--line); color:var(--muted);
   function updateActionProgress() {
     const first=actionQueue[0]; $('action-progress').hidden=!first;
     $('action-progress').textContent=first ? first.label+(actionQueue.length>1 ? ' · '+(actionQueue.length-1)+' queued' : '') : '';
+    $('action-progress').title=$('action-progress').textContent;
+    updateStatusHint();
   }
   async function drainActions() {
     mutating=true; const errors=[];
