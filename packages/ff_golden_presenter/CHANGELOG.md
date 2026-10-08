@@ -1,3 +1,17 @@
+## 1.1.13
+
+- Added `clean-goldens` to delete baseline images below exact `golden`
+  directories. The optional `--input` defaults to `test`; `--dry-run` lists
+  matching paths, count, and size. Failure directories, non-image files, and
+  symlinks are preserved, with shared verified cleanup and extension filters.
+- Kept **Changes** zoom active across navigation, content updates, and viewport
+  resizing, fitting each comparison's own changed area while preserving pan
+  during highlight repaints. Unchanged and single-image previews use Fit and
+  retain the preference for the next comparison.
+- Opened new and staged-added images in Fit regardless of the previous zoom;
+  refreshing the same image preserves manual zoom and pan.
+- Added CLI, cleanup, and browser regressions for these behaviors.
+
 ## 1.1.12
 
 - Kept sidebar action buttons in place as queued actions start, finish, or

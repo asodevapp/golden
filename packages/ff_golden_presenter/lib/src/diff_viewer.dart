@@ -138,7 +138,7 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
   </div>
   <div class="zoom-bar" role="group" aria-label="Image zoom">
     <button id="zoom-out" aria-label="Zoom out" title="Zoom out (−)">−</button><label class="zoom-value"><input id="zoom-percent" type="number" min="1" max="800" step="10" value="100" aria-label="Zoom percent">%</label><button id="zoom-in" aria-label="Zoom in" title="Zoom in (+)">+</button>
-    <button id="zoom-fit" title="Fit whole image (0)" aria-pressed="true">Fit</button><button id="zoom-width" title="Fit image width" aria-pressed="false">Width</button><button id="zoom-actual" title="Original pixel size (1)" aria-pressed="false">100%</button><button id="zoom-changes" title="Zoom to the bounding area of changed pixels">Changes</button>
+    <button id="zoom-fit" title="Fit whole image (0)" aria-pressed="true">Fit</button><button id="zoom-width" title="Fit image width" aria-pressed="false">Width</button><button id="zoom-actual" title="Original pixel size (1)" aria-pressed="false">100%</button><button id="zoom-changes" title="Keep the changed area fitted across images" aria-pressed="false">Changes</button>
     <span class="zoom-hint">Ctrl/⌘ + wheel to zoom · drag to pan · double-click for 100%</span>
   </div>
   <div id="metrics"></div>
@@ -199,9 +199,9 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
   let pendingCleanup = null, cleanupConfirmation = null;
   const actionQueue = [], actionTasks = new Map();
   const pendingMutations = new Set();
-  let before = null, after = null, loadedRevision = null, loadingRevision = null, loadSequence = 0;
+  let before = null, after = null, loadedRevision = null, loadingRevision = null, loadSequence = 0, loadedImageId = null, loadingAnchor = null;
   let polling = false, mutating = false, diffImage = null, diffMask = null, diffBounds = null, diffSummary = '', diffAttempted = false;
-  let zoomMode = 'fit', manualScale = 1, renderedScale = 1, renderedMode = 'side', paintKey = null, synchronizing = false;
+  let zoomMode = 'fit', manualScale = 1, renderedScale = 1, renderedMode = 'side', paintKey = null, changesFitKey = null, synchronizing = false;
   let failureView = 'compare', loadedFailureView = 'compare';
   const artifactFlags = {before:'hasBefore',after:'hasAfter',isolatedDiff:'hasIsolatedDiff',maskedDiff:'hasMaskedDiff'};
   const artifactLabels = {before:'Expected',after:'Actual',isolatedDiff:'Isolated diff',maskedDiff:'Masked diff'};
@@ -1001,6 +1001,7 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
   }
   function clearImage() {
     loadSequence++; loadedRevision = loadingRevision = null; before = after = diffImage = diffMask = diffBounds = null; paintKey = null;
+    loadedImageId = loadingAnchor = changesFitKey = null;
     $('filename').textContent = scope==='failures' ? 'Failure artifacts' : 'Image changes'; $('context').textContent = 'Choose an image to compare';
     $('metrics').textContent = ''; $('side').hidden = $('combined').hidden = true; $('empty').hidden = false;
     $('empty').firstElementChild.textContent = 'No image selected'; $('empty').lastElementChild.textContent = scope==='failures' ? 'Generated failures appear here automatically.' : 'Changes appear here automatically.';
@@ -1019,6 +1020,10 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
   async function loadCurrent() {
     const item = current(); if (!item) return clearImage();
     const artifact=effectiveFailureView(item);
+    const switchingImage=item.id!==loadedImageId;
+    const anchor=switchingImage ? null : captureAnchor() || loadingAnchor;
+    const previousFitKey=changesFitKey;
+    loadingAnchor=anchor;
     const sequence = ++loadSequence; loadedRevision = null; loadingRevision = item.revision; updateButtons();
     $('filename').textContent = item.path;
     $('empty').firstElementChild.textContent = 'Loading comparison…'; $('empty').lastElementChild.textContent = '';
@@ -1030,11 +1035,15 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
       if (Math.max(before?.naturalWidth || 0,after?.naturalWidth || 0) * Math.max(before?.naturalHeight || 0,after?.naturalHeight || 0) > 16000000) {
         throw new Error('Preview exceeds the 16 megapixel limit. Open this image in an external viewer.');
       }
-      loadedRevision = item.revision; loadingRevision = null; loadedFailureView=artifact;
+      loadedRevision = item.revision; loadedImageId=item.id; loadingRevision = loadingAnchor = null; loadedFailureView=artifact;
+      const fitNewImage=switchingImage && isNewImage(item);
+      if(fitNewImage && zoomMode!=='changes') zoomMode='fit';
       $('before-label').textContent = item.failure ? 'Expected' : item.staged ? 'HEAD' : 'Index';
       $('after-label').textContent = item.failure ? artifactLabels[artifact] || 'Actual' : item.staged ? 'Index' : 'Working tree';
       $('before-size').textContent = dimensions(before); $('after-size').textContent = dimensions(after);
       $('empty').hidden = true; render(); updateButtons();
+      if(fitNewImage) for(const viewport of viewports()) {viewport.scrollLeft=0;viewport.scrollTop=0;}
+      else if(!switchingImage && (zoomMode!=='changes' || changesFitKey===previousFitKey)) restoreAnchor(anchor);
     } catch (error) {
       if (sequence !== loadSequence) return;
       loadingRevision = null;
@@ -1107,13 +1116,9 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
   }
   function zoomToChanges() {
     if (!loadedRevision) return;
-    const {width,height}=imageSize(); buildDiff(width,height);
-    if (!diffBounds) { message('No changed pixels in this comparison.'); render(); return; }
-    const viewport=viewports()[0], bounds=diffBounds;
-    setZoom(Math.min((viewport.clientWidth-48)/(bounds.width+48),(viewport.clientHeight-48)/(bounds.height+48),8),
-      {viewport,x:bounds.x+bounds.width/2,y:bounds.y+bounds.height/2,fx:.5,fy:.5});
+    zoomMode='changes'; changesFitKey=null; render();
   }
-  function renderPreservingPosition() { const anchor=captureAnchor(); render(); restoreAnchor(anchor); }
+  function renderPreservingPosition() { const anchor=zoomMode==='changes' ? null : captureAnchor(); render(); restoreAnchor(anchor); }
   function render() {
     if (!loadedRevision) return;
     const {width,height}=imageSize();
@@ -1129,8 +1134,12 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
     $('mix-control').hidden = mode !== 'split' && mode !== 'overlay';
     $('mix-label').textContent = mode === 'split' ? 'Position' : 'Opacity'; $('mix-value').textContent = $('mix').value + '%';
     const viewport = viewports(mode)[0];
+    if(zoomMode==='changes' && !single && before && after) buildDiff(width,height);
+    const bounds=zoomMode==='changes' && !single && before && after ? diffBounds : null;
     const fit = Math.min((viewport.clientWidth-32)/width,(viewport.clientHeight-32)/height,1);
-    const scale = zoomMode==='manual' ? manualScale : Math.max(.01,zoomMode==='width' ? Math.min((viewport.clientWidth-32)/width,8) : fit);
+    const scale = zoomMode==='manual' ? manualScale : Math.max(.01,bounds
+      ? Math.min((viewport.clientWidth-48)/(bounds.width+48),(viewport.clientHeight-48)/(bounds.height+48),8)
+      : zoomMode==='width' ? Math.min((viewport.clientWidth-32)/width,8) : fit);
     const nextPaintKey=[loadedRevision,loadedFailureView,mode,mix,highlight,intensity,mode==='split' ? scale : ''].join('|');
     const repaint=paintKey!==nextPaintKey;
     if ((mode==='diff' || highlight) && repaint) buildDiff(width,height);
@@ -1159,6 +1168,16 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
     $('zoom-fit').setAttribute('aria-pressed',String(zoomMode==='fit'));
     $('zoom-width').setAttribute('aria-pressed',String(zoomMode==='width'));
     $('zoom-actual').setAttribute('aria-pressed',String(zoomMode==='manual' && scale===1));
+    $('zoom-changes').setAttribute('aria-pressed',String(zoomMode==='changes'));
+    // Only changed geometry reframes the view. Highlight and other repaints
+    // preserve manual panning while Changes remains the preferred zoom mode.
+    const fitKey=zoomMode==='changes' ? JSON.stringify([loadedImageId,loadedRevision,loadedFailureView,mode,single,
+      viewport.clientWidth,viewport.clientHeight,width,height,bounds]) : null;
+    if(fitKey && fitKey!==changesFitKey) {
+      if(bounds) restoreAnchor({viewport,x:bounds.x+bounds.width/2,y:bounds.y+bounds.height/2,fx:.5,fy:.5});
+      else {viewport.scrollLeft=0;viewport.scrollTop=0;syncViewports(viewport);}
+    }
+    changesFitKey=fitKey;
     const failure=!!current()?.failure;
     $('combined-label').textContent = mode === 'diff' ? 'Changed pixels in pink' : mode === 'split' ? (failure ? 'Expected ← | → Actual' : 'Before ← | → After') : (failure ? 'Actual over Expected' : 'After over Before');
     $('metrics').textContent = single ? dimensions(after) : dimensions(before) + ' → ' + dimensions(after) + (before && after && (before.naturalWidth!==after.naturalWidth || before.naturalHeight!==after.naturalHeight) ? ' · Dimensions changed' : '') + (mode === 'diff' || highlight ? diffSummary : '');
@@ -1355,7 +1374,8 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
     if(event.key==='0') {event.preventDefault();fitZoom();}
     if(event.key==='1') {event.preventDefault();setZoom(1);}
   });
-  new ResizeObserver(renderPreservingPosition).observe($('viewer'));
+  const resizeObserver=new ResizeObserver(renderPreservingPosition);
+  for(const viewport of document.querySelectorAll('.viewport')) resizeObserver.observe(viewport);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh(); else closeMenu();});
   setInterval(()=>{if(!document.hidden)refresh();},2000); refresh();
 })();

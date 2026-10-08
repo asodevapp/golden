@@ -27,7 +27,7 @@ async function viewer(t, changes=[item('a'),item('b'),item('c','screens/beta')],
     const url=new URL(route.request().url());
     if(url.pathname==='/') return route.fulfill({contentType:'text/html',body:html});
     if(url.pathname==='/api/changes') return route.fulfill({json:data});
-    if(url.pathname==='/api/image') {imageReads++;imageRequests.push(Object.fromEntries(url.searchParams));return route.fulfill({contentType:'image/png',body:invalidImages.has(url.searchParams.get('side')) ? Buffer.from('invalid PNG') : pixel});}
+    if(url.pathname==='/api/image') {imageReads++;imageRequests.push(Object.fromEntries(url.searchParams));return route.fulfill({contentType:'image/png',body:invalidImages.has(url.searchParams.get('side')) ? Buffer.from('invalid PNG') : hooks.image?.(Object.fromEntries(url.searchParams)) || pixel});}
     if(url.pathname==='/api/test-run') return route.fulfill({json:run});
     if(url.pathname==='/api/failures/prepare-delete') {
       const body=route.request().postDataJSON();preparations.push(body);
@@ -221,6 +221,143 @@ test('returning from a new image restores comparison mode and highlight settings
   assert.equal(await page.getByLabel('Highlight changes',{exact:true}).isChecked(),true);
   const widths=await page.evaluate(()=>[document.getElementById('before-pane').clientWidth,document.getElementById('after-pane').clientWidth,document.getElementById('side').clientWidth]);
   assert.ok(Math.abs(widths[0]-widths[1])<=1 && widths[0]<widths[2]*.6);
+});
+
+async function zoomFixture(t, specs) {
+  const v=await viewer(t,specs.map(spec=>({...item(spec.id),...spec.item})));
+  const images=await v.page.evaluate(specs=>Object.fromEntries(specs.map(spec=>{
+    const canvas=document.createElement('canvas');canvas.width=1200;canvas.height=1000;
+    const ctx=canvas.getContext('2d');ctx.fillStyle='#222';ctx.fillRect(0,0,1200,1000);
+    const before=canvas.toDataURL().split(',')[1];
+    if(spec.bounds) {ctx.fillStyle='#fff';ctx.fillRect(...spec.bounds);}
+    return [spec.id,{before,after:canvas.toDataURL().split(',')[1]}];
+  })),specs);
+  v.hooks.image=({id,side})=>Buffer.from(images[id][side],'base64');
+  await v.refresh(data=>data.changes.forEach(c=>c.revision+='-large'));
+  await v.page.waitForFunction(()=>!document.getElementById('zoom-in').disabled && document.getElementById('after-canvas').width===1200);
+  return {...v,images};
+}
+async function chooseZoomImage(page,id) {
+  await page.locator(`.file button[title="screens/alpha/${id}.png"]`).click();
+  await page.waitForFunction(()=>!document.getElementById('zoom-in').disabled);
+}
+async function framedChanges(page,bounds,viewportId='before-viewport') {
+  await page.waitForFunction(({bounds,viewportId})=>{
+    const viewport=document.getElementById(viewportId),canvas=viewport.querySelector('canvas');
+    const frame=viewport.getBoundingClientRect(),image=canvas.getBoundingClientRect(),scale=image.width/canvas.width;
+    return Math.abs(image.left+(bounds[0]+bounds[2]/2)*scale-frame.left-viewport.clientWidth/2)<2 &&
+      Math.abs(image.top+(bounds[1]+bounds[3]/2)*scale-frame.top-viewport.clientHeight/2)<2 &&
+      bounds[2]*scale<viewport.clientWidth && bounds[3]*scale<viewport.clientHeight;
+  },{bounds,viewportId});
+  assert.equal(await page.locator('#zoom-changes').getAttribute('aria-pressed'),'true');
+  return Number(await page.locator('#zoom-percent').inputValue());
+}
+async function panPosition(page,id='before-viewport') {
+  return page.locator('#'+id).evaluate(el=>[el.scrollLeft,el.scrollTop]);
+}
+
+test('Changes follows new bounds across navigation, content updates, modes and resize, but preserves pan during repaints', async t => {
+  const first=[400,300,40,50],second=[600,500,170,90],updated=[300,250,70,120];
+  const {page,refresh,images}=await zoomFixture(t,[{id:'a',bounds:first},{id:'b',bounds:second},{id:'updated',bounds:updated}]);
+  await page.locator('#zoom-changes').click();
+  const firstScale=await framedChanges(page,first);
+  await chooseZoomImage(page,'b');
+  const secondScale=await framedChanges(page,second);
+  assert.notEqual(secondScale,firstScale);
+  images.b=images.updated;
+  await refresh(data=>data.changes[1].revision+='-updated');
+  await page.waitForFunction(()=>!document.getElementById('zoom-in').disabled);
+  const updatedScale=await framedChanges(page,updated);
+  await page.setViewportSize({width:1000,height:650});
+  const resizedScale=await framedChanges(page,updated);
+  assert.notEqual(resizedScale,updatedScale);
+  await page.locator('#mode').selectOption('overlay');
+  await framedChanges(page,updated,'combined-viewport');
+  await page.locator('#mode').selectOption('side');
+  await framedChanges(page,updated);
+  await page.locator('#before-viewport').evaluate(el=>{el.scrollLeft+=30;el.scrollTop+=25;});
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  const pan=await panPosition(page);
+  await page.locator('#highlight').check();
+  await page.locator('#highlight-strength').fill('75');
+  await page.locator('#highlight-strength').dispatchEvent('input');
+  await refresh(data=>data.changes[1].difference=ready(25));
+  assert.deepEqual(await panPosition(page),pan);
+  assert.deepEqual(await panPosition(page,'after-viewport'),pan);
+  assert.equal(await page.locator('#zoom-changes').getAttribute('aria-pressed'),'true');
+  await chooseZoomImage(page,'b');
+  assert.deepEqual(await panPosition(page),pan);
+  await page.locator('#zoom-changes').click();
+  await framedChanges(page,updated);
+});
+
+test('Changes uses Fit for identical, added, deleted and single failure images and resumes on comparisons', async t => {
+  const bounds=[400,300,40,50];
+  const {page,refresh,images}=await zoomFixture(t,[
+    {id:'a',bounds},{id:'same'},
+    {id:'added',item:{status:'A',hasBefore:false,staged:true}},
+    {id:'deleted',item:{status:'D',hasAfter:false}},
+  ]);
+  await page.locator('#zoom-changes').click();
+  await framedChanges(page,bounds);
+  for(const id of ['same','added','deleted']) {
+    await chooseZoomImage(page,id);
+    assert.equal(await page.locator('#zoom-changes').getAttribute('aria-pressed'),'true');
+    assert.ok(Number(await page.locator('#zoom-percent').inputValue())<100);
+    await chooseZoomImage(page,'a');
+    await framedChanges(page,bounds);
+  }
+  await chooseZoomImage(page,'same');
+  await page.locator('#zoom-fit').click();
+  await page.locator('#zoom-changes').click();
+  await chooseZoomImage(page,'a');
+  await framedChanges(page,bounds);
+  images.failure={...images.a,isolatedDiff:images.a.after};
+  await refresh(data=>setFailures(data,[failure('failure')]));
+  await page.locator('#file-scope').selectOption('failures');
+  await page.waitForFunction(()=>!document.getElementById('zoom-in').disabled);
+  await framedChanges(page,bounds);
+  await page.locator('#failure-view').selectOption('isolatedDiff');
+  await page.waitForFunction(()=>!document.getElementById('zoom-in').disabled);
+  assert.ok(Number(await page.locator('#zoom-percent').inputValue())<100);
+  assert.equal(await page.locator('#zoom-changes').getAttribute('aria-pressed'),'true');
+  await page.locator('#failure-view').selectOption('compare');
+  await page.waitForFunction(()=>!document.getElementById('zoom-in').disabled);
+  await framedChanges(page,bounds);
+});
+
+test('new images enter Fit from manual zoom, while refreshing the same new image preserves zoom and pan', async t => {
+  const {page,refresh}=await zoomFixture(t,[{id:'a',bounds:[400,300,40,50]},
+    {id:'added',item:{status:'?',hasBefore:false}},{id:'staged',item:{status:'A',hasBefore:false,staged:true}}]);
+  for(const id of ['added','staged']) {
+    await page.locator('#zoom-percent').fill('200');
+    await page.locator('#zoom-percent').press('Enter');
+    await chooseZoomImage(page,id);
+    assert.equal(await page.locator('#zoom-fit').getAttribute('aria-pressed'),'true');
+    assert.ok(Number(await page.locator('#zoom-percent').inputValue())<100);
+    await page.locator('#zoom-percent').fill('200');
+    await page.locator('#zoom-percent').press('Enter');
+    await page.locator('#after-viewport').evaluate(el=>{el.scrollLeft=330;el.scrollTop=250;});
+    const pan=await panPosition(page,'after-viewport');
+    await refresh(data=>data.changes.find(c=>c.id===id).revision+='-updated');
+    await page.waitForFunction(()=>!document.getElementById('zoom-in').disabled);
+    assert.equal(Number(await page.locator('#zoom-percent').inputValue()),200);
+    assert.deepEqual(await panPosition(page,'after-viewport'),pan);
+  }
+});
+
+test('explicit zoom controls leave Changes mode', async t => {
+  const bounds=[400,300,40,50];
+  const {page}=await zoomFixture(t,[{id:'a',bounds},{id:'b',bounds:[600,500,170,90]}]);
+  for(const control of ['zoom-in','zoom-actual','zoom-fit','zoom-width']) {
+    await chooseZoomImage(page,'a');
+    await page.locator('#zoom-changes').click();
+    await framedChanges(page,bounds);
+    await page.locator('#'+control).click();
+    assert.equal(await page.locator('#zoom-changes').getAttribute('aria-pressed'),'false');
+    await chooseZoomImage(page,'b');
+    assert.equal(await page.locator('#zoom-changes').getAttribute('aria-pressed'),'false');
+  }
 });
 
 test('deleted images and failure artifacts without an expected image are not new', async t => {

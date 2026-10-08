@@ -86,7 +86,7 @@ The equivalent manual dependency is:
 
 ```yaml
 dev_dependencies:
-  ff_golden_presenter: ^1.1.12
+  ff_golden_presenter: ^1.1.13
 ```
 
 For an unreleased repository revision, use the package Git source and
@@ -131,6 +131,7 @@ Run `dart run ff_golden_presenter --help` for the action list and `<action> --he
 | `doctor` | Detect compatible tools and print a platform-specific install command. |
 | `migrate` | Preview/apply safe package renames and report manual migration work. |
 | `clean-failures` | Delete generated comparison images below `failures` directories. |
+| `clean-goldens` | Delete baseline images below `golden` directories; defaults to `test`. |
 
 ### Local Git image review
 
@@ -223,10 +224,16 @@ controls the highlight opacity.
 
 New Git images open in a single full-width pane marked **new**. The empty
 before pane and comparison-only controls are hidden; returning to a modified
-image restores the selected comparison mode and highlight setting.
+image restores the selected comparison mode and highlight setting. Navigating to
+a new image, including a staged addition, fits the whole image regardless of the
+previous zoom. Refreshing that same image preserves manual zoom and pan.
 
 Zoom with **− / +**, an editable percentage (1–800%), **Fit**, **Width**, or
-**100%**. **Changes** zooms directly to the bounding area of changed pixels.
+**100%**. **Changes** stays active across navigation, content updates, and viewport
+resizing, fitting and centering each comparison's own changed area. Images without
+changes and single-image previews use Fit while retaining this preference for the
+next comparison. Highlight repaints preserve panning; another zoom control exits
+Changes mode.
 Ctrl/Cmd + wheel (including trackpad pinch where supported by the browser) zooms
 around the cursor. Drag an image to pan; double-click toggles between 100% at the
 clicked point and Fit. The two side-by-side images share zoom and scroll position.
@@ -487,6 +494,27 @@ label/URL separator, so query parameters remain intact. External `http` and
 Unsafe schemes such as `javascript:` are rejected. The favicon is encoded as a
 data URL inside the generated HTML, so no extra icon file needs to be copied to
 the publication directory.
+
+### Cleaning golden baseline images
+
+Preview or delete all baseline images under `test`:
+
+```shell
+dart run ff_golden_presenter clean-goldens --dry-run
+dart run ff_golden_presenter clean-goldens
+```
+
+`--input` is optional and defaults to `test`. Use `--input test/screens` to narrow
+the scan or pass a `golden` directory directly. The command deletes PNG, JPG,
+JPEG, WebP, and SVG files only below directories named exactly `golden`.
+`--extensions png` restricts cleanup to PNG. Dry-run lists relative paths and
+reports the total file count and size.
+
+Deletion is permanent. Files in `failures` directories, non-image files,
+similarly named directories such as `goldens`, and symbolic links are preserved.
+Directories themselves remain. Cleanup verifies the captured file list before
+deleting it; newly created files are not added to that list. The Git index is
+unchanged, so tracked baseline removals appear as working-tree deletions.
 
 ### Cleaning failure images
 
