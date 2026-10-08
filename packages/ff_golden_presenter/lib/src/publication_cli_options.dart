@@ -73,6 +73,73 @@ Example:
 ''';
 }
 
+final class CleanGoldensCliOptions {
+  CleanGoldensCliOptions._({
+    required this.input,
+    required this.extensions,
+    required this.dryRun,
+    required this.showHelp,
+    required ArgParser parser,
+  }) : _parser = parser;
+
+  final String input;
+  final Set<String> extensions;
+  final bool dryRun;
+  final bool showHelp;
+  final ArgParser _parser;
+
+  static CleanGoldensCliOptions parse(List<String> arguments) {
+    final parser = ArgParser(usageLineLength: 100)
+      ..addOption(
+        'input',
+        abbr: 'i',
+        defaultsTo: 'test',
+        valueHelp: 'directory',
+        help: 'Directory to scan recursively for exact golden directories.',
+      )
+      ..addMultiOption(
+        'extensions',
+        defaultsTo: publicationExtensionsDefault,
+        valueHelp: 'list',
+        help: 'Golden image extensions to delete (comma-separated).',
+      )
+      ..addFlag(
+        'dry-run',
+        negatable: false,
+        help: 'List matching files without deleting them.',
+      )
+      ..addFlag(
+        'help',
+        abbr: 'h',
+        negatable: false,
+        help: 'Print this usage information.',
+      );
+    final results = parser.parse(arguments);
+    _rejectRest(results);
+    return CleanGoldensCliOptions._(
+      input: results['input'] as String,
+      extensions: _parseExtensions(results),
+      dryRun: results['dry-run'] as bool,
+      showHelp: results['help'] as bool,
+      parser: parser,
+    );
+  }
+
+  String get usage => '''
+Delete baseline images below exact golden directories. Deletion is permanent.
+Failure directories, non-image files, and symlinks are preserved.
+
+Usage: ff_golden_presenter clean-goldens [options]
+
+${_parser.usage}
+
+Examples:
+  dart run ff_golden_presenter clean-goldens --dry-run
+  dart run ff_golden_presenter clean-goldens
+  dart run ff_golden_presenter clean-goldens --input test/screens
+''';
+}
+
 final class CollectCliOptions {
   CollectCliOptions._({
     required this.input,

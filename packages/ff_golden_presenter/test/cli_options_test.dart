@@ -7,6 +7,22 @@ import 'package:path/path.dart' as path;
 import 'package:test/test.dart';
 
 void main() {
+  test('clean-goldens defaults to test and accepts a narrower input', () {
+    final options = CleanGoldensCliOptions.parse([]);
+    expect(options.input, 'test');
+    expect(options.extensions, {'png', 'jpg', 'jpeg', 'webp', 'svg'});
+    expect(options.dryRun, isFalse);
+    final preview = CleanGoldensCliOptions.parse(
+        ['--input', 'test/screens', '--extensions', '.PNG,webp', '--dry-run']);
+    expect(preview.input, 'test/screens');
+    expect(preview.extensions, {'png', 'webp'});
+    expect(preview.dryRun, isTrue);
+    expect(() => CleanGoldensCliOptions.parse(['--extensions', '.']),
+        throwsFormatException);
+    expect(() => CleanGoldensCliOptions.parse(['unexpected']),
+        throwsFormatException);
+  });
+
   test('diff defaults to a local viewer and validates the port', () {
     final options = DiffCliOptions.parse([]);
     expect(options.project, '.');

@@ -3,7 +3,7 @@ import 'package:path/path.dart' as path;
 
 import 'report_customization_cli.dart';
 
-const ffGoldenPresenterVersion = '1.1.12';
+const ffGoldenPresenterVersion = '1.1.13';
 
 /// Parsed command-line configuration for FF Golden Presenter.
 final class GoldenPresenterOptions {

@@ -38,7 +38,7 @@ void main() {
     );
 
     expect(code, 0);
-    expect(output.toString(), 'ff_golden_presenter 1.1.12\n');
+    expect(output.toString(), 'ff_golden_presenter 1.1.13\n');
   });
 
   test('generates a report end to end', () async {
@@ -208,6 +208,77 @@ void main() {
     expect(cleanOutput.toString(), contains('Deleted 1 failure image (3 B)'));
     expect(await failureImage.exists(), isFalse);
     expect(await goldenImage.exists(), isTrue);
+  });
+
+  test('clean-goldens lists and deletes baseline files while keeping failures',
+      () async {
+    final project =
+        await Directory.systemTemp.createTemp('ff_clean_goldens_cli_');
+    addTearDown(() => project.delete(recursive: true));
+    final baseline =
+        File(path.join(project.path, 'test/auth/golden/login.png'));
+    final failure =
+        File(path.join(project.path, 'test/auth/failures/diff.png'));
+    for (final file in [baseline, failure]) {
+      await file.create(recursive: true);
+      await file.writeAsBytes([1, 2, 3]);
+    }
+    final preview = StringBuffer(), errors = StringBuffer();
+    expect(
+        await runGoldenPresenter(
+          [
+            'clean-goldens',
+            '--input',
+            path.join(project.path, 'test'),
+            '--dry-run'
+          ],
+          output: preview,
+          errors: errors,
+        ),
+        0);
+    expect(preview.toString(), contains('auth/golden/login.png'));
+    expect(preview.toString(), contains('Would delete 1 golden image (3 B)'));
+    expect(errors, isEmpty);
+    expect(await baseline.exists(), isTrue);
+    final output = StringBuffer();
+    expect(
+        await runGoldenPresenter(
+          ['clean-goldens', '--input', path.join(project.path, 'test')],
+          output: output,
+          errors: errors,
+        ),
+        0);
+    expect(output.toString(), contains('Deleted 1 golden image (3 B)'));
+    expect(await baseline.exists(), isFalse);
+    expect(await failure.exists(), isTrue);
+  });
+
+  test('clean-goldens help and invalid inputs return CLI statuses', () async {
+    final output = StringBuffer(), errors = StringBuffer();
+    expect(
+        await runGoldenPresenter(['clean-goldens', '--help'],
+            output: output, errors: errors),
+        0);
+    expect(output.toString(), contains('defaults to "test"'));
+    expect(
+        await runGoldenPresenter(['clean-goldens', '--unknown'],
+            output: output, errors: errors),
+        64);
+    expect(
+        await runGoldenPresenter([
+          'clean-goldens',
+          '--input',
+          path.rootPrefix(Directory.current.path)
+        ], output: output, errors: errors),
+        64);
+    expect(errors.toString(), contains('filesystem root'));
+    final project = await Directory.systemTemp.createTemp('ff_clean_missing_');
+    addTearDown(() => project.delete(recursive: true));
+    expect(
+        await runGoldenPresenter(
+            ['clean-goldens', '--input', path.join(project.path, 'missing')],
+            output: output, errors: errors),
+        66);
   });
 
   test('migrate supports preview, apply, and clean check modes', () async {
