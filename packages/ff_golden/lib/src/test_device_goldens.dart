@@ -13,9 +13,7 @@ import 'theme.dart';
 import 'variant.dart';
 
 const List<Locale> defaultLocales = <Locale>[Locale('us', 'US')];
-const List<GoldenDevice> defaultDevices = <GoldenDevice>[
-  GoldenDevice.iPhone11,
-];
+const List<GoldenDevice> defaultDevices = <GoldenDevice>[GoldenDevice.iPhone11];
 final List<GoldenTheme> defaultThemes = [GoldenTheme.defaultTheme];
 
 /// Compatibility API for existing scenario-based suites.
@@ -25,12 +23,8 @@ final List<GoldenTheme> defaultThemes = [GoldenTheme.defaultTheme];
 @isTestGroup
 void testDeviceGoldens(
   String description,
-  Future<void> Function(
-    WidgetTester,
-    GoldenDevice,
-    Locale,
-    GoldenTheme,
-  ) builder, {
+  Future<void> Function(WidgetTester, GoldenDevice, Locale, GoldenTheme)
+  builder, {
   FutureOr<void> Function()? setUp,
   FutureOr<void> Function()? tearDown,
   List<GoldenDevice> devices = defaultDevices,

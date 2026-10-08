@@ -17,8 +17,8 @@ screenshots:
     path: screenshots/coverage-matrix.png
 
 environment:
-  sdk: ">=3.6.0 <4.0.0"
-  flutter: ">=3.27.0"
+  sdk: ">=3.13.0 <4.0.0"
+  flutter: ">=3.47.0"
 
 resolution: workspace
 
@@ -30,8 +30,7 @@ dependencies:
     sdk: flutter
   flutter_test:
     sdk: flutter
-  flutter_localizations:
-    sdk: flutter
+  material_ui: ^1.6.0
   meta: ^1.7.0
   path: ^1.9.1
 

@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:ff_golden/ff_golden.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   testFfGoldens(
@@ -36,12 +36,8 @@ void main() {
         state: loadedFixture,
         prepare: (_, fixture) => fixture.prepare(),
         interact: (context, fixture) async {
-          fixture.complete(
-            const _Profile(name: 'Ada', plan: 'Pro'),
-          );
-          await context.pumpUntilFound(
-            find.byKey(const Key('profile-loaded')),
-          );
+          fixture.complete(const _Profile(name: 'Ada', plan: 'Pro'));
+          await context.pumpUntilFound(find.byKey(const Key('profile-loaded')));
         },
         dispose: (_, fixture) => fixture.dispose(),
       ),
@@ -51,9 +47,7 @@ void main() {
         prepare: (_, fixture) => fixture.prepare(),
         interact: (context, fixture) async {
           fixture.completeError(StateError('fixture failure'));
-          await context.pumpUntilFound(
-            find.byKey(const Key('profile-error')),
-          );
+          await context.pumpUntilFound(find.byKey(const Key('profile-error')));
         },
         dispose: (_, fixture) => fixture.dispose(),
       ),
@@ -74,20 +68,20 @@ class _CounterCardState extends State<_CounterCard> {
 
   @override
   Widget build(BuildContext context) => Card(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Count: $count'),
-              IconButton(
-                onPressed: () => setState(() => count++),
-                icon: const Icon(Icons.add),
-              ),
-            ],
+    child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('Count: $count'),
+          IconButton(
+            onPressed: () => setState(() => count++),
+            icon: const Icon(Icons.add),
           ),
-        ),
-      );
+        ],
+      ),
+    ),
+  );
 }
 
 class _ProfileFixture {
@@ -132,20 +126,19 @@ class _ProfileCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => FutureBuilder<_Profile>(
-        future: repository.load(),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return const Text('Could not load profile',
-                key: Key('profile-error'));
-          }
-          final profile = snapshot.data;
-          if (profile == null) {
-            return const CircularProgressIndicator(key: Key('profile-loading'));
-          }
-          return Text(
-            '${profile.name} · ${profile.plan}',
-            key: const Key('profile-loaded'),
-          );
-        },
+    future: repository.load(),
+    builder: (context, snapshot) {
+      if (snapshot.hasError) {
+        return const Text('Could not load profile', key: Key('profile-error'));
+      }
+      final profile = snapshot.data;
+      if (profile == null) {
+        return const CircularProgressIndicator(key: Key('profile-loading'));
+      }
+      return Text(
+        '${profile.name} · ${profile.plan}',
+        key: const Key('profile-loaded'),
       );
+    },
+  );
 }

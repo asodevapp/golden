@@ -15,9 +15,8 @@ void main() {
   });
 
   test('finds only PNG files outside the expected manifest', () {
-    final scope = Directory.fromUri(
-      directory.uri.resolve('golden/scenario/'),
-    )..createSync(recursive: true);
+    final scope = Directory.fromUri(directory.uri.resolve('golden/scenario/'))
+      ..createSync(recursive: true);
     File.fromUri(scope.uri.resolve('expected.png')).writeAsBytesSync([1]);
     File.fromUri(scope.uri.resolve('stale.png')).writeAsBytesSync([1]);
     File.fromUri(scope.uri.resolve('notes.txt')).writeAsStringSync('ignored');

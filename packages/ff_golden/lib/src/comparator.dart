@@ -5,11 +5,9 @@ import 'package:flutter_test/flutter_test.dart';
 @immutable
 class GoldenTolerance {
   /// Creates a tolerance with fractional and absolute changed-pixel limits.
-  const GoldenTolerance({
-    this.maxDiffRate = 0,
-    this.maxDifferentPixels = 0,
-  })  : assert(maxDiffRate >= 0 && maxDiffRate <= 1),
-        assert(maxDifferentPixels >= 0);
+  const GoldenTolerance({this.maxDiffRate = 0, this.maxDifferentPixels = 0})
+    : assert(maxDiffRate >= 0 && maxDiffRate <= 1),
+      assert(maxDifferentPixels >= 0);
 
   /// Fraction from 0 to 1. For example, 0.001 means 0.1%.
   final double maxDiffRate;
@@ -31,8 +29,8 @@ class GoldenTolerance {
 
     final image = result.diffs?['testImage'];
     if (image == null) return false;
-    final differentPixels =
-        (result.diffPercent * image.width * image.height).round();
+    final differentPixels = (result.diffPercent * image.width * image.height)
+        .round();
     return differentPixels <= maxDifferentPixels;
   }
 }
@@ -40,8 +38,10 @@ class GoldenTolerance {
 /// A Flutter local-file comparator that applies a [GoldenTolerance].
 class FfGoldenFileComparator extends LocalFileComparator {
   /// Creates a comparator rooted at [testFile].
-  FfGoldenFileComparator(super.testFile,
-      {this.tolerance = GoldenTolerance.strict});
+  FfGoldenFileComparator(
+    super.testFile, {
+    this.tolerance = GoldenTolerance.strict,
+  });
 
   /// The policy applied to every comparison.
   final GoldenTolerance tolerance;

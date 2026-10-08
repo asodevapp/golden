@@ -1,9 +1,7 @@
 import 'dart:async';
 
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:meta/meta.dart';
 
 import 'capture.dart';
@@ -72,9 +70,9 @@ class GoldenRunConfiguration {
     this.autoCapture = true,
     this.reporter,
   }) : assert(
-          captureScale == null || captureScale > 0,
-          'captureScale must be greater than zero.',
-        );
+         captureScale == null || captureScale > 0,
+         'captureScale must be greater than zero.',
+       );
 
   final GoldenPathStrategy pathStrategy;
   final String testName;
@@ -116,15 +114,15 @@ class GoldenTestContext {
   List<GoldenCapture> get captures => List.unmodifiable(_captures);
 
   GoldenTestDriver get driver => GoldenTestDriver(
-        tester: tester,
-        context: 'scenario $scenario, variant ${variant.label}',
-      );
+    tester: tester,
+    context: 'scenario $scenario, variant ${variant.label}',
+  );
 
   String path({String? testName}) => configuration.pathStrategy.build(
-        scenario: scenario,
-        variant: variant,
-        testName: testName ?? configuration.testName,
-      );
+    scenario: scenario,
+    variant: variant,
+    testName: testName ?? configuration.testName,
+  );
 
   Future<void> capture({String? testName}) async {
     final resolvedName = testName ?? configuration.testName;
@@ -148,8 +146,7 @@ class GoldenTestContext {
   Future<void> pumpFrames(
     int count, {
     Duration step = const Duration(milliseconds: 16),
-  }) =>
-      driver.pumpFrames(count, step: step);
+  }) => driver.pumpFrames(count, step: step);
 
   Future<void> elapse(Duration duration) => driver.elapse(duration);
 
@@ -158,28 +155,25 @@ class GoldenTestContext {
     Duration timeout = const Duration(seconds: 5),
     Duration step = const Duration(milliseconds: 16),
     String description = 'condition',
-  }) =>
-      driver.pumpUntil(
-        condition,
-        timeout: timeout,
-        step: step,
-        description: description,
-      );
+  }) => driver.pumpUntil(
+    condition,
+    timeout: timeout,
+    step: step,
+    description: description,
+  );
 
   /// Pumps in bounded virtual-time steps until [finder] appears.
   Future<void> pumpUntilFound(
     Finder finder, {
     Duration timeout = const Duration(seconds: 5),
     Duration step = const Duration(milliseconds: 16),
-  }) =>
-      driver.pumpUntilFound(finder, timeout: timeout, step: step);
+  }) => driver.pumpUntilFound(finder, timeout: timeout, step: step);
 
   Future<void> pumpUntilGone(
     Finder finder, {
     Duration timeout = const Duration(seconds: 5),
     Duration step = const Duration(milliseconds: 16),
-  }) =>
-      driver.pumpUntilGone(finder, timeout: timeout, step: step);
+  }) => driver.pumpUntilGone(finder, timeout: timeout, step: step);
 }
 
 @isTestGroup
@@ -286,7 +280,8 @@ void testFfGoldens(
           phase = 'build';
           await errorCapture.run(() async {
             final child = build(goldenVariant);
-            final app = wrapper?.call(child, goldenVariant) ??
+            final app =
+                wrapper?.call(child, goldenVariant) ??
                 FfGoldenTestApp(variant: goldenVariant, child: child);
             await tester.pumpWidget(
               RepaintBoundary(
@@ -439,21 +434,16 @@ class FfGoldenTestApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => MaterialApp(
-        debugShowCheckedModeBanner: false,
-        theme: variant.theme.data.copyWith(platform: variant.platform),
-        locale: variant.locale,
-        supportedLocales: [variant.locale],
-        localizationsDelegates: const [
-          GlobalMaterialLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          DefaultCupertinoLocalizations.delegate,
-        ],
-        home: Directionality(
-          textDirection: variant.textDirection,
-          child: Scaffold(body: Center(child: child)),
-        ),
-      );
+    debugShowCheckedModeBanner: false,
+    theme: variant.theme.data.copyWith(platform: variant.platform),
+    locale: variant.locale,
+    supportedLocales: [variant.locale],
+    localizationsDelegates: GlobalMaterialLocalizations.delegates,
+    home: Directionality(
+      textDirection: variant.textDirection,
+      child: Scaffold(body: Center(child: child)),
+    ),
+  );
 }
 
 Future<void> _pumpAndSettle(WidgetTester tester) => tester.pumpAndSettle();

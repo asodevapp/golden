@@ -16,105 +16,111 @@ void main() {
 
     tearDown(() => project.delete(recursive: true));
 
-    test('update discovers sorted golden test files and uses safe defaults',
-        () async {
-      await _touch(project, 'test/screens/z_golden_test.dart');
-      await _touch(project, 'test/a_golden_test.dart');
-      await _touch(project, 'test/ordinary_test.dart');
-      late String executable;
-      late List<String> childArguments;
+    test(
+      'update discovers sorted golden test files and uses safe defaults',
+      () async {
+        await _touch(project, 'test/screens/z_golden_test.dart');
+        await _touch(project, 'test/a_golden_test.dart');
+        await _touch(project, 'test/ordinary_test.dart');
+        late String executable;
+        late List<String> childArguments;
 
-      final exitCode = await runFfGolden(
-        const ['update', '--flutter', 'flutter-probe'],
-        workingDirectory: project,
-        processRunner: (value, arguments) async {
-          executable = value;
-          childArguments = arguments;
-          return 0;
-        },
-      );
+        final exitCode = await runFfGolden(
+          const ['update', '--flutter', 'flutter-probe'],
+          workingDirectory: project,
+          processRunner: (value, arguments) async {
+            executable = value;
+            childArguments = arguments;
+            return 0;
+          },
+        );
 
-      expect(exitCode, 0);
-      expect(executable, 'flutter-probe');
-      expect(childArguments, const [
-        'test',
-        '--no-pub',
-        '--update-goldens',
-        '--tags=golden',
-        '--concurrency=8',
-        'test/a_golden_test.dart',
-        'test/screens/z_golden_test.dart',
-      ]);
-    });
-
-    test('test forwards a target and Flutter filters without discovery',
-        () async {
-      await _touch(project, 'test/ignored_golden_test.dart');
-      late List<String> childArguments;
-
-      final exitCode = await runFfGolden(
-        const [
+        expect(exitCode, 0);
+        expect(executable, 'flutter-probe');
+        expect(childArguments, const [
           'test',
-          '--flutter=flutter-probe',
+          '--no-pub',
+          '--update-goldens',
+          '--tags=golden',
+          '--concurrency=8',
+          'test/a_golden_test.dart',
+          'test/screens/z_golden_test.dart',
+        ]);
+      },
+    );
+
+    test(
+      'test forwards a target and Flutter filters without discovery',
+      () async {
+        await _touch(project, 'test/ignored_golden_test.dart');
+        late List<String> childArguments;
+
+        final exitCode = await runFfGolden(
+          const [
+            'test',
+            '--flutter=flutter-probe',
+            'test/screens/login_test.dart',
+            '--plain-name',
+            'loaded page',
+            '-v',
+          ],
+          workingDirectory: project,
+          processRunner: (_, arguments) async {
+            childArguments = arguments;
+            return 7;
+          },
+        );
+
+        expect(exitCode, 7);
+        expect(childArguments, const [
+          'test',
+          '--no-pub',
+          '--tags=golden',
+          '--concurrency=8',
           'test/screens/login_test.dart',
           '--plain-name',
           'loaded page',
           '-v',
-        ],
-        workingDirectory: project,
-        processRunner: (_, arguments) async {
-          childArguments = arguments;
-          return 7;
-        },
-      );
+        ]);
+      },
+    );
 
-      expect(exitCode, 7);
-      expect(childArguments, const [
-        'test',
-        '--no-pub',
-        '--tags=golden',
-        '--concurrency=8',
-        'test/screens/login_test.dart',
-        '--plain-name',
-        'loaded page',
-        '-v',
-      ]);
-    });
+    test(
+      'verify supports runner overrides and forwards arguments after --',
+      () async {
+        late List<String> childArguments;
 
-    test('verify supports runner overrides and forwards arguments after --',
-        () async {
-      late List<String> childArguments;
+        final exitCode = await runFfGolden(
+          const [
+            'verify',
+            '--flutter',
+            'flutter-probe',
+            '--pub',
+            '--all-tests',
+            '--tags',
+            'ff_golden',
+            '--concurrency=3',
+            '--',
+            '--exclude-tags',
+            'slow',
+          ],
+          workingDirectory: project,
+          processRunner: (_, arguments) async {
+            childArguments = arguments;
+            return 0;
+          },
+        );
 
-      final exitCode = await runFfGolden(
-        const [
-          'verify',
-          '--flutter',
-          'flutter-probe',
-          '--pub',
-          '--all-tests',
-          '--tags',
-          'ff_golden',
+        expect(exitCode, 0);
+        expect(childArguments, const [
+          'test',
+          '--tags=ff_golden',
           '--concurrency=3',
-          '--',
           '--exclude-tags',
           'slow',
-        ],
-        workingDirectory: project,
-        processRunner: (_, arguments) async {
-          childArguments = arguments;
-          return 0;
-        },
-      );
-
-      expect(exitCode, 0);
-      expect(childArguments, const [
-        'test',
-        '--tags=ff_golden',
-        '--concurrency=3',
-        '--exclude-tags',
-        'slow',
-      ]);
-    });
+        ]);
+      },
+    );
 
     test('dry-run prints the command and does not start Flutter', () async {
       await _touch(project, 'test/login_golden_test.dart');
@@ -140,10 +146,7 @@ void main() {
 
       expect(exitCode, 0);
       expect(started, isFalse);
-      expect(
-        output.toString(),
-        contains("--plain-name 'loaded page'"),
-      );
+      expect(output.toString(), contains("--plain-name 'loaded page'"));
       expect(output.toString(), contains('test/login_golden_test.dart'));
     });
 
@@ -218,10 +221,7 @@ void main() {
       final rootOutput = StringBuffer();
       final commandOutput = StringBuffer();
 
-      expect(
-        await runFfGolden(const [], output: rootOutput),
-        0,
-      );
+      expect(await runFfGolden(const [], output: rootOutput), 0);
       expect(
         await runFfGolden(const ['update', '--help'], output: commandOutput),
         0,

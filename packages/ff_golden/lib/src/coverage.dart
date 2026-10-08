@@ -4,12 +4,7 @@ import 'device.dart';
 import 'theme.dart';
 import 'variant.dart';
 
-enum GoldenSampling {
-  full,
-  smoke,
-  pairwise,
-  priority,
-}
+enum GoldenSampling { full, smoke, pairwise, priority }
 
 typedef GoldenVariantPredicate = bool Function(GoldenVariant variant);
 typedef GoldenVariantPriority = int Function(GoldenVariant variant);
@@ -19,19 +14,19 @@ enum _GoldenRuleKind { require, exclude }
 @immutable
 class GoldenCoverageRule {
   const GoldenCoverageRule.require(this.name, this.predicate)
-      : _kind = _GoldenRuleKind.require;
+    : _kind = _GoldenRuleKind.require;
 
   const GoldenCoverageRule.excludeWhen(this.name, this.predicate)
-      : _kind = _GoldenRuleKind.exclude;
+    : _kind = _GoldenRuleKind.exclude;
 
   final String name;
   final GoldenVariantPredicate predicate;
   final _GoldenRuleKind _kind;
 
   bool allows(GoldenVariant variant) => switch (_kind) {
-        _GoldenRuleKind.require => predicate(variant),
-        _GoldenRuleKind.exclude => !predicate(variant),
-      };
+    _GoldenRuleKind.require => predicate(variant),
+    _GoldenRuleKind.exclude => !predicate(variant),
+  };
 }
 
 @immutable
@@ -88,23 +83,25 @@ class GoldenCoverage {
     this.sampling = GoldenSampling.full,
     this.maxCombinations = 256,
     this.priority,
-  })  : devices = List<GoldenDevice>.unmodifiable(
-          devices ?? const <GoldenDevice>[GoldenDevice.iPhone11],
-        ),
-        locales = List<Locale>.unmodifiable(
-          locales ?? const <Locale>[Locale('en', 'US')],
-        ),
-        themes = List<GoldenTheme>.unmodifiable(
-          themes ?? <GoldenTheme>[GoldenTheme.defaultTheme],
-        ),
-        textScales = textScales == null ? null : List.unmodifiable(textScales),
-        directions = List.unmodifiable(directions),
-        platforms = platforms == null ? null : List.unmodifiable(platforms),
-        brightnesses =
-            brightnesses == null ? null : List.unmodifiable(brightnesses),
-        highContrasts =
-            highContrasts == null ? null : List.unmodifiable(highContrasts),
-        rules = List.unmodifiable(rules) {
+  }) : devices = List<GoldenDevice>.unmodifiable(
+         devices ?? const <GoldenDevice>[GoldenDevice.iPhone11],
+       ),
+       locales = List<Locale>.unmodifiable(
+         locales ?? const <Locale>[Locale('en', 'US')],
+       ),
+       themes = List<GoldenTheme>.unmodifiable(
+         themes ?? <GoldenTheme>[GoldenTheme.defaultTheme],
+       ),
+       textScales = textScales == null ? null : List.unmodifiable(textScales),
+       directions = List.unmodifiable(directions),
+       platforms = platforms == null ? null : List.unmodifiable(platforms),
+       brightnesses = brightnesses == null
+           ? null
+           : List.unmodifiable(brightnesses),
+       highContrasts = highContrasts == null
+           ? null
+           : List.unmodifiable(highContrasts),
+       rules = List.unmodifiable(rules) {
     _validateAxes();
   }
 
@@ -300,10 +297,7 @@ class GoldenCoverage {
     }
     _ensureUnique('device names', devices.map((device) => device.name));
     _ensureUnique('theme names', themes.map((theme) => theme.name));
-    _ensureUnique(
-      'locales',
-      locales.map((locale) => locale.toLanguageTag()),
-    );
+    _ensureUnique('locales', locales.map((locale) => locale.toLanguageTag()));
   }
 
   void _ensureUnique(String axis, Iterable<String> values) {

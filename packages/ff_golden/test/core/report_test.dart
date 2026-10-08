@@ -40,8 +40,9 @@ void main() {
     );
     await reporter.complete();
 
-    final json = jsonDecode(await File(reporter.outputPath).readAsString())
-        as Map<String, dynamic>;
+    final json = jsonDecode(
+      await File(reporter.outputPath).readAsString(),
+    ) as Map<String, dynamic>;
     expect(json['schema'], 'ff_golden.run');
     expect(json['schemaVersion'], 2);
     expect(

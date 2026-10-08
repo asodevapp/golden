@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:ff_golden/ff_golden.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   testWidgets('pumpUntil advances bounded virtual time', (tester) async {
@@ -22,8 +22,9 @@ void main() {
     expect(ready, isTrue);
   });
 
-  testWidgets('pumpUntil reports the condition and test context on timeout',
-      (tester) async {
+  testWidgets('pumpUntil reports the condition and test context on timeout', (
+    tester,
+  ) async {
     final driver = GoldenTestDriver(
       tester: tester,
       context: 'scenario async, variant phone',
@@ -79,10 +80,7 @@ void main() {
     Timer(const Duration(milliseconds: 50), () => elapsed = true);
     final driver = GoldenTestDriver(tester: tester);
 
-    await driver.pumpFrames(
-      3,
-      step: const Duration(milliseconds: 10),
-    );
+    await driver.pumpFrames(3, step: const Duration(milliseconds: 10));
     expect(elapsed, isFalse);
 
     await driver.elapse(const Duration(milliseconds: 20));

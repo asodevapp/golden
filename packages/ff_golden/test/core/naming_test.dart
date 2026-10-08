@@ -1,12 +1,13 @@
 import 'package:ff_golden/ff_golden.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   test('default axes keep migration-friendly compact paths', () {
-    final variant = GoldenCoverage(
-      locales: const [Locale('en')],
-    ).plan().variants.single;
+    final variant = GoldenCoverage(locales: const [Locale('en')])
+        .plan()
+        .variants
+        .single;
 
     expect(
       const GoldenPathStrategy().build(
@@ -41,8 +42,10 @@ void main() {
   });
 
   test('case-insensitive collisions are rejected before tests register', () {
-    final variant =
-        GoldenCoverage(locales: const [Locale('en')]).plan().variants.single;
+    final variant = GoldenCoverage(locales: const [Locale('en')])
+        .plan()
+        .variants
+        .single;
 
     expect(
       () => const GoldenPathStrategy().validate(

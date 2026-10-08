@@ -11,12 +11,13 @@ enum GoldenDirection {
 
   /// Resolves this mode to the concrete direction for [locale].
   TextDirection resolve(Locale locale) => switch (this) {
-        GoldenDirection.auto => _rtlLanguages.contains(locale.languageCode)
-            ? TextDirection.rtl
-            : TextDirection.ltr,
-        GoldenDirection.ltr => TextDirection.ltr,
-        GoldenDirection.rtl => TextDirection.rtl,
-      };
+    GoldenDirection.auto =>
+      _rtlLanguages.contains(locale.languageCode)
+          ? TextDirection.rtl
+          : TextDirection.ltr,
+    GoldenDirection.ltr => TextDirection.ltr,
+    GoldenDirection.rtl => TextDirection.rtl,
+  };
 }
 
 const _rtlLanguages = <String>{
@@ -82,15 +83,15 @@ class GoldenVariant {
 
   /// Stable key-value tokens used by coverage sampling algorithms.
   List<String> get axisValues => <String>[
-        'device=${device.name}',
-        'theme=${theme.name}',
-        'locale=${locale.toLanguageTag()}',
-        'textScale=$textScale',
-        'direction=${direction.name}',
-        'platform=${platform.name}',
-        'brightness=${brightness.name}',
-        'highContrast=$highContrast',
-      ];
+    'device=${device.name}',
+    'theme=${theme.name}',
+    'locale=${locale.toLanguageTag()}',
+    'textScale=$textScale',
+    'direction=${direction.name}',
+    'platform=${platform.name}',
+    'brightness=${brightness.name}',
+    'highContrast=$highContrast',
+  ];
 
   @override
   String toString() => 'GoldenVariant($label)';

@@ -75,7 +75,8 @@ class GoldenPathStrategy {
     }
     if (includeDefaultAxes || variant.highContrast) {
       buffer.write(
-          variant.highContrast ? '{high-contrast}' : '{normal-contrast}');
+        variant.highContrast ? '{high-contrast}' : '{normal-contrast}',
+      );
     }
     return '${ffGoldenSafeName(folder)}/${ffGoldenSafeName(scenario)}/$buffer.png';
   }

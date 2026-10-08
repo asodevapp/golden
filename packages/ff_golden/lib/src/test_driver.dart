@@ -9,10 +9,7 @@ typedef GoldenWaitCondition = bool Function();
 /// legacy APIs so migrated suites can adopt deterministic waits without
 /// changing their baseline naming or capture behavior.
 class GoldenTestDriver {
-  GoldenTestDriver({
-    required this.tester,
-    this.context,
-  });
+  GoldenTestDriver({required this.tester, this.context});
 
   final WidgetTester tester;
 
@@ -75,26 +72,24 @@ class GoldenTestDriver {
     Finder finder, {
     Duration timeout = const Duration(seconds: 5),
     Duration step = const Duration(milliseconds: 16),
-  }) =>
-      pumpUntil(
-        () => finder.evaluate().isNotEmpty,
-        timeout: timeout,
-        step: step,
-        description: '$finder to appear',
-      );
+  }) => pumpUntil(
+    () => finder.evaluate().isNotEmpty,
+    timeout: timeout,
+    step: step,
+    description: '$finder to appear',
+  );
 
   /// Pumps bounded virtual time until [finder] no longer matches a widget.
   Future<void> pumpUntilGone(
     Finder finder, {
     Duration timeout = const Duration(seconds: 5),
     Duration step = const Duration(milliseconds: 16),
-  }) =>
-      pumpUntil(
-        () => finder.evaluate().isEmpty,
-        timeout: timeout,
-        step: step,
-        description: '$finder to disappear',
-      );
+  }) => pumpUntil(
+    () => finder.evaluate().isEmpty,
+    timeout: timeout,
+    step: step,
+    description: '$finder to disappear',
+  );
 
   static void _validateStep(Duration step) {
     if (step <= Duration.zero) {

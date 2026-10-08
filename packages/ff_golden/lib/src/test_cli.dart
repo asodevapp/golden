@@ -74,7 +74,8 @@ Future<int> runFfGolden(
     ...discoveredTargets,
     ...forwardedArguments,
   ];
-  final flutterExecutable = options.flutterExecutable ??
+  final flutterExecutable =
+      options.flutterExecutable ??
       _resolveFlutterExecutable(
         currentDirectory: currentDirectory,
         resolvedExecutable: resolvedExecutable ?? Platform.resolvedExecutable,
@@ -121,11 +122,11 @@ enum _GoldenTestCommand {
   bool get updatesGoldens => this == update;
 
   static _GoldenTestCommand? parse(String value) => switch (value) {
-        'test' => test,
-        'verify' => verify,
-        'update' => update,
-        _ => null,
-      };
+    'test' => test,
+    'verify' => verify,
+    'update' => update,
+    _ => null,
+  };
 }
 
 final class _GoldenTestOptions {
@@ -196,8 +197,10 @@ final class _GoldenTestOptions {
           } else if (argument.startsWith('--test-root=')) {
             testRoot = _nonEmptyValue('--test-root', argument.substring(12));
           } else if (argument.startsWith('--flutter=')) {
-            flutterExecutable =
-                _nonEmptyValue('--flutter', argument.substring(10));
+            flutterExecutable = _nonEmptyValue(
+              '--flutter',
+              argument.substring(10),
+            );
           } else {
             forwardedArguments.add(argument);
           }
@@ -292,7 +295,8 @@ Future<List<String>> _discoverGoldenTests({
       path.isAbsolute(testRoot)
           ? path.normalize(entity.path)
           : path.normalize(
-              path.relative(entity.path, from: currentDirectory.path)),
+              path.relative(entity.path, from: currentDirectory.path),
+            ),
     );
   }
   targets.sort();
@@ -353,7 +357,8 @@ String _shellQuote(String value) {
   return "'${value.replaceAll("'", "'\\''")}'";
 }
 
-String _commandUsage(_GoldenTestCommand command) => '''
+String _commandUsage(_GoldenTestCommand command) =>
+    '''
 Usage: flutter pub run ff_golden ${command.name} [options] [flutter test arguments]
 
 Runs golden tests with project-safe defaults. Unknown arguments are forwarded

@@ -16,8 +16,9 @@ List<String> findStaleGoldenFiles({
   required Iterable<String> expectedPaths,
   required String scope,
 }) {
-  final normalizedExpected =
-      expectedPaths.map((path) => Uri(path: path).path.toLowerCase()).toSet();
+  final normalizedExpected = expectedPaths
+      .map((path) => Uri(path: path).path.toLowerCase())
+      .toSet();
   final scopeUri = baseDirectory.resolve(
     scope.endsWith('/') ? scope : '$scope/',
   );

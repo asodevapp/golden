@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:ff_golden/ff_golden.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   testDeviceGoldens(
@@ -31,13 +31,12 @@ void main() {
       ),
     ],
     locales: const [Locale('ar')],
-    themes: [
-      GoldenTheme(name: 'dark', data: ThemeData.dark()),
-    ],
+    themes: [GoldenTheme(name: 'dark', data: ThemeData.dark())],
   );
 
-  testWidgets('legacy GoldenTester captures before postPumping',
-      (tester) async {
+  testWidgets('legacy GoldenTester captures before postPumping', (
+    tester,
+  ) async {
     final events = <String>[];
     final goldenTester = _RecordingGoldenTester(
       events,
@@ -54,38 +53,39 @@ void main() {
       scenario: (_) async => events.add('scenario'),
     );
 
-    expect(
-      events,
-      <String>['scenario', 'beforeCapture', 'capture', 'postPumping'],
-    );
+    expect(events, <String>[
+      'scenario',
+      'beforeCapture',
+      'capture',
+      'postPumping',
+    ]);
   });
 
   testWidgets(
-      'legacy GoldenTester preserves unsanitized paths and Locale.toString',
-      (tester) async {
-    final events = <String>[];
-    final goldenTester = _RecordingGoldenTester(events);
+    'legacy GoldenTester preserves unsanitized paths and Locale.toString',
+    (tester) async {
+      final events = <String>[];
+      final goldenTester = _RecordingGoldenTester(events);
 
-    await goldenTester.builder(
-      tester,
-      const GoldenDevice(
-        name: 'device name',
-        logicalSize: Size(320, 240),
-      ),
-      const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hans'),
-      GoldenTheme.dark,
-      scenarioName: 'scenario name',
-      scenario: (_) async {},
-    );
+      await goldenTester.builder(
+        tester,
+        const GoldenDevice(name: 'device name', logicalSize: Size(320, 240)),
+        const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hans'),
+        GoldenTheme.dark,
+        scenarioName: 'scenario name',
+        scenario: (_) async {},
+      );
 
-    expect(
-      goldenTester.capturedPath,
-      'golden/scenario name/device name[dark](zh_Hans).png',
-    );
-  });
+      expect(
+        goldenTester.capturedPath,
+        'golden/scenario name/device name[dark](zh_Hans).png',
+      );
+    },
+  );
 
-  testWidgets('legacy GoldenTester exposes bounded virtual-time waits',
-      (tester) async {
+  testWidgets('legacy GoldenTester exposes bounded virtual-time waits', (
+    tester,
+  ) async {
     final goldenTester = _RecordingGoldenTester(<String>[]);
     var ready = false;
 
@@ -109,14 +109,11 @@ void main() {
 }
 
 class _RecordingGoldenTester extends GoldenTester {
-  _RecordingGoldenTester(
-    this.events, {
-    super.beforeCapture,
-    super.postPumping,
-  }) : super(
-          widget: (_) => const SizedBox(),
-          wrapper: (child, locale, theme) => child,
-        );
+  _RecordingGoldenTester(this.events, {super.beforeCapture, super.postPumping})
+    : super(
+        widget: (_) => const SizedBox(),
+        wrapper: (child, locale, theme) => child,
+      );
 
   final List<String> events;
   String? capturedPath;

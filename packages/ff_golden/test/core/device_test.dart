@@ -1,6 +1,6 @@
 import 'package:ff_golden/ff_golden.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test('iPhone 11 keeps logical geometry and physical density separate', () {
@@ -18,9 +18,6 @@ void main() {
     final landscape = GoldenDevice.iPhone11.landscape();
 
     expect(landscape.logicalSize, const Size(896, 414));
-    expect(
-      landscape.safeArea,
-      const EdgeInsets.only(left: 44, right: 34),
-    );
+    expect(landscape.safeArea, const EdgeInsets.only(left: 44, right: 34));
   });
 }

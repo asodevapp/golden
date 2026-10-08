@@ -6,15 +6,11 @@ void main() {
     const tolerance = GoldenTolerance(maxDiffRate: 0.001);
 
     expect(
-      tolerance.allows(
-        ComparisonResult(passed: false, diffPercent: 0.001),
-      ),
+      tolerance.allows(ComparisonResult(passed: false, diffPercent: 0.001)),
       isTrue,
     );
     expect(
-      tolerance.allows(
-        ComparisonResult(passed: false, diffPercent: 0.01),
-      ),
+      tolerance.allows(ComparisonResult(passed: false, diffPercent: 0.01)),
       isFalse,
     );
   });

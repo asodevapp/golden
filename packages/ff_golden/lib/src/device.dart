@@ -17,8 +17,8 @@ class GoldenDevice {
     this.brightness = Brightness.light,
     this.highContrast = false,
     this.textScale = 1,
-  })  : assert(devicePixelRatio > 0),
-        assert(textScale > 0);
+  }) : assert(devicePixelRatio > 0),
+       assert(textScale > 0);
 
   /// Stable name used in test labels and golden filenames.
   final String name;
@@ -47,9 +47,9 @@ class GoldenDevice {
 
   /// Raster size obtained from [logicalSize] and [devicePixelRatio].
   Size get physicalSize => Size(
-        logicalSize.width * devicePixelRatio,
-        logicalSize.height * devicePixelRatio,
-      );
+    logicalSize.width * devicePixelRatio,
+    logicalSize.height * devicePixelRatio,
+  );
 
   /// The legacy physical-pixel size accessor.
   @Deprecated('Use logicalSize or physicalSize explicitly.')
@@ -68,29 +68,28 @@ class GoldenDevice {
     Brightness? brightness,
     bool? highContrast,
     double? textScale,
-  }) =>
-      GoldenDevice(
-        name: name ?? this.name,
-        logicalSize: logicalSize ?? this.logicalSize,
-        devicePixelRatio: devicePixelRatio ?? this.devicePixelRatio,
-        platform: platform ?? this.platform,
-        safeArea: safeArea ?? this.safeArea,
-        brightness: brightness ?? this.brightness,
-        highContrast: highContrast ?? this.highContrast,
-        textScale: textScale ?? this.textScale,
-      );
+  }) => GoldenDevice(
+    name: name ?? this.name,
+    logicalSize: logicalSize ?? this.logicalSize,
+    devicePixelRatio: devicePixelRatio ?? this.devicePixelRatio,
+    platform: platform ?? this.platform,
+    safeArea: safeArea ?? this.safeArea,
+    brightness: brightness ?? this.brightness,
+    highContrast: highContrast ?? this.highContrast,
+    textScale: textScale ?? this.textScale,
+  );
 
   /// Returns a landscape copy with rotated logical size and safe-area insets.
   GoldenDevice landscape({String? name}) => copyWith(
-        name: name ?? '${this.name}_Landscape',
-        logicalSize: Size(logicalSize.height, logicalSize.width),
-        safeArea: EdgeInsets.fromLTRB(
-          safeArea.top,
-          safeArea.left,
-          safeArea.bottom,
-          safeArea.right,
-        ),
-      );
+    name: name ?? '${this.name}_Landscape',
+    logicalSize: Size(logicalSize.height, logicalSize.width),
+    safeArea: EdgeInsets.fromLTRB(
+      safeArea.top,
+      safeArea.left,
+      safeArea.bottom,
+      safeArea.right,
+    ),
+  );
 
   /// Returns a copy with theme-related device defaults replaced.
   GoldenDevice toTheme({
@@ -98,11 +97,7 @@ class GoldenDevice {
     Brightness? brightness,
     bool? highContrast,
   }) =>
-      copyWith(
-        name: name,
-        brightness: brightness,
-        highContrast: highContrast,
-      );
+      copyWith(name: name, brightness: brightness, highContrast: highContrast);
 
   static const iPhone5S = GoldenDevice(
     name: 'iPhone5S',

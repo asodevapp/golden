@@ -32,6 +32,18 @@ stable machine-readable run metadata alongside the golden artifacts.
 
 ## Install
 
+The unreleased runner requires Flutter 3.47 and Dart 3.13 or newer and uses
+[`material_ui`](https://pub.dev/packages/material_ui) for themes, Material
+widgets, and localization delegates. Custom `GoldenTheme.data` values must
+use `ThemeData` from `package:material_ui/material_ui.dart`. Migrate Material
+imports in the tested application to the same package and declare
+`material_ui` as a direct dependency when importing it.
+
+For a subtree that still uses `package:flutter/material.dart`, provide a custom
+`wrapper` that installs `MaterialUiCompatibilityBridge` through
+`MaterialApp.builder`, as described in the
+[`material_ui` migration guide](https://pub.dev/packages/material_ui#migrating-existing-code-to-this-package).
+
 Add the package as a development dependency:
 
 ```shell
@@ -66,7 +78,7 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) async {
 
 ```dart
 import 'package:ff_golden/ff_golden.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

@@ -12,6 +12,15 @@ application dependencies.
 
 ## 1. Install the packages
 
+The unreleased runner uses the standalone
+[`material_ui`](https://pub.dev/packages/material_ui) package and requires
+Flutter 3.47 / Dart 3.13 or newer. Import
+`package:material_ui/material_ui.dart` for Material widgets and custom
+`GoldenTheme.data` values, and declare `material_ui` as a direct dependency in
+applications that import it. The default test app installs
+`GlobalMaterialLocalizations.delegates` from that package for Material,
+Cupertino, and core widget localization.
+
 === "Runner only"
 
     ```shell
@@ -59,7 +68,7 @@ Create a file below `test/`, for example
 
 ```dart
 import 'package:ff_golden/ff_golden.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

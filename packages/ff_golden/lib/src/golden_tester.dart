@@ -10,13 +10,18 @@ import 'theme.dart';
 import 'variant.dart';
 
 typedef GoldenLegacyWrapper = Widget Function(
-    Widget child, Locale locale, GoldenTheme theme);
+  Widget child,
+  Locale locale,
+  GoldenTheme theme,
+);
 typedef GoldenVariantWrapper = Widget Function(
-    Widget child, GoldenVariant variant);
+  Widget child,
+  GoldenVariant variant,
+);
 
 abstract class GoldenTesterBase {
   GoldenTesterBase({
-    required Widget Function(Key key) widget,
+    required this._widget,
     GoldenLegacyWrapper? wrapper,
     GoldenVariantWrapper? variantWrapper,
     this.testName = '',
@@ -24,15 +29,14 @@ abstract class GoldenTesterBase {
     this.captureScale,
     this.tolerance = GoldenTolerance.strict,
     this.freezeAnimations = false,
-  })  : assert(
-          (wrapper == null) != (variantWrapper == null),
-          'Provide exactly one of wrapper or variantWrapper.',
-        ),
-        _widget = widget,
-        _legacyWrapper = wrapper,
-        _variantWrapper = variantWrapper,
-        key = UniqueKey(),
-        captureKey = UniqueKey();
+  }) : assert(
+         (wrapper == null) != (variantWrapper == null),
+         'Provide exactly one of wrapper or variantWrapper.',
+       ),
+       _legacyWrapper = wrapper,
+       _variantWrapper = variantWrapper,
+       key = UniqueKey(),
+       captureKey = UniqueKey();
 
   @protected
   final Key key;
@@ -57,9 +61,9 @@ abstract class GoldenTesterBase {
   late GoldenVariant variant;
 
   GoldenTestDriver get driver => GoldenTestDriver(
-        tester: tester,
-        context: 'scenario $scenarioName, variant ${variant.label}',
-      );
+    tester: tester,
+    context: 'scenario $scenarioName, variant ${variant.label}',
+  );
 
   GoldenDevice get device => variant.device;
   Locale get locale => variant.locale;
@@ -69,8 +73,7 @@ abstract class GoldenTesterBase {
   Future<void> pumpFrames(
     int count, {
     Duration step = const Duration(milliseconds: 16),
-  }) =>
-      driver.pumpFrames(count, step: step);
+  }) => driver.pumpFrames(count, step: step);
 
   Future<void> elapse(Duration duration) => driver.elapse(duration);
 
@@ -79,27 +82,24 @@ abstract class GoldenTesterBase {
     Duration timeout = const Duration(seconds: 5),
     Duration step = const Duration(milliseconds: 16),
     String description = 'condition',
-  }) =>
-      driver.pumpUntil(
-        condition,
-        timeout: timeout,
-        step: step,
-        description: description,
-      );
+  }) => driver.pumpUntil(
+    condition,
+    timeout: timeout,
+    step: step,
+    description: description,
+  );
 
   Future<void> pumpUntilFound(
     Finder finder, {
     Duration timeout = const Duration(seconds: 5),
     Duration step = const Duration(milliseconds: 16),
-  }) =>
-      driver.pumpUntilFound(finder, timeout: timeout, step: step);
+  }) => driver.pumpUntilFound(finder, timeout: timeout, step: step);
 
   Future<void> pumpUntilGone(
     Finder finder, {
     Duration timeout = const Duration(seconds: 5),
     Duration step = const Duration(milliseconds: 16),
-  }) =>
-      driver.pumpUntilGone(finder, timeout: timeout, step: step);
+  }) => driver.pumpUntilGone(finder, timeout: timeout, step: step);
 
   @mustCallSuper
   Future<void> setScenario({
@@ -108,21 +108,20 @@ abstract class GoldenTesterBase {
     required GoldenDevice device,
     required Locale locale,
     required GoldenTheme theme,
-  }) =>
-      setVariantScenario(
-        tester: tester,
-        scenarioName: scenarioName,
-        variant: GoldenVariant(
-          device: device,
-          locale: locale,
-          theme: theme,
-          textScale: device.textScale,
-          direction: GoldenDirection.auto,
-          platform: device.platform,
-          brightness: device.brightness,
-          highContrast: device.highContrast,
-        ),
-      );
+  }) => setVariantScenario(
+    tester: tester,
+    scenarioName: scenarioName,
+    variant: GoldenVariant(
+      device: device,
+      locale: locale,
+      theme: theme,
+      textScale: device.textScale,
+      direction: GoldenDirection.auto,
+      platform: device.platform,
+      brightness: device.brightness,
+      highContrast: device.highContrast,
+    ),
+  );
 
   @mustCallSuper
   Future<void> setVariantScenario({
@@ -135,7 +134,8 @@ abstract class GoldenTesterBase {
     this.variant = variant;
 
     final child = _widget(key);
-    final wrapped = _variantWrapper?.call(child, variant) ??
+    final wrapped =
+        _variantWrapper?.call(child, variant) ??
         _legacyWrapper!(child, variant.locale, variant.theme);
     await tester.pumpWidget(
       RepaintBoundary(
@@ -150,8 +150,9 @@ abstract class GoldenTesterBase {
       final dot = testName.isEmpty ? '' : '.';
       final localeName = locale.toString();
       final localePostfix = localeName == 'en' ? '' : '($localeName)';
-      final themePostfix =
-          theme == GoldenTheme.defaultTheme ? '' : '[${theme.name}]';
+      final themePostfix = theme == GoldenTheme.defaultTheme
+          ? ''
+          : '[${theme.name}]';
       return '$folder/$scenarioName/'
           '$testName$dot${device.name}$themePostfix$localePostfix.png';
     }
@@ -163,11 +164,11 @@ abstract class GoldenTesterBase {
   }
 
   Future<void> matchesGolden() => expectFfGolden(
-        find.byKey(captureKey),
-        goldenPath,
-        captureScale: captureScale ?? device.devicePixelRatio,
-        tolerance: tolerance,
-      );
+    find.byKey(captureKey),
+    goldenPath,
+    captureScale: captureScale ?? device.devicePixelRatio,
+    tolerance: tolerance,
+  );
 }
 
 typedef PumpingCallback = Future<void> Function(WidgetTester tester);
@@ -182,10 +183,9 @@ class GoldenTester extends GoldenTesterBase {
     super.captureScale,
     super.tolerance,
     super.freezeAnimations,
-    PumpingCallback? beforeCapture,
-    PumpingCallback? postPumping = _defaultPostPumping,
-  })  : _beforeCapture = beforeCapture,
-        _postPumping = postPumping;
+    this._beforeCapture,
+    this._postPumping = _defaultPostPumping,
+  });
 
   final PumpingCallback? _beforeCapture;
   final PumpingCallback? _postPumping;

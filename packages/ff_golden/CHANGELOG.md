@@ -1,5 +1,10 @@
 ## Unreleased
 
+- Migrated theme data, the default test app, localization delegates, examples,
+  and tests to the standalone `material_ui` package.
+- Requires Flutter 3.47 and Dart 3.13 or newer. Custom `GoldenTheme.data`
+  values and Material widgets must use `package:material_ui/material_ui.dart`.
+
 ## 1.3.1
 
 - Added a pub.dev screenshot and an early README visual showing one scenario

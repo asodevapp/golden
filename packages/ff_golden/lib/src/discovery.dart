@@ -19,22 +19,19 @@ void registerGoldenDiscovery({
     // Flutter's JSON reporter attaches the real (group-prefixed) test ID/name.
     // Do not call widget builders, scenario hooks, captures, or reporters here.
     // ignore: avoid_print
-    print('FF_GOLDEN_DISCOVERY ${jsonEncode({
-          'schema': 1,
-          'description': description,
-          'scenario': scenario,
-          'api': legacy ? 'legacy' : 'coverage',
-          'axes': {
-            'device': variant.device.name,
-            'theme': variant.theme.name,
-            'locale': variant.locale.toLanguageTag(),
-            if (!legacy) ...{
-              'textScale': '${variant.textScale}',
-              'direction': variant.textDirection.name,
-              'platform': variant.platform.name,
-              'highContrast': '${variant.highContrast}',
-            },
-          },
-        })}');
+    print(
+      'FF_GOLDEN_DISCOVERY ${jsonEncode({
+        'schema': 1,
+        'description': description,
+        'scenario': scenario,
+        'api': legacy ? 'legacy' : 'coverage',
+        'axes': {
+          'device': variant.device.name,
+          'theme': variant.theme.name,
+          'locale': variant.locale.toLanguageTag(),
+          if (!legacy) ...{'textScale': '${variant.textScale}', 'direction': variant.textDirection.name, 'platform': variant.platform.name, 'highContrast': '${variant.highContrast}'},
+        },
+      })}',
+    );
   }, tags: const ['ff_golden_discovery']);
 }

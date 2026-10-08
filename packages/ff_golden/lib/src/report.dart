@@ -23,14 +23,14 @@ class GoldenSuitePlan {
   final List<String> goldenPaths;
 
   Map<String, Object?> toJson() => {
-        'description': description,
-        'scenario': scenario,
-        'sampling': plan.sampling.name,
-        'rawCombinations': plan.rawCount,
-        'excludedCombinations': plan.excludedCount,
-        'selectedCombinations': plan.selectedCount,
-        'goldenPaths': goldenPaths,
-      };
+    'description': description,
+    'scenario': scenario,
+    'sampling': plan.sampling.name,
+    'rawCombinations': plan.rawCount,
+    'excludedCombinations': plan.excludedCount,
+    'selectedCombinations': plan.selectedCount,
+    'goldenPaths': goldenPaths,
+  };
 }
 
 class GoldenCaseResult {
@@ -59,29 +59,24 @@ class GoldenCaseResult {
   final String? stackTrace;
 
   Map<String, Object?> toJson() => {
-        'description': description,
-        'scenario': scenario,
-        'status': status.name,
-        'durationMs': duration.inMicroseconds / 1000,
-        'goldenPaths': captures.map((capture) => capture.path).toList(),
-        'captures': captures.map((capture) => capture.toJson()).toList(),
-        'failureArtifacts': status == GoldenResultStatus.failed
-            ? {
-                'directory': 'failures',
-                'kinds': [
-                  'masterImage',
-                  'testImage',
-                  'isolatedDiff',
-                  'maskedDiff',
-                ],
-              }
-            : null,
-        'overflowCount': overflowCount,
-        'failurePhase': failurePhase,
-        'error': error,
-        'stackTrace': stackTrace,
-        'variant': _variantJson(variant),
-      };
+    'description': description,
+    'scenario': scenario,
+    'status': status.name,
+    'durationMs': duration.inMicroseconds / 1000,
+    'goldenPaths': captures.map((capture) => capture.path).toList(),
+    'captures': captures.map((capture) => capture.toJson()).toList(),
+    'failureArtifacts': status == GoldenResultStatus.failed
+        ? {
+            'directory': 'failures',
+            'kinds': ['masterImage', 'testImage', 'isolatedDiff', 'maskedDiff'],
+          }
+        : null,
+    'overflowCount': overflowCount,
+    'failurePhase': failurePhase,
+    'error': error,
+    'stackTrace': stackTrace,
+    'variant': _variantJson(variant),
+  };
 }
 
 class GoldenCapture {
@@ -107,12 +102,11 @@ class JsonGoldenReporter implements GoldenReporter {
   JsonGoldenReporter(
     String outputPath, {
     required String shardName,
-    Uri? testFile,
+    this._testFile,
     Directory? projectDirectory,
-  })  : _requestedOutputPath = outputPath,
-        _testFile = testFile,
-        _shardName = shardName,
-        _projectDirectory = projectDirectory ?? Directory.current {
+  }) : _requestedOutputPath = outputPath,
+       _shardName = shardName,
+       _projectDirectory = projectDirectory ?? Directory.current {
     if (shardName.trim().isEmpty) {
       throw ArgumentError.value(shardName, 'shardName', 'must not be empty');
     }
@@ -191,8 +185,9 @@ class JsonGoldenReporter implements GoldenReporter {
     final requested = path.normalize(path.absolute(_requestedOutputPath));
     final explicitJson = path.extension(requested).toLowerCase() == '.json';
     final directory = explicitJson ? path.dirname(requested) : requested;
-    final prefix =
-        explicitJson ? '${path.basenameWithoutExtension(requested)}.' : '';
+    final prefix = explicitJson
+        ? '${path.basenameWithoutExtension(requested)}.'
+        : '';
     return path.join(directory, '$prefix$_resolvedShardName.json');
   }
 
@@ -228,26 +223,26 @@ class JsonGoldenReporter implements GoldenReporter {
 }
 
 Map<String, Object?> _variantJson(GoldenVariant variant) => {
-      'device': {
-        'name': variant.device.name,
-        'logicalWidth': variant.device.logicalSize.width,
-        'logicalHeight': variant.device.logicalSize.height,
-        'physicalWidth': variant.device.physicalSize.width,
-        'physicalHeight': variant.device.physicalSize.height,
-        'devicePixelRatio': variant.device.devicePixelRatio,
-        'safeArea': {
-          'left': variant.device.safeArea.left,
-          'top': variant.device.safeArea.top,
-          'right': variant.device.safeArea.right,
-          'bottom': variant.device.safeArea.bottom,
-        },
-      },
-      'theme': variant.theme.name,
-      'locale': variant.locale.toLanguageTag(),
-      'textScale': variant.textScale,
-      'direction': variant.textDirection.name,
-      'directionMode': variant.direction.name,
-      'platform': variant.platform.name,
-      'brightness': variant.brightness.name,
-      'highContrast': variant.highContrast,
-    };
+  'device': {
+    'name': variant.device.name,
+    'logicalWidth': variant.device.logicalSize.width,
+    'logicalHeight': variant.device.logicalSize.height,
+    'physicalWidth': variant.device.physicalSize.width,
+    'physicalHeight': variant.device.physicalSize.height,
+    'devicePixelRatio': variant.device.devicePixelRatio,
+    'safeArea': {
+      'left': variant.device.safeArea.left,
+      'top': variant.device.safeArea.top,
+      'right': variant.device.safeArea.right,
+      'bottom': variant.device.safeArea.bottom,
+    },
+  },
+  'theme': variant.theme.name,
+  'locale': variant.locale.toLanguageTag(),
+  'textScale': variant.textScale,
+  'direction': variant.textDirection.name,
+  'directionMode': variant.direction.name,
+  'platform': variant.platform.name,
+  'brightness': variant.brightness.name,
+  'highContrast': variant.highContrast,
+};

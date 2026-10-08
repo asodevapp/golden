@@ -1,6 +1,6 @@
 import 'package:ff_golden/ff_golden.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   final reporter = JsonGoldenReporter(
@@ -47,25 +47,25 @@ class _PresenterProbeState extends State<_PresenterProbe> {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-        width: 280,
-        child: Card(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const FlutterLogo(size: 72),
-                const SizedBox(height: 16),
-                Text(_filled ? 'Filled state' : 'Empty state'),
-                const SizedBox(height: 12),
-                FilledButton(
-                  key: const Key('toggle'),
-                  onPressed: () => setState(() => _filled = !_filled),
-                  child: const Text('Toggle'),
-                ),
-              ],
+    width: 280,
+    child: Card(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const FlutterLogo(size: 72),
+            const SizedBox(height: 16),
+            Text(_filled ? 'Filled state' : 'Empty state'),
+            const SizedBox(height: 12),
+            FilledButton(
+              key: const Key('toggle'),
+              onPressed: () => setState(() => _filled = !_filled),
+              child: const Text('Toggle'),
             ),
-          ),
+          ],
         ),
-      );
+      ),
+    ),
+  );
 }

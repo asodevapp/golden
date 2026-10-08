@@ -50,17 +50,14 @@ void main() {
   );
 
   test('typed scenario lifecycle is isolated around build and interaction', () {
-    expect(
-      events,
-      <String>[
-        'before',
-        'prepare',
-        'build',
-        'interact',
-        'dispose',
-        'after',
-      ],
-    );
+    expect(events, <String>[
+      'before',
+      'prepare',
+      'build',
+      'interact',
+      'dispose',
+      'after',
+    ]);
     expect(fixture.installed, isFalse);
   });
 }

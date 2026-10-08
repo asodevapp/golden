@@ -1,5 +1,5 @@
 import 'package:ff_golden/ff_golden.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   testFfGoldens(

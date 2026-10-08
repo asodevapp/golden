@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
-/// A named Flutter theme used as a golden coverage axis.
+/// A named Material UI theme used as a golden coverage axis.
 @immutable
 class GoldenTheme {
   /// Creates a named theme and optionally marks it as the default variant.
@@ -13,7 +13,7 @@ class GoldenTheme {
   /// Stable name used in test labels and golden filenames.
   final String name;
 
-  /// Flutter theme data installed for the variant.
+  /// Theme data from `package:material_ui/material_ui.dart` for the variant.
   final ThemeData data;
 
   /// Whether filenames may omit this theme for migration-friendly paths.
