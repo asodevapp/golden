@@ -746,6 +746,69 @@ test('a failed batch does not stop subsequent batches and only remaining files a
   assert.deepEqual(actions[3],actions[1]);
 });
 
+test('all sidebar count buttons filter groups, toggle off, and track dropdown and live counts', async t => {
+  const {page,refresh}=await viewer(t,[item('u1'),item('u2'),
+    {...item('s1'),staged:true},{...item('s2'),staged:true}]);
+  await refresh(data=>setFailures(data,[failure('f1'),failure('f2')]));
+  const buttons=['show-all','show-unstaged','show-staged','show-failures'];
+  async function assertScope(scope,id,names) {
+    assert.equal(await page.locator('#file-scope').inputValue(),scope);
+    for(const button of buttons) assert.equal(await page.locator('#'+button).getAttribute('aria-pressed'),String(button===id));
+    assert.deepEqual((await page.locator('.file-name').allTextContents()).sort(),names);
+    assert.equal(await page.locator('#shown-count').textContent(),String(names.length));
+  }
+  await assertScope('all','show-all',['s1.png','s2.png','u1.png','u2.png']);
+  await page.locator('#show-unstaged').click();
+  await assertScope('unstaged','show-unstaged',['u1.png','u2.png']);
+  await page.locator('#show-unstaged').click();
+  await assertScope('all','show-all',['s1.png','s2.png','u1.png','u2.png']);
+  await page.locator('#show-staged').press('Enter');
+  await assertScope('staged','show-staged',['s1.png','s2.png']);
+  await page.locator('#show-failures').click();
+  await assertScope('failures','show-failures',['f1.png','f2.png']);
+  await page.locator('.file > button').first().click({button:'right'});
+  await rememberUI(page);
+  await refresh(data=>data.changes.find(c=>c.id==='s2').staged=false);
+  await assertUI(page);
+  assert.equal(await page.locator('#unstaged-count').textContent(),'3');
+  assert.equal(await page.locator('#staged-count').textContent(),'1');
+  await assertScope('failures','show-failures',['f1.png','f2.png']);
+  await page.locator('#show-all').click();
+  await assertScope('all','show-all',['s1.png','s2.png','u1.png','u2.png']);
+  await page.locator('#file-scope').selectOption('staged');
+  await assertScope('staged','show-staged',['s1.png']);
+  await refresh(data=>data.changes.find(c=>c.id==='s1').staged=false);
+  await assertScope('staged','show-staged',[]);
+  assert.equal(await page.locator('#staged-count').textContent(),'0');
+  await page.locator('#show-staged').press('Space');
+  await assertScope('all','show-all',['s1.png','s2.png','u1.png','u2.png']);
+});
+
+test('sidebar count filters preserve search, Git type and failure result filters', async t => {
+  const {page,refresh}=await viewer(t,[
+    {...item('match-new'),hasBefore:false,status:'?'},item('other-modified'),
+    {...item('match-staged'),hasBefore:false,status:'A',staged:true},
+  ]);
+  await refresh(data=>setFailures(data,[failure('match-failure'),failure('other-failure')]));
+  await page.setViewportSize({width:800,height:650});
+  await page.locator('#search').fill('match');
+  await page.locator('#change-filter').selectOption('added');
+  await page.locator('#show-unstaged').click();
+  assert.deepEqual(await page.locator('.file-name').allTextContents(),['match-new.png']);
+  await page.locator('#show-staged').click();
+  assert.deepEqual(await page.locator('.file-name').allTextContents(),['match-staged.png']);
+  await page.locator('#show-failures').click();
+  await page.locator('#failure-filter').selectOption('changed');
+  assert.deepEqual(await page.locator('.file-name').allTextContents(),['match-failure.png']);
+  await page.locator('#show-all').click();
+  assert.equal(await page.locator('#search').inputValue(),'match');
+  assert.equal(await page.locator('#change-filter').inputValue(),'added');
+  assert.deepEqual((await page.locator('.file-name').allTextContents()).sort(),['match-new.png','match-staged.png']);
+  await page.locator('#show-failures').click();
+  assert.equal(await page.locator('#failure-filter').inputValue(),'changed');
+  assert.deepEqual(await page.locator('.file-name').allTextContents(),['match-failure.png']);
+});
+
 test('failure filters compose with search and update membership when metrics complete', async t => {
   const {page,refresh}=await viewer(t);
   await refresh(data=>setFailures(data,[

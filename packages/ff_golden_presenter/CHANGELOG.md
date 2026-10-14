@@ -1,3 +1,13 @@
+## 1.1.15
+
+- Made all sidebar counters quick filters: **shown** returns to all Git changes,
+  while **unstaged**, **staged**, and **failures** select their respective groups.
+  The active counter is highlighted and synchronized with the dropdown;
+  clicking it again returns to all changes.
+- Preserved search and Git type/failure result filters when switching groups,
+  with browser coverage for keyboard controls, empty groups, and live updates
+  that retain an open tree menu.
+
 ## 1.1.14
 
 - Added a resizable image tree sidebar with drag and keyboard controls,

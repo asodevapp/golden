@@ -86,7 +86,7 @@ The equivalent manual dependency is:
 
 ```yaml
 dev_dependencies:
-  ff_golden_presenter: ^1.1.14
+  ff_golden_presenter: ^1.1.15
 ```
 
 For an unreleased repository revision, use the package Git source and
@@ -152,7 +152,10 @@ filter (**All changes**, **Unstaged**, **Staged**, **Failures**) and the **Tree*
 buttons. **⋯** opens folder expand/collapse commands and **Show ignored**. While
 ignored files are visible, a removable **+ ignored (N)** indicator stays beside
 search. **Shown / unstaged / staged / failures** counts stay above the scrolling
-tree, so the current filter result and all groups remain visible. The tree compacts
+tree and act as quick filters: click a group to review it, click its active filter
+again to return to all changes, or click **shown** directly. The active group is
+highlighted and stays synchronized with the dropdown during live refresh.
+Search and file-type/result filters are preserved. The tree compacts
 single-child folders, remembers collapsed folders during live refresh, and
 supports selecting a whole folder. Search shows matching files together with
 their parent folders. File rows show their changed-pixel percentage, and folders

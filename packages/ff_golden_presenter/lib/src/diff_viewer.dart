@@ -30,7 +30,8 @@ input[type=search] { width:100%; min-width:0; height:30px; color:inherit; backgr
 .file-tools>button { font-size:20px; } .file-layout [aria-pressed=true],[aria-pressed=true] { color:var(--accent); border-color:var(--accent); background:#213d3b; }
 #ignored-active { height:30px; padding:3px 7px; font-size:11px; white-space:nowrap; color:var(--accent); border-color:#397f69; background:#213d3b; } .ignored-label { color:var(--muted); font-size:10px; }
 .file-count { display:flex; min-width:0; padding-top:2px; color:var(--muted); font-size:10px; } .file-count span { flex:1; min-width:0; text-align:center; white-space:nowrap; } .file-count span+span { border-left:1px solid var(--line); } .file-count strong { margin-right:3px; color:#cbd5df; font-size:11px; font-variant-numeric:tabular-nums; }
-.file-count button { padding:1px 4px; font-size:10px; color:#f0a8cc; background:transparent; border-color:transparent; } .file-count button[aria-pressed=true] { border-color:#87516d; background:#392a35; }
+.file-count button { max-width:100%; padding:1px 2px; font-size:10px; color:inherit; background:transparent; border-color:transparent; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .file-count button[aria-pressed=true] { color:var(--accent); border-color:#397f69; background:#213d3b; } .file-count button[aria-pressed=true] strong { color:inherit; }
+#show-failures { color:#f0a8cc; } #show-failures[aria-pressed=true] { border-color:#87516d; background:#392a35; }
 .status-filter { width:100%; min-width:0; height:28px; padding:3px 6px; font-size:11px; } .failure-summary { color:var(--muted); font-size:11px; padding:2px 1px; }
 #files { flex:1; overflow:auto; padding:6px 8px 16px; } .group-title { margin:14px 8px 6px; display:flex; justify-content:space-between; color:var(--muted); font-size:11px; font-weight:650; letter-spacing:.08em; text-transform:uppercase; }
 .folder { margin:4px 0; } .folder summary { display:flex; align-items:center; gap:6px; padding:7px 5px; cursor:pointer; color:#bdcbd7; font-size:12px; list-style:none; }
@@ -123,7 +124,7 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
     </div>
     <select id="change-filter" class="status-filter" aria-label="Git change type"><option value="all">All change types</option><option value="added">New files</option><option value="modified">Modified files</option><option value="deleted">Deleted files</option></select>
     <select id="failure-filter" class="status-filter" aria-label="Failure result filter" hidden><option value="all">All failures</option><option value="changed">With pixel changes</option><option value="unchanged">No pixel changes</option><option value="incomplete">Missing expected or actual</option><option value="pending">Calculating</option><option value="unavailable">Comparison unavailable</option></select>
-    <div id="file-count" class="file-count" role="status"><span><strong id="shown-count">0</strong>shown</span><span><strong id="unstaged-count">0</strong>unstaged</span><span><strong id="staged-count">0</strong>staged</span><span><button id="show-failures" title="Review generated failure images" aria-pressed="false"><strong id="failure-count">0</strong>failures</button></span></div>
+    <div id="file-count" class="file-count" role="status"><span><button id="show-all" data-review-scope="all" title="Review all Git changes" aria-pressed="true"><strong id="shown-count">0</strong>shown</button></span><span><button id="show-unstaged" data-review-scope="unstaged" title="Review unstaged images" aria-pressed="false"><strong id="unstaged-count">0</strong>unstaged</button></span><span><button id="show-staged" data-review-scope="staged" title="Review staged images" aria-pressed="false"><strong id="staged-count">0</strong>staged</button></span><span><button id="show-failures" data-review-scope="failures" title="Review generated failure images" aria-pressed="false"><strong id="failure-count">0</strong>failures</button></span></div>
     <div id="failure-summary" class="failure-summary" role="status" hidden></div>
   </div>
   <div id="files"></div><div id="warnings" hidden></div>
@@ -636,7 +637,7 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
     $('git-selection').hidden = failureMode;
     $('failure-selection').hidden = !failureMode;
     $('change-filter').hidden = failureMode; $('failure-filter').hidden = !failureMode;
-    $('show-failures').setAttribute('aria-pressed',String(failureMode));
+    document.querySelectorAll('[data-review-scope]').forEach(button=>button.setAttribute('aria-pressed',String(scope===button.dataset.reviewScope)));
     $('failure-summary').hidden = !failureMode;
     const failureInfo = failureSummary.caseCount+' comparisons · '+failureSummary.fileCount+' images · '+formatBytes(failureSummary.totalBytes)+(failureSummary.scanning ? ' · Scanning…' : '');
     if ($('failure-summary').textContent!==failureInfo) $('failure-summary').textContent=failureInfo;
@@ -1341,7 +1342,7 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
     refresh();
   }
   $('file-scope').addEventListener('change',()=>setScope($('file-scope').value));
-  $('show-failures').addEventListener('click',()=>setScope(scope==='failures' ? 'all' : 'failures'));
+  document.querySelectorAll('[data-review-scope]').forEach(button=>button.addEventListener('click',()=>setScope(scope===button.dataset.reviewScope ? 'all' : button.dataset.reviewScope)));
   for (const id of ['change-filter','failure-filter']) $(id).addEventListener('change',()=>{
     closeMenu(); const items=visible(); if (!items.some(c=>c.id===activeId)) choose(items[0]?.id || null); else renderList();
   });
