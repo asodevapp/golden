@@ -14,16 +14,17 @@ let browser;
 before(async () => {browser = await chromium.launch({headless:true, ...(process.env.CHROME_PATH ? {executablePath:process.env.CHROME_PATH} : {})});});
 after(async () => {await browser?.close();});
 
-async function viewer(t, changes=[item('a'),item('b'),item('c','screens/beta')], run={id:null,active:false,cursor:0}) {
+async function viewer(t, changes=[item('a'),item('b'),item('c','screens/beta')], run={id:null,active:false,cursor:0}, initScript) {
   const context = await browser.newContext({viewport:{width:1280,height:800}});
   t.after(() => context.close());
   const page = await context.newPage(), errors=[], actions=[];
+  if(initScript) await page.addInitScript(initScript);
   page.on('pageerror', error => errors.push(error.message));
   t.after(() => assert.deepEqual(errors, []));
   const data={repository:'/fixture',input:'.',warnings:[],changes,failures:{items:[],caseCount:0,fileCount:0,totalBytes:0,scanning:false,warnings:[]}};
   let imageReads=0;
   const imageRequests=[],deletions=[],preparations=[],plans=new Map(),hooks={},invalidImages=new Set();
-  await page.route('http://review.test/**', async route => {
+  await page.route('http://127.0.0.1:44519/**', async route => {
     const url=new URL(route.request().url());
     if(url.pathname==='/') return route.fulfill({contentType:'text/html',body:html});
     if(url.pathname==='/api/changes') return route.fulfill({json:data});
@@ -60,7 +61,7 @@ async function viewer(t, changes=[item('a'),item('b'),item('c','screens/beta')],
     }
     throw new Error(`Unexpected request: ${url}`);
   });
-  await page.goto('http://review.test/');
+  await page.goto('http://127.0.0.1:44519/');
   await page.locator('.file').first().waitFor();
   await page.waitForFunction(() => !document.getElementById('zoom-in').disabled);
   const refresh = async update => {
@@ -255,6 +256,191 @@ async function framedChanges(page,bounds,viewportId='before-viewport') {
 async function panPosition(page,id='before-viewport') {
   return page.locator('#'+id).evaluate(el=>[el.scrollLeft,el.scrollTop]);
 }
+
+test('sidebar drag preserves the tree and Changes framing, remembers width, and clamps it on resize', async t => {
+  const bounds=[400,300,180,50];
+  const {page,refresh}=await zoomFixture(t,[{id:'a',bounds},{id:'b'}]);
+  await page.locator('.file input').first().check();
+  await page.evaluate(()=>window.sidebarRow=document.querySelector('.file'));
+  await page.locator('#zoom-changes').click();
+  const scale=await framedChanges(page,bounds);
+  const divider=page.locator('#sidebar-resize'), box=await divider.boundingBox();
+  await page.mouse.move(box.x+4,box.y+box.height/2);
+  await page.mouse.down();await page.mouse.move(box.x+124,box.y+box.height/2,{steps:8});await page.mouse.up();
+  const width=()=>page.locator('#sidebar').evaluate(el=>el.getBoundingClientRect().width);
+  assert.equal(await width(),440);
+  assert.notEqual(await framedChanges(page,bounds),scale);
+  assert.equal(await page.evaluate(()=>sidebarRow===document.querySelector('.file')),true);
+  assert.equal(await page.locator('.file input').first().isChecked(),true);
+  await refresh(data=>data.changes[1].difference=ready(10));
+  assert.equal(await width(),440);
+  await divider.press('Shift+ArrowRight');await divider.press('ArrowLeft');
+  assert.equal(await width(),500);
+  assert.equal(await page.locator('#filename').textContent(),'screens/alpha/a.png');
+  await page.reload();await page.waitForFunction(()=>!document.getElementById('zoom-in').disabled);
+  assert.equal(await width(),500);
+  await page.setViewportSize({width:800,height:650});
+  await page.waitForFunction(()=>document.getElementById('sidebar').getBoundingClientRect().width===472);
+  assert.equal(await divider.getAttribute('aria-valuenow'),'472');
+  await page.setViewportSize({width:1280,height:800});
+  await page.waitForFunction(()=>document.getElementById('sidebar').getBoundingClientRect().width===500);
+  await divider.dblclick();
+  assert.equal(await width(),320);
+  assert.equal(await page.evaluate(()=>localStorage.getItem('ff-golden-sidebar-width')),null);
+});
+
+test('side-by-side pan stays synchronized when scrolling begins during zoom and resize', async t => {
+  const {page}=await zoomFixture(t,[{id:'a',bounds:[400,300,40,50]}]);
+  await page.evaluate(()=>{
+    document.getElementById('zoom-changes').click();
+    const viewport=document.getElementById('before-viewport');
+    viewport.scrollLeft+=45;viewport.scrollTop+=35;viewport.dispatchEvent(new Event('scroll'));
+  });
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  assert.deepEqual(await panPosition(page,'after-viewport'),await panPosition(page));
+  await page.locator('#sidebar-resize').press('Shift+ArrowRight');
+  await page.locator('#after-viewport').evaluate(el=>{el.scrollLeft+=20;el.scrollTop+=15;el.dispatchEvent(new Event('scroll'));});
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  assert.deepEqual(await panPosition(page,'after-viewport'),await panPosition(page));
+});
+
+test('sidebar keyboard bounds and cancelled drag leave both panels usable', async t => {
+  const {page}=await viewer(t);
+  await page.setViewportSize({width:800,height:650});
+  const divider=page.locator('#sidebar-resize');
+  await divider.press('Home');
+  assert.equal(await divider.getAttribute('aria-valuenow'),'200');
+  await divider.press('End');
+  assert.equal(await divider.getAttribute('aria-valuenow'),'472');
+  assert.equal(await page.locator('.review').evaluate(el=>el.clientWidth),320);
+  const box=await divider.boundingBox();
+  await page.mouse.move(box.x+4,box.y+box.height/2);await page.mouse.down();
+  await divider.dispatchEvent('pointercancel');
+  await page.mouse.move(box.x-80,box.y+box.height/2);await page.mouse.up();
+  assert.equal(await divider.getAttribute('aria-valuenow'),'472');
+  assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('resizing-sidebar')),false);
+  await divider.dblclick();
+  assert.equal(await divider.getAttribute('aria-valuenow'),'240');
+});
+
+function mockImageClipboard() {
+  window.clipboardImages=[];window.clipboardError=null;
+  const NativeClipboardItem=window.ClipboardItem;
+  window.ClipboardItem=class extends NativeClipboardItem {
+    constructor(data) {super(data);this.promised=typeof data['image/png'].then==='function';}
+  };
+  Object.defineProperty(navigator,'clipboard',{configurable:true,value:{write:async items=>{
+    if(window.clipboardError) throw new DOMException('Clipboard denied',window.clipboardError);
+    const active=navigator.userActivation.isActive, promised=items[0].promised;
+    const blob=await items[0].getType('image/png'), bitmap=await createImageBitmap(blob), canvas=document.createElement('canvas');
+    canvas.width=bitmap.width;canvas.height=bitmap.height;canvas.getContext('2d').drawImage(bitmap,0,0);bitmap.close();
+    window.clipboardImages.push({width:canvas.width,height:canvas.height,type:blob.type,active,promised,
+      pixels:Array.from(canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data)});
+  }}});
+}
+async function clipboardFixture(t,changes=[item('a')]) {
+  const v=await viewer(t,changes,undefined,mockImageClipboard);
+  const images=await v.page.evaluate(()=>Object.fromEntries([
+    ['before',4,3,'red'],['after',3,2,'blue'],['isolatedDiff',6,1,'lime'],['maskedDiff',5,2,'magenta'],
+  ].map(([side,width,height,color])=>{
+    const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
+    const ctx=canvas.getContext('2d');ctx.fillStyle=color;ctx.fillRect(0,0,width,height);
+    if(side==='before') ctx.clearRect(width-1,height-1,1,1);
+    return [side,canvas.toDataURL().split(',')[1]];
+  })));
+  v.hooks.image=({side})=>Buffer.from(images[side],'base64');
+  await v.refresh(data=>data.changes.forEach(c=>c.revision+='-pixels'));
+  await v.page.waitForFunction(()=>!document.getElementById('zoom-in').disabled && document.getElementById('before-canvas').width>=3);
+  return v;
+}
+async function copyPane(page,id) {
+  const previous=await page.evaluate(()=>clipboardImages.length);
+  await page.locator('#'+id).click({button:'right'});
+  await page.getByRole('menuitem',{name:'Copy image',exact:true}).click();
+  await page.waitForFunction(count=>clipboardImages.length===count+1,previous);
+  assert.equal(await page.locator('#message').textContent(),'Image copied.');
+  const copied=await page.evaluate(()=>clipboardImages.at(-1));
+  assert.equal(copied.type,'image/png');assert.equal(copied.active,true);assert.equal(copied.promised,true);
+  return copied;
+}
+
+test('comparison menu copies original source size and alpha despite zoom and highlighting', async t => {
+  const {page,refresh}=await clipboardFixture(t);
+  await page.locator('#zoom-percent').fill('400');await page.locator('#zoom-percent').press('Enter');
+  await page.locator('#highlight').check();
+  // A metric poll keeps the reviewed image menu and its copy action available.
+  await page.locator('#before-canvas').click({button:'right'});
+  await rememberUI(page);
+  await refresh(data=>data.changes[0].difference=ready(50));
+  await assertUI(page);
+  await page.getByRole('menuitem',{name:'Copy image',exact:true}).click();
+  await page.waitForFunction(()=>clipboardImages.length===1);
+  const before=await page.evaluate(()=>clipboardImages[0]);
+  assert.deepEqual([before.width,before.height],[4,3]);
+  assert.deepEqual(before.pixels.slice(0,4),[255,0,0,255]);
+  assert.deepEqual(before.pixels.slice(-4),[0,0,0,0]);
+  const after=await copyPane(page,'after-canvas');
+  assert.deepEqual([after.width,after.height],[3,2]);
+  assert.deepEqual(after.pixels.slice(0,4),[0,0,255,255]);
+  // Tree menus retain file actions only; copy is specific to the comparison.
+  await page.locator('.file > button').first().click({button:'right'});
+  assert.equal(await page.getByRole('menuitem',{name:'Copy image',exact:true}).count(),0);
+});
+
+test('comparison menu copies rendered Swipe, Overlay and Pixel diff pixels', async t => {
+  const {page}=await clipboardFixture(t);
+  for(const mode of ['split','overlay','diff']) {
+    await page.locator('#mode').selectOption(mode);
+    const expected=await page.locator('#combined-canvas').evaluate(canvas=>Array.from(canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data));
+    const copied=await copyPane(page,'combined-canvas');
+    assert.deepEqual([copied.width,copied.height],[4,3]);
+    assert.deepEqual(copied.pixels,expected);
+  }
+});
+
+test('copy works for new, deleted, staged and individual failure artifact images', async t => {
+  const {page,refresh}=await clipboardFixture(t,[
+    item('a'),{...item('new'),hasBefore:false,status:'?'},
+    {...item('deleted'),hasAfter:false,status:'D'},
+    {...item('staged'),hasBefore:false,status:'A',staged:true},
+  ]);
+  for(const id of ['new','staged','deleted']) {
+    await chooseZoomImage(page,id);
+    const copied=await copyPane(page,id==='deleted' ? 'before-canvas' : 'after-canvas');
+    assert.deepEqual([copied.width,copied.height],id==='deleted' ? [4,3] : [3,2]);
+  }
+  await refresh(data=>setFailures(data,[failure('failure')]));
+  await page.locator('#file-scope').selectOption('failures');
+  await page.waitForFunction(()=>!document.getElementById('zoom-in').disabled);
+  for(const [artifact,size] of [['before',[4,3]],['after',[3,2]],['isolatedDiff',[6,1]],['maskedDiff',[5,2]]]) {
+    await page.locator('#failure-view').selectOption(artifact);
+    await page.waitForFunction(()=>!document.getElementById('zoom-in').disabled);
+    const copied=await copyPane(page,'after-canvas');
+    assert.deepEqual([copied.width,copied.height],size);
+  }
+});
+
+test('copy reports clipboard failures and prevents copying an obsolete combined comparison', async t => {
+  const {page,refresh}=await clipboardFixture(t);
+  await page.evaluate(()=>window.clipboardError='NotAllowedError');
+  await page.locator('#after-canvas').click({button:'right'});
+  await page.getByRole('menuitem',{name:'Copy image',exact:true}).click();
+  await page.waitForFunction(()=>document.getElementById('message').classList.contains('error'));
+  assert.match(await page.locator('#message').textContent(),/Allow clipboard access/);
+  await page.evaluate(()=>window.clipboardError=null);
+  await page.locator('#mode').selectOption('overlay');
+  await page.locator('#combined-canvas').click({button:'right'});
+  await refresh(data=>data.changes[0].revision+='-changed');
+  await page.waitForFunction(()=>!document.getElementById('zoom-in').disabled);
+  await page.getByRole('menuitem',{name:'Copy image',exact:true}).click();
+  assert.match(await page.locator('#message').textContent(),/comparison changed/);
+  assert.equal(await page.evaluate(()=>clipboardImages.length),0);
+  await page.locator('#mode').selectOption('side');
+  await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{value:undefined}));
+  await page.locator('#after-canvas').click({button:'right'});
+  await page.getByRole('menuitem',{name:'Copy image',exact:true}).click();
+  assert.match(await page.locator('#message').textContent(),/unavailable in this browser/);
+});
 
 test('Changes follows new bounds across navigation, content updates, modes and resize, but preserves pan during repaints', async t => {
   const first=[400,300,40,50],second=[600,500,170,90],updated=[300,250,70,120];

@@ -16,8 +16,11 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible { 
 header { display:flex; align-items:center; gap:20px; padding:16px 22px; border-bottom:1px solid var(--line); }
 .brand { font-weight:700; font-size:17px; white-space:nowrap; } .brand span { color:var(--accent); } .repo { color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; }
 .brand-credit { display:inline-block; margin-left:10px; color:var(--muted); font-size:11px; font-weight:400; text-decoration:none; border-radius:3px; } .brand-credit strong { color:#4da3ff; font-weight:600; } .brand-credit:hover strong { color:#7abdff; }
-.local { color:var(--accent); font-size:12px; white-space:nowrap; } main { display:grid; grid-template-columns:320px minmax(0,1fr); min-height:0; flex:1; overflow:hidden; }
-aside { display:flex; flex-direction:column; border-right:1px solid var(--line); background:var(--panel); min-height:0; }
+.local { color:var(--accent); font-size:12px; white-space:nowrap; } main { --sidebar-width:320px; display:grid; grid-template-columns:var(--sidebar-width) 8px minmax(0,1fr); min-height:0; flex:1; overflow:hidden; }
+aside { display:flex; flex-direction:column; border-right:1px solid var(--line); background:var(--panel); min-width:0; min-height:0; }
+.sidebar-resize { cursor:ew-resize; touch-action:none; position:relative; background:var(--panel); border-right:1px solid var(--line); }
+.sidebar-resize::after { content:''; position:absolute; width:2px; height:44px; top:calc(50% - 22px); left:3px; background:#6c8987; border-radius:2px; }
+.sidebar-resize:hover,.sidebar-resize:focus-visible { background:#35504f; outline:1px solid var(--accent); outline-offset:-1px; } body.resizing-sidebar,body.resizing-sidebar * { cursor:ew-resize!important; user-select:none; }
 .filters { padding:8px 10px; display:grid; gap:6px; border-bottom:1px solid var(--line); }
 .file-search,.file-tools { display:flex; align-items:center; gap:6px; min-width:0; }
 input[type=search] { width:100%; min-width:0; height:30px; color:inherit; background:var(--bg); padding:5px 8px; border:1px solid var(--line); border-radius:5px; font-size:12px; }
@@ -105,13 +108,13 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
 #delete-failures-dialog .dialog-actions { flex-shrink:0; flex-wrap:wrap; }
 @media(max-width:850px) { .tests-body { grid-template-columns:310px minmax(0,1fr); } .test-settings { padding:10px; } }
 @media(max-width:1050px) { #test-log-hint { flex-basis:100%; } .test-output-actions { margin-left:0; } }
-@media(max-width:850px) { main { grid-template-columns:240px minmax(0,1fr); } header { padding:12px; } .local { display:none; } .toolbar,.detail { padding:10px; } .detail { flex-wrap:wrap; } #viewer { margin:0 8px 8px; } }
+@media(max-width:850px) { main { --sidebar-width:240px; } header { padding:12px; } .local { display:none; } .toolbar,.detail { padding:10px; } .detail { flex-wrap:wrap; } #viewer { margin:0 8px 8px; } }
 </style>
 </head>
 <body>
 <header><div class="brand"><span>FF Golden</span> / Changes<a class="brand-credit" href="https://aso.dev/?utm_source=ff_golden&amp;utm_medium=referral" target="_blank" rel="noopener noreferrer">by <strong>aso.dev</strong></a></div><div class="repo" id="repository">Loading repository…</div><span class="local">● Local image review</span><button id="show-tests" aria-expanded="false" aria-controls="tests-panel">Tests</button><button id="refresh">Refresh</button></header>
 <main>
-<aside aria-label="Review images">
+<aside id="sidebar" aria-label="Review images">
   <div class="filters">
     <div class="file-search"><input id="search" type="search" aria-label="Search changed images" placeholder="Search files or scenarios…"><button id="ignored-active" title="Ignored files are visible. Click to hide them." aria-label="Hide ignored files" hidden>+ ignored ×</button></div>
     <div class="file-tools"><select id="file-scope" aria-label="Image review filter"><option value="all">All changes</option><option value="unstaged">Unstaged</option><option value="staged">Staged</option><option value="failures">Failures</option></select>
@@ -127,6 +130,7 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
   <div id="git-selection" class="selection"><button id="stage-deleted" class="primary" title="Stage all non-ignored deleted images in this review, including files hidden by search or filters" hidden>Stage all deletions (0)</button><button id="stage-selected" disabled>Stage (0)</button><button id="unstage-selected" disabled>Unstage (0)</button><button id="revert-selected" class="danger" disabled>Revert (0)</button><button id="clear-selected" class="icon-button" aria-label="Clear selection" title="Clear selection" disabled>×</button><button id="selection-actions" class="icon-button" aria-label="Selection actions" title="Selection actions" aria-haspopup="menu" aria-expanded="false" aria-controls="action-menu" disabled>⋯</button></div>
   <div id="failure-selection" class="failure-selection" hidden><button id="delete-selected-failures" class="danger" disabled>Delete selected failures</button><button id="delete-failures" class="danger" disabled>Delete all failure images</button></div>
 </aside>
+<div id="sidebar-resize" class="sidebar-resize" role="separator" aria-label="Resize image tree" aria-orientation="vertical" aria-controls="sidebar" tabindex="0" title="Drag to resize · ←/→ adjust width · double-click to reset"></div>
 <section class="review" aria-label="Image comparison">
   <div class="detail"><div class="detail-text"><h1 id="filename">Image changes</h1><div id="context">Choose an image to compare</div></div><button id="previous" aria-label="Previous image" disabled>←</button><button id="next" aria-label="Next image" disabled>→</button><button id="toggle-stage" class="primary" disabled>Stage file</button><button id="revert-file" class="danger" disabled>Revert changes</button><button id="file-actions" aria-label="File actions" title="File actions · also available with right-click" aria-haspopup="menu" aria-expanded="false" aria-controls="action-menu" disabled>⋯</button></div>
   <div class="toolbar" id="comparison-toolbar">
@@ -201,7 +205,7 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
   const pendingMutations = new Set();
   let before = null, after = null, loadedRevision = null, loadingRevision = null, loadSequence = 0, loadedImageId = null, loadingAnchor = null;
   let polling = false, mutating = false, diffImage = null, diffMask = null, diffBounds = null, diffSummary = '', diffAttempted = false;
-  let zoomMode = 'fit', manualScale = 1, renderedScale = 1, renderedMode = 'side', paintKey = null, changesFitKey = null, synchronizing = false;
+  let zoomMode = 'fit', manualScale = 1, renderedScale = 1, renderedMode = 'side', paintKey = null, changesFitKey = null;
   let failureView = 'compare', loadedFailureView = 'compare';
   const artifactFlags = {before:'hasBefore',after:'hasAfter',isolatedDiff:'hasIsolatedDiff',maskedDiff:'hasMaskedDiff'};
   const artifactLabels = {before:'Expected',after:'Actual',isolatedDiff:'Isolated diff',maskedDiff:'Masked diff'};
@@ -309,6 +313,32 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
   }
   const testAxes=['device','theme','locale','name','textScale','direction','platform','highContrast'];
   const testDefaults={device:'All devices',theme:'All themes',locale:'All locales',textScale:'All',direction:'All',platform:'All',highContrast:'All'};
+  let sidebarWidth=null, sidebarResize=null;
+  try { const saved=Number(localStorage.getItem('ff-golden-sidebar-width')); if(Number.isFinite(saved) && saved>0) sidebarWidth=saved; } catch (_) {}
+  function resizeSidebar(width=sidebarWidth ?? (innerWidth<=850 ? 240 : 320),save=false) {
+    const main=document.querySelector('main'), max=Math.max(160,Math.min(720,main.clientWidth-328)), min=Math.min(200,max);
+    const actual=Math.round(Math.min(max,Math.max(min,width)));
+    main.style.setProperty('--sidebar-width',actual+'px');
+    for(const [key,value] of Object.entries({valuemin:min,valuemax:max,valuenow:actual})) $('sidebar-resize').setAttribute('aria-'+key,value);
+    if(save) {sidebarWidth=actual;try {localStorage.setItem('ff-golden-sidebar-width',String(actual));} catch (_) {}}
+  }
+  $('sidebar-resize').addEventListener('pointerdown',event=>{
+    if(event.button!==0) return; event.preventDefault();closeMenu();
+    sidebarResize={x:event.clientX,width:$('sidebar').getBoundingClientRect().width};
+    $('sidebar-resize').setPointerCapture(event.pointerId);document.body.classList.add('resizing-sidebar');
+  });
+  window.addEventListener('pointermove',event=>{if(sidebarResize) resizeSidebar(sidebarResize.width+event.clientX-sidebarResize.x,true);});
+  const endSidebarResize=()=>{sidebarResize=null;document.body.classList.remove('resizing-sidebar');};
+  for(const type of ['pointerup','pointercancel','blur']) window.addEventListener(type,endSidebarResize);
+  $('sidebar-resize').addEventListener('lostpointercapture',endSidebarResize);
+  $('sidebar-resize').addEventListener('dblclick',()=>{sidebarWidth=null;try {localStorage.removeItem('ff-golden-sidebar-width');} catch (_) {} resizeSidebar();});
+  $('sidebar-resize').addEventListener('keydown',event=>{
+    if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
+    event.preventDefault();event.stopPropagation();
+    const step=event.shiftKey ? 80 : 20, width=$('sidebar').getBoundingClientRect().width;
+    resizeSidebar(event.key==='Home' ? 0 : event.key==='End' ? innerWidth : width+(event.key==='ArrowLeft' ? -step : step),true);
+  });
+  window.addEventListener('resize',()=>resizeSidebar());resizeSidebar();
   let testsHeight=360, testsResize=null;
   try { testsHeight=Number(localStorage.getItem('ff-golden-tests-height')) || 360; } catch (_) {}
   function resizeTests(height,save=false) {
@@ -713,7 +743,7 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
     if(!showIgnored) for(const [id,item] of selected) if(item.ignored) selected.delete(id);
     const items=visible();if(!items.some(c=>c.id===activeId)) choose(items[0]?.id || null);else renderList();
   }
-  function openMenu(items,{origin,title,selection=false,folder,x,y}) {
+  function openMenu(items,{origin,title,selection=false,folder,imageCopy,x,y}) {
     closeMenu();
     if (!items.length) return;
     // Keep the reviewed revisions captured here; mutations still reject stale data.
@@ -731,6 +761,7 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
       button.addEventListener('click',()=>{closeMenu(true);run();}); menu.append(button);
     }
     function separator() { const line=document.createElement('div'); line.setAttribute('role','separator'); menu.append(line); }
+    if(imageCopy) {command('Copy image',null,imageCopy.run,imageCopy.hint);separator();}
     if(items[0]?.failure) {
       command('Delete failure images',items.reduce((sum,c)=>sum+c.artifactCount,0),()=>confirmDeleteFailures(items),'Delete only the captured artifacts',true);
       const included=items.filter(c=>!c.ignored),excluded=items.filter(c=>c.ignored);
@@ -763,7 +794,7 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
   }
   function bindContextMenu(element,getContext,origin=element) {
     function open(event,keyboard=false) {
-      const context=getContext(); if(!context.items.length) return;
+      const context=getContext(event); if(!context.items.length) return;
       event.preventDefault(); event.stopPropagation();
       openMenu(context.items,{...context,origin,...(!keyboard ? {x:event.clientX,y:event.clientY} : {})});
     }
@@ -1053,6 +1084,35 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
     }
   }
   function dimensions(image) { return image ? image.naturalWidth + ' × ' + image.naturalHeight : 'Not present'; }
+  async function copyImage(makeCanvas) {
+    try {
+      if(!navigator.clipboard?.write || typeof ClipboardItem==='undefined') throw new Error('Image copying is unavailable in this browser.');
+      const canvas=makeCanvas();
+      const png=new Promise((resolve,reject)=>canvas.toBlob(blob=>blob ? resolve(blob) : reject(new Error('Unable to encode the image.')),'image/png'));
+      // Start the clipboard write in the click handler, before awaiting PNG
+      // encoding, so browsers that require user activation can accept it.
+      await navigator.clipboard.write([new ClipboardItem({'image/png':png})]);
+      message('Image copied.');
+    } catch(error) {
+      message(error.name==='NotAllowedError' ? 'Unable to copy image. Allow clipboard access in your browser and try again.' : 'Unable to copy image: '+error.message,true);
+    }
+  }
+  function comparisonContext(event) {
+    const context=fileContext(), canvas=event.target.closest?.('.viewport')?.querySelector('canvas');
+    if(!loadedRevision || !canvas?.getClientRects().length) return context;
+    const image=canvas.id==='before-canvas' ? before : canvas.id==='after-canvas' ? after : null;
+    if(canvas.id!=='combined-canvas' && !image) return context;
+    const revision=loadedRevision, id=loadedImageId, key=paintKey;
+    return {...context,imageCopy:{
+      hint:image ? 'Copy the original image as PNG, at its full size' : 'Copy this comparison as PNG, at its full size',
+      run:()=>copyImage(()=>{
+        if(!image && (revision!==loadedRevision || id!==loadedImageId || key!==paintKey)) throw new Error('The comparison changed. Open its menu and try again.');
+        const result=document.createElement('canvas');
+        result.width=image ? image.naturalWidth : canvas.width;result.height=image ? image.naturalHeight : canvas.height;
+        result.getContext('2d').drawImage(image || canvas,0,0);return result;
+      }),
+    }};
+  }
   function sizeCanvas(canvas,width,height) { if (canvas.width !== width) canvas.width = width; if (canvas.height !== height) canvas.height = height; }
   function pixels(image,width,height) {
     const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
@@ -1094,9 +1154,15 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
   }
   function syncViewports(source) {
     if (renderedMode!=='side' || !viewports().includes(source)) return;
-    synchronizing=true;
-    for (const target of viewports()) if(target!==source) { target.scrollLeft=source.scrollLeft; target.scrollTop=source.scrollTop; }
-    requestAnimationFrame(()=>{synchronizing=false;});
+    const panes=viewports();
+    const left=Math.min(source.scrollLeft,...panes.map(pane=>pane.scrollWidth-pane.clientWidth));
+    const top=Math.min(source.scrollTop,...panes.map(pane=>pane.scrollHeight-pane.clientHeight));
+    // Matching positions do not emit scroll events; no frame-wide lock is
+    // needed, so a user scroll during a zoom or resize is never discarded.
+    for(const target of panes) {
+      if(target.scrollLeft!==left) target.scrollLeft=left;
+      if(target.scrollTop!==top) target.scrollTop=top;
+    }
   }
   function restoreAnchor(anchor) {
     if (!anchor || !loadedRevision) return;
@@ -1313,7 +1379,7 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
     button.addEventListener('click',()=>{if(menuState?.origin===button) closeMenu(true); else open();});
     button.addEventListener('keydown',event=>{if(event.key==='ArrowDown'){event.preventDefault();open();}});
   }
-  bindContextMenu($('viewer'),fileContext,$('file-actions'));
+  bindContextMenu($('viewer'),comparisonContext,$('file-actions'));
   bindContextMenu($('git-selection'),selectionContext,$('selection-actions'));
   $('action-menu').addEventListener('contextmenu',event=>event.preventDefault());
   $('action-menu').addEventListener('keydown',event=>{
@@ -1338,7 +1404,7 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
   window.addEventListener('blur',()=>closeMenu());
   for (const [source,target] of [['before-viewport','after-viewport'],['after-viewport','before-viewport']]) {
     $(source).addEventListener('scroll',()=>{
-      if(!synchronizing) syncViewports($(source));
+      syncViewports($(source));
     });
   }
   for(const viewport of document.querySelectorAll('.viewport')) {
