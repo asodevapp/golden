@@ -1,3 +1,17 @@
+## 1.1.14
+
+- Added a resizable image tree sidebar with drag and keyboard controls,
+  double-click reset, persisted width, and bounds that leave room for comparison.
+  Resizing preserves tree state and updates Fit and Changes framing.
+- Added **Copy image** to comparison context menus. Source panes copy their
+  original pixels and dimensions as PNG; Swipe, Overlay, and Pixel diff copy
+  the rendered comparison. New/deleted images and failure artifact previews
+  are supported, with clipboard errors reported in the status area.
+- Fixed synchronized side-by-side scrolling during zoom and resize by removing
+  a frame-wide lock that could discard user scrolling.
+- Added browser regressions for resizing, PNG dimensions and transparency,
+  clipboard errors, captured comparison identity, and synchronized panning.
+
 ## 1.1.13
 
 - Added `clean-goldens` to delete baseline images below exact `golden`

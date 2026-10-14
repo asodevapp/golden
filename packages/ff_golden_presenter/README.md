@@ -86,7 +86,7 @@ The equivalent manual dependency is:
 
 ```yaml
 dev_dependencies:
-  ff_golden_presenter: ^1.1.13
+  ff_golden_presenter: ^1.1.14
 ```
 
 For an unreleased repository revision, use the package Git source and
@@ -221,6 +221,19 @@ Select a file and switch between side-by-side, swipe, overlay, and pixel-diff
 views. In side-by-side, enable **Highlight changes** to overlay changed pixels on
 the new version only, keeping the old version unchanged; the intensity slider
 controls the highlight opacity.
+
+Drag the divider beside the image tree to resize the sidebar. Its width is
+remembered when reloading the same local viewer and constrained to leave space
+for the comparison.
+Focus the divider and use Left/Right arrows to adjust it (Shift for larger steps),
+or double-click to restore the default width.
+
+Right-click an image in the comparison area and choose **Copy image** to copy it
+as PNG at its original pixel size. Source panes copy the original image without
+highlight overlays or padding; Swipe, Overlay, and Pixel diff copy the rendered
+comparison. This also works for new/deleted images and failure artifact previews.
+The browser may request clipboard permission; copy errors appear in the status
+area.
 
 New Git images open in a single full-width pane marked **new**. The empty
 before pane and comparison-only controls are hidden; returning to a modified
