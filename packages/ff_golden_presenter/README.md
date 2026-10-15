@@ -86,7 +86,7 @@ The equivalent manual dependency is:
 
 ```yaml
 dev_dependencies:
-  ff_golden_presenter: ^1.1.15
+  ff_golden_presenter: ^1.1.16
 ```
 
 For an unreleased repository revision, use the package Git source and
@@ -225,6 +225,12 @@ views. In side-by-side, enable **Highlight changes** to overlay changed pixels o
 the new version only, keeping the old version unchanged; the intensity slider
 controls the highlight opacity.
 
+Enable **Near divider** in Side by side to place mobile screenshots next to the
+central divider instead of centering each in its own pane. The setting uses each
+image's own width, preserves zoom, and is remembered across files and page reloads
+in the same local viewer. Enlarged images that need horizontal scrolling use the
+usual synchronized view; fitting them again restores divider alignment.
+
 Drag the divider beside the image tree to resize the sidebar. Its width is
 remembered when reloading the same local viewer and constrained to leave space
 for the comparison.
@@ -232,9 +238,12 @@ Focus the divider and use Left/Right arrows to adjust it (Shift for larger steps
 or double-click to restore the default width.
 
 Right-click an image in the comparison area and choose **Copy image** to copy it
-as PNG at its original pixel size. Source panes copy the original image without
-highlight overlays or padding; Swipe, Overlay, and Pixel diff copy the rendered
-comparison. This also works for new/deleted images and failure artifact previews.
+as PNG at its original pixel scale. With **Highlight changes** enabled, copying
+the right pane includes the highlight at the selected intensity and uses the full
+comparison dimensions, including highlighted changes outside a smaller new image.
+Without highlighting, source panes copy the original image dimensions and pixels;
+Swipe, Overlay, and Pixel diff copy the rendered comparison. This also works for
+new/deleted images and failure artifact previews.
 The browser may request clipboard permission; copy errors appear in the status
 area.
 

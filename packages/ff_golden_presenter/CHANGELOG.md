@@ -1,3 +1,16 @@
+## 1.1.16
+
+- Added **Near divider** to place side-by-side screenshots next to the central
+  divider using each image's own width. The setting preserves zoom and is
+  remembered across files and page reloads; horizontally overflowing images
+  retain synchronized scrolling.
+- Included visible **Highlight changes** overlays and their selected intensity
+  when copying the right image. Highlighted copies use the full comparison
+  dimensions so changes outside a smaller new image remain visible; source
+  copies without highlighting retain their original dimensions and pixels.
+- Added browser coverage for divider alignment, zoom, panning, saved preferences,
+  and copied PNG pixels, intensity, extent differences, and stale comparisons.
+
 ## 1.1.15
 
 - Made all sidebar counters quick filters: **shown** returns to all Git changes,

@@ -257,6 +257,92 @@ async function panPosition(page,id='before-viewport') {
   return page.locator('#'+id).evaluate(el=>[el.scrollLeft,el.scrollTop]);
 }
 
+async function mobileFixture(t) {
+  const v=await viewer(t,[item('phone-a'),item('phone-b'),{...item('new-phone'),hasBefore:false,status:'?'}]);
+  const images=await v.page.evaluate(()=>Object.fromEntries([
+    ['before',360,800,'#263d50'],['after',390,844,'#244b43'],
+  ].map(([side,width,height,color])=>{
+    const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
+    const ctx=canvas.getContext('2d');ctx.fillStyle=color;ctx.fillRect(0,0,width,height);
+    ctx.fillStyle='#edf1f5';ctx.font='24px system-ui';ctx.fillText(side==='before' ? 'Before' : 'After',24,60);
+    ctx.fillStyle='#75dcce';ctx.fillRect(24,150,width-48,80);
+    return [side,canvas.toDataURL().split(',')[1]];
+  })));
+  v.hooks.image=({side})=>Buffer.from(images[side],'base64');
+  await v.refresh(data=>data.changes.forEach(c=>c.revision+='-mobile'));
+  await v.page.waitForFunction(()=>!document.getElementById('zoom-in').disabled && document.getElementById('after-size').textContent==='390 × 844');
+  return v;
+}
+async function mobileGap(page) {
+  return page.evaluate(()=>{
+    const before=document.getElementById('before-canvas'),after=document.getElementById('after-canvas');
+    const scale=parseFloat(before.style.width)/before.width;
+    return after.getBoundingClientRect().left-before.getBoundingClientRect().left-360*scale;
+  });
+}
+
+test('Near divider brings unequal-width mobile images together without changing zoom', async t => {
+  const {page,refresh}=await mobileFixture(t);
+  const zoom=await page.locator('#zoom-percent').inputValue();
+  assert.ok(await mobileGap(page)>100);
+  await page.getByLabel('Align images to divider').check();
+  assert.ok(Math.abs(await mobileGap(page)-1)<1);
+  assert.equal(await page.locator('#zoom-percent').inputValue(),zoom);
+  await page.locator('#zoom-width').click();
+  assert.ok(Math.abs(await mobileGap(page)-1)<1);
+  await page.locator('#zoom-fit').click();
+  await refresh(data=>data.changes[0].difference=ready(15));
+  assert.ok(Math.abs(await mobileGap(page)-1)<1);
+  await chooseZoomImage(page,'phone-b');
+  assert.equal(await page.getByLabel('Align images to divider').isChecked(),true);
+  assert.ok(Math.abs(await mobileGap(page)-1)<1);
+  await page.locator('#sidebar-resize').press('Shift+ArrowRight');
+  await page.waitForFunction(()=>document.getElementById('sidebar').getBoundingClientRect().width===400);
+  assert.ok(Math.abs(await mobileGap(page)-1)<1);
+  await page.getByLabel('Align images to divider').uncheck();
+  assert.ok(await mobileGap(page)>100);
+});
+
+test('Near divider preserves manual pan, uses normal scrolling when zoomed, and returns with Fit', async t => {
+  const {page}=await mobileFixture(t);
+  await page.locator('#zoom-actual').click();
+  await page.locator('#before-viewport').evaluate(el=>{el.scrollTop=200;el.dispatchEvent(new Event('scroll'));});
+  await page.getByLabel('Align images to divider').check();
+  assert.equal(await page.locator('#zoom-percent').inputValue(),'100');
+  assert.equal((await panPosition(page))[1],200);
+  assert.deepEqual(await panPosition(page,'after-viewport'),await panPosition(page));
+  assert.ok(Math.abs(await mobileGap(page)-1)<1);
+  await page.locator('#zoom-percent').fill('200');await page.locator('#zoom-percent').press('Enter');
+  assert.equal(await page.locator('#side').evaluate(el=>el.classList.contains('near-divider')),false);
+  assert.equal(await page.getByLabel('Align images to divider').isChecked(),true);
+  await page.locator('#after-viewport').evaluate(el=>{el.scrollLeft=80;el.scrollTop=180;el.dispatchEvent(new Event('scroll'));});
+  assert.deepEqual(await panPosition(page),await panPosition(page,'after-viewport'));
+  await page.locator('#zoom-fit').click();
+  assert.ok(Math.abs(await mobileGap(page)-1)<1);
+});
+
+test('Near divider is remembered but leaves combined and new-image previews centered', async t => {
+  const {page}=await mobileFixture(t);
+  await page.getByLabel('Align images to divider').check();
+  await page.locator('#mode').selectOption('overlay');
+  assert.equal(await page.locator('#near-divider-control').isVisible(),false);
+  await chooseZoomImage(page,'new-phone');
+  assert.equal(await page.locator('#side').evaluate(el=>el.classList.contains('near-divider')),false);
+  const offset=await page.evaluate(()=>{
+    const canvas=document.getElementById('after-canvas').getBoundingClientRect(),viewport=document.getElementById('after-viewport').getBoundingClientRect();
+    return Math.abs(canvas.left+canvas.width/2-viewport.left-viewport.width/2);
+  });
+  assert.ok(offset<1);
+  await chooseZoomImage(page,'phone-a');
+  assert.equal(await page.locator('#mode').inputValue(),'overlay');
+  await page.locator('#mode').selectOption('side');
+  assert.ok(Math.abs(await mobileGap(page)-1)<1);
+  await page.reload();
+  await page.waitForFunction(()=>!document.getElementById('zoom-in').disabled && document.getElementById('after-size').textContent==='390 × 844');
+  assert.equal(await page.getByLabel('Align images to divider').isChecked(),true);
+  assert.ok(Math.abs(await mobileGap(page)-1)<1);
+});
+
 test('sidebar drag preserves the tree and Changes framing, remembers width, and clamps it on resize', async t => {
   const bounds=[400,300,180,50];
   const {page,refresh}=await zoomFixture(t,[{id:'a',bounds},{id:'b'}]);
@@ -364,7 +450,7 @@ async function copyPane(page,id) {
   return copied;
 }
 
-test('comparison menu copies original source size and alpha despite zoom and highlighting', async t => {
+test('comparison menu copies left source and highlighted right pixels at the selected intensity, without CSS zoom', async t => {
   const {page,refresh}=await clipboardFixture(t);
   await page.locator('#zoom-percent').fill('400');await page.locator('#zoom-percent').press('Enter');
   await page.locator('#highlight').check();
@@ -379,9 +465,22 @@ test('comparison menu copies original source size and alpha despite zoom and hig
   assert.deepEqual([before.width,before.height],[4,3]);
   assert.deepEqual(before.pixels.slice(0,4),[255,0,0,255]);
   assert.deepEqual(before.pixels.slice(-4),[0,0,0,0]);
-  const after=await copyPane(page,'after-canvas');
-  assert.deepEqual([after.width,after.height],[3,2]);
-  assert.deepEqual(after.pixels.slice(0,4),[0,0,255,255]);
+  const rendered=()=>page.locator('#after-canvas').evaluate(canvas=>Array.from(canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data));
+  const expected=await rendered(), after=await copyPane(page,'after-canvas');
+  assert.deepEqual([after.width,after.height],[4,3]);
+  assert.deepEqual(after.pixels,expected);
+  assert.notDeepEqual(after.pixels.slice(0,4),[0,0,255,255]);
+  // Extent differences beyond the 3x2 actual image remain in the copied 4x3 comparison.
+  assert.ok(after.pixels.at(-1)>0);
+  await page.locator('#highlight-strength').fill('75');
+  await page.locator('#highlight-strength').dispatchEvent('input');
+  const stronger=await copyPane(page,'after-canvas');
+  assert.deepEqual(stronger.pixels,await rendered());
+  assert.notDeepEqual(stronger.pixels,after.pixels);
+  await page.locator('#highlight').uncheck();
+  const original=await copyPane(page,'after-canvas');
+  assert.deepEqual([original.width,original.height],[3,2]);
+  assert.deepEqual(original.pixels.slice(0,4),[0,0,255,255]);
   // Tree menus retain file actions only; copy is specific to the comparison.
   await page.locator('.file > button').first().click({button:'right'});
   assert.equal(await page.getByRole('menuitem',{name:'Copy image',exact:true}).count(),0);
@@ -404,6 +503,7 @@ test('copy works for new, deleted, staged and individual failure artifact images
     {...item('deleted'),hasAfter:false,status:'D'},
     {...item('staged'),hasBefore:false,status:'A',staged:true},
   ]);
+  await page.locator('#highlight').check();
   for(const id of ['new','staged','deleted']) {
     await chooseZoomImage(page,id);
     const copied=await copyPane(page,id==='deleted' ? 'before-canvas' : 'after-canvas');
@@ -436,6 +536,13 @@ test('copy reports clipboard failures and prevents copying an obsolete combined 
   assert.match(await page.locator('#message').textContent(),/comparison changed/);
   assert.equal(await page.evaluate(()=>clipboardImages.length),0);
   await page.locator('#mode').selectOption('side');
+  await page.locator('#highlight').check();
+  await page.locator('#after-canvas').click({button:'right'});
+  await refresh(data=>data.changes[0].revision+='-highlighted-change');
+  await page.waitForFunction(()=>!document.getElementById('zoom-in').disabled);
+  await page.getByRole('menuitem',{name:'Copy image',exact:true}).click();
+  assert.match(await page.locator('#message').textContent(),/comparison changed/);
+  assert.equal(await page.evaluate(()=>clipboardImages.length),0);
   await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{value:undefined}));
   await page.locator('#after-canvas').click({button:'right'});
   await page.getByRole('menuitem',{name:'Copy image',exact:true}).click();

@@ -79,6 +79,10 @@ input[type=search] { width:100%; min-width:0; height:30px; color:inherit; backgr
 .pane-source { display:flex; align-items:center; gap:8px; } .new-image-badge { padding:1px 7px; border:1px solid #397f69; border-radius:4px; background:#213d3b; color:#a5f4d4; font-size:10px; font-weight:650; }
 .pane-label { padding:9px 12px; color:var(--muted); font-size:11px; background:var(--panel); display:flex; justify-content:space-between; }
 .viewport { flex:1; min-height:0; overflow:auto; padding:16px; overscroll-behavior:contain; } .viewport canvas { display:block; max-width:none; margin-inline:auto; box-shadow:0 0 0 1px #39414b; background-color:#20262c; background-image:conic-gradient(#2b333c 25%, transparent 0 50%, #2b333c 0 75%, transparent 0); background-size:16px 16px; cursor:grab; touch-action:none; user-select:none; }
+.image-surface { margin-inline:auto; } .image-surface canvas { margin:0; }
+.panels.near-divider #before-viewport { padding-right:0; } .panels.near-divider #after-viewport { padding-left:0; }
+.panels.near-divider #before-viewport .image-surface { margin-left:auto; margin-right:0; } .panels.near-divider #after-viewport .image-surface { margin-left:0; margin-right:auto; }
+.panels.near-divider .image-surface { overflow:hidden; box-shadow:0 0 0 1px #39414b; }
 .viewport.dragging canvas { cursor:grabbing; }
 #combined { height:100%; display:flex; flex-direction:column; } #combined .viewport { min-width:0; }
 footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); color:var(--muted); font-size:11px; display:flex; align-items:center; gap:20px; } #connection { flex-shrink:0; margin-left:auto; white-space:nowrap; }
@@ -139,6 +143,7 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
     <label id="mode-control">View <select id="mode"><option value="side">Side by side</option><option value="split">Swipe</option><option value="overlay">Overlay</option><option value="diff">Pixel diff</option></select></label>
     <label id="highlight-control" class="highlight-control" title="Highlight changed pixels on the new version only"><input id="highlight" type="checkbox">Highlight changes</label>
     <label id="highlight-strength-control" class="highlight-control" hidden>Intensity <input id="highlight-strength" type="range" min="10" max="100" value="55" aria-label="Highlight intensity"></label>
+    <label id="near-divider-control" class="highlight-control" title="Place the two images next to the central divider when they fit horizontally"><input id="near-divider" type="checkbox" aria-label="Align images to divider">Near divider</label>
     <label id="mix-control" hidden><span id="mix-label">Position</span><input id="mix" type="range" min="0" max="100" value="50" aria-label="Comparison mix"><span id="mix-value">50%</span></label>
   </div>
   <div class="zoom-bar" role="group" aria-label="Image zoom">
@@ -150,10 +155,10 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
   <div id="viewer">
     <div id="empty"><strong>No image selected</strong><span>Changes appear here automatically.</span></div>
     <div id="side" class="panels" hidden>
-      <div class="pane" id="before-pane"><div class="pane-label"><span id="before-label">Before</span><span id="before-size"></span></div><div class="viewport" id="before-viewport"><canvas id="before-canvas"></canvas></div></div>
-      <div class="pane" id="after-pane"><div class="pane-label"><span class="pane-source"><span id="after-label">After</span><span id="new-image-badge" class="new-image-badge" hidden>new</span></span><span id="after-size"></span></div><div class="viewport" id="after-viewport"><canvas id="after-canvas"></canvas></div></div>
+      <div class="pane" id="before-pane"><div class="pane-label"><span id="before-label">Before</span><span id="before-size"></span></div><div class="viewport" id="before-viewport"><div class="image-surface"><canvas id="before-canvas"></canvas></div></div></div>
+      <div class="pane" id="after-pane"><div class="pane-label"><span class="pane-source"><span id="after-label">After</span><span id="new-image-badge" class="new-image-badge" hidden>new</span></span><span id="after-size"></span></div><div class="viewport" id="after-viewport"><div class="image-surface"><canvas id="after-canvas"></canvas></div></div></div>
     </div>
-    <div id="combined" hidden><div class="pane-label"><span id="combined-label">Before / After</span><span>Top-left aligned · original pixels</span></div><div class="viewport" id="combined-viewport"><canvas id="combined-canvas"></canvas></div></div>
+    <div id="combined" hidden><div class="pane-label"><span id="combined-label">Before / After</span><span>Top-left aligned · original pixels</span></div><div class="viewport" id="combined-viewport"><div class="image-surface"><canvas id="combined-canvas"></canvas></div></div></div>
   </div>
 </section>
 </main>
@@ -208,6 +213,7 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
   let polling = false, mutating = false, diffImage = null, diffMask = null, diffBounds = null, diffSummary = '', diffAttempted = false;
   let zoomMode = 'fit', manualScale = 1, renderedScale = 1, renderedMode = 'side', paintKey = null, changesFitKey = null;
   let failureView = 'compare', loadedFailureView = 'compare';
+  try { $('near-divider').checked=localStorage.getItem('ff-golden-near-divider')==='true'; } catch (_) {}
   const artifactFlags = {before:'hasBefore',after:'hasAfter',isolatedDiff:'hasIsolatedDiff',maskedDiff:'hasMaskedDiff'};
   const artifactLabels = {before:'Expected',after:'Actual',isolatedDiff:'Isolated diff',maskedDiff:'Masked diff'};
   const reviewItems = () => scope === 'failures' ? failures : changes;
@@ -667,7 +673,7 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
       ? 'Generated failure · '+failureDetail(item)
       : (item.staged ? 'Staged · HEAD → Index' : 'Unstaged · Index → Working tree') + (item.ignored ? ' · Ignored by .golden_ignore' : '');
     $('previous').disabled = $('next').disabled = visible().length < 2;
-    document.querySelectorAll('.zoom-bar button, #zoom-percent, #highlight, #highlight-strength').forEach(control => { control.disabled = !loadedRevision; });
+    document.querySelectorAll('.zoom-bar button, #zoom-percent, #highlight, #highlight-strength, #near-divider').forEach(control => { control.disabled = !loadedRevision; });
     syncSelectionControls();
   }
   function syncSelectionControls() {
@@ -1103,14 +1109,15 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
     if(!loadedRevision || !canvas?.getClientRects().length) return context;
     const image=canvas.id==='before-canvas' ? before : canvas.id==='after-canvas' ? after : null;
     if(canvas.id!=='combined-canvas' && !image) return context;
+    const painted=!image || canvas.id==='after-canvas' && !$('highlight-control').hidden && $('highlight').checked;
     const revision=loadedRevision, id=loadedImageId, key=paintKey;
     return {...context,imageCopy:{
-      hint:image ? 'Copy the original image as PNG, at its full size' : 'Copy this comparison as PNG, at its full size',
+      hint:painted ? 'Copy this comparison as PNG, including visible highlights' : 'Copy the original image as PNG, at its full size',
       run:()=>copyImage(()=>{
-        if(!image && (revision!==loadedRevision || id!==loadedImageId || key!==paintKey)) throw new Error('The comparison changed. Open its menu and try again.');
+        if(painted && (revision!==loadedRevision || id!==loadedImageId || key!==paintKey)) throw new Error('The comparison changed. Open its menu and try again.');
         const result=document.createElement('canvas');
-        result.width=image ? image.naturalWidth : canvas.width;result.height=image ? image.naturalHeight : canvas.height;
-        result.getContext('2d').drawImage(image || canvas,0,0);return result;
+        result.width=painted ? canvas.width : image.naturalWidth;result.height=painted ? canvas.height : image.naturalHeight;
+        result.getContext('2d').drawImage(painted ? canvas : image,0,0);return result;
       }),
     }};
   }
@@ -1197,6 +1204,7 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
     $('before-pane').hidden=single; $('side').classList.toggle('single-image',single); $('new-image-badge').hidden=!added;
     $('comparison-toolbar').hidden=added;
     $('mode-control').hidden=single; $('highlight-control').hidden = !side || single; $('highlight-strength-control').hidden = !highlight;
+    $('near-divider-control').hidden=!side || single || !before || !after;
     $('zoom-changes').hidden=single;
     $('mix-control').hidden = mode !== 'split' && mode !== 'overlay';
     $('mix-label').textContent = mode === 'split' ? 'Position' : 'Opacity'; $('mix-value').textContent = $('mix').value + '%';
@@ -1207,12 +1215,17 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
     const scale = zoomMode==='manual' ? manualScale : Math.max(.01,bounds
       ? Math.min((viewport.clientWidth-48)/(bounds.width+48),(viewport.clientHeight-48)/(bounds.height+48),8)
       : zoomMode==='width' ? Math.min((viewport.clientWidth-32)/width,8) : fit);
+    const nearDivider=side && !single && before && after && $('near-divider').checked &&
+      viewports(mode).every(pane=>width*scale<=pane.clientWidth-32+.01);
+    $('side').classList.toggle('near-divider',!!nearDivider);
     const nextPaintKey=[loadedRevision,loadedFailureView,mode,mix,highlight,intensity,mode==='split' ? scale : ''].join('|');
     const repaint=paintKey!==nextPaintKey;
     if ((mode==='diff' || highlight) && repaint) buildDiff(width,height);
     const canvases = viewports(mode).map(viewport=>viewport.querySelector('canvas'));
     canvases.forEach(canvas => {
       sizeCanvas(canvas,width,height); canvas.style.width = width*scale + 'px'; canvas.style.height = height*scale + 'px';
+      const image=canvas.id==='before-canvas' ? before : after;
+      canvas.parentElement.style.width=(nearDivider ? image.naturalWidth : width)*scale+'px';
       canvas.style.imageRendering = scale>=1 ? 'pixelated' : 'auto';
       if (!repaint) return;
       const ctx = canvas.getContext('2d'); ctx.clearRect(0,0,width,height);
@@ -1239,7 +1252,7 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
     // Only changed geometry reframes the view. Highlight and other repaints
     // preserve manual panning while Changes remains the preferred zoom mode.
     const fitKey=zoomMode==='changes' ? JSON.stringify([loadedImageId,loadedRevision,loadedFailureView,mode,single,
-      viewport.clientWidth,viewport.clientHeight,width,height,bounds]) : null;
+      viewport.clientWidth,viewport.clientHeight,width,height,bounds,!!nearDivider]) : null;
     if(fitKey && fitKey!==changesFitKey) {
       if(bounds) restoreAnchor({viewport,x:bounds.x+bounds.width/2,y:bounds.y+bounds.height/2,fx:.5,fy:.5});
       else {viewport.scrollLeft=0;viewport.scrollTop=0;syncViewports(viewport);}
@@ -1352,6 +1365,10 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
   }));
   $('mode').addEventListener('change',renderPreservingPosition); $('mix').addEventListener('input',render);
   $('highlight').addEventListener('change',renderPreservingPosition); $('highlight-strength').addEventListener('input',render);
+  $('near-divider').addEventListener('change',()=>{
+    try {localStorage.setItem('ff-golden-near-divider',String($('near-divider').checked));} catch (_) {}
+    renderPreservingPosition();
+  });
   $('zoom-in').addEventListener('click',()=>setZoom(renderedScale*1.25)); $('zoom-out').addEventListener('click',()=>setZoom(renderedScale/1.25));
   $('zoom-fit').addEventListener('click',()=>fitZoom()); $('zoom-width').addEventListener('click',()=>fitZoom('width')); $('zoom-actual').addEventListener('click',()=>setZoom(1));
   $('zoom-changes').addEventListener('click',zoomToChanges);
