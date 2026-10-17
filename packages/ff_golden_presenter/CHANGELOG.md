@@ -1,3 +1,13 @@
+## 1.1.17
+
+- Freed space for file and folder names in the diff tree and list by showing
+  quick actions in place of the difference percentage on hover or keyboard
+  focus. Names and row geometry stay fixed while the actions appear.
+- Kept percentages visible after pointer selection and left actions visible
+  beside percentages on devices without hover.
+- Added browser regressions for compact and wide sidebars, tree/list layouts,
+  keyboard and touch actions, and file, folder, and group action scopes.
+
 ## 1.1.16
 
 - Added **Near divider** to place side-by-side screenshots next to the central

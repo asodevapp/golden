@@ -86,7 +86,7 @@ The equivalent manual dependency is:
 
 ```yaml
 dev_dependencies:
-  ff_golden_presenter: ^1.1.16
+  ff_golden_presenter: ^1.1.17
 ```
 
 For an unreleased repository revision, use the package Git source and
@@ -236,6 +236,11 @@ remembered when reloading the same local viewer and constrained to leave space
 for the comparison.
 Focus the divider and use Left/Right arrows to adjust it (Shift for larger steps),
 or double-click to restore the default width.
+
+Tree and list rows give file names the full available width. Quick actions appear
+in place of the difference percentage on hover or keyboard focus, without moving
+the name or changing the row height. On devices without hover, actions stay visible
+beside the percentage.
 
 Right-click an image in the comparison area and choose **Copy image** to copy it
 as PNG at its original pixel scale. With **Highlight changes** enabled, copying

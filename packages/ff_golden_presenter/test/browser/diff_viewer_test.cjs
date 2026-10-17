@@ -14,8 +14,8 @@ let browser;
 before(async () => {browser = await chromium.launch({headless:true, ...(process.env.CHROME_PATH ? {executablePath:process.env.CHROME_PATH} : {})});});
 after(async () => {await browser?.close();});
 
-async function viewer(t, changes=[item('a'),item('b'),item('c','screens/beta')], run={id:null,active:false,cursor:0}, initScript) {
-  const context = await browser.newContext({viewport:{width:1280,height:800}});
+async function viewer(t, changes=[item('a'),item('b'),item('c','screens/beta')], run={id:null,active:false,cursor:0}, initScript, contextOptions={}) {
+  const context = await browser.newContext({viewport:{width:1280,height:800},...contextOptions});
   t.after(() => context.close());
   const page = await context.newPage(), errors=[], actions=[];
   if(initScript) await page.addInitScript(initScript);
@@ -83,6 +83,90 @@ async function assertUI(page, unchangedTree=true) {
     {menuOpen:true,sameMenu:true,focus:true,row:true,folder:true,top:true});
   if(unchangedTree) assert.equal(await page.evaluate(()=>treeChanges.length),0);
 }
+
+async function rowGeometry(row) {
+  return row.evaluate(element=>{
+    const rect=node=>{const {x,y,width,height}=node.getBoundingClientRect();return {x,y,width,height};};
+    return {row:rect(element),name:rect(element.querySelector('.file-name,.folder-name') || element.firstElementChild),
+      metric:rect(element.querySelector('.difference-value')),actions:rect(element.querySelector('.row-actions')),
+      main:rect(element.matches('.file') ? element.querySelector(':scope > button') : element),
+      actionsVisible:getComputedStyle(element.querySelector('.row-actions')).opacity==='1',
+      metricVisible:getComputedStyle(element.querySelector('.difference-value')).opacity==='1'};
+  });
+}
+
+test('quick actions share the metric slot without reserving space or moving file names in tree and list', async t => {
+  const {page}=await viewer(t,[{...item('iPhone5S[dark]'),difference:ready(100)},item('iphone11[light]')]);
+  const row=page.locator('.file').first();
+  for(const width of [200,320,500]) {
+    const handle=page.locator('#sidebar-resize'), box=await handle.boundingBox();
+    const current=await page.locator('#sidebar').evaluate(el=>el.getBoundingClientRect().width);
+    await page.mouse.move(box.x+box.width/2,box.y+100);await page.mouse.down();
+    await page.mouse.move(box.x+box.width/2+width-current,box.y+100);await page.mouse.up();
+    for(const layout of ['Tree','List']) {
+      await page.getByRole('button',{name:layout,exact:true}).click();
+      await page.locator('header').hover();
+      const idle=await rowGeometry(row);
+      assert.equal(idle.actionsVisible,false);assert.equal(idle.metricVisible,true);
+      assert.ok(idle.row.x+idle.row.width-idle.main.x-idle.main.width<=8,'No empty action column after the file button');
+      assert.ok(idle.actions.x<idle.metric.x+idle.metric.width && idle.actions.x+idle.actions.width>idle.metric.x,'Actions reuse the metric area');
+      await row.hover();
+      const hover=await rowGeometry(row);
+      assert.equal(hover.actionsVisible,true);assert.equal(hover.metricVisible,false);
+      for(const part of ['row','main','name','metric']) assert.deepEqual(hover[part],idle[part],part+' must not move on hover');
+      assert.equal(await page.locator('.file').nth(1).locator('.row-actions').evaluate(el=>getComputedStyle(el).opacity),'0');
+      await page.locator('header').hover();
+      assert.deepEqual(await rowGeometry(row),idle);
+    }
+  }
+});
+
+test('keyboard reveals quick actions and pointer selection restores metrics; folder actions keep their scope', async t => {
+  const {page,actions,refresh}=await viewer(t,[{...item('a'),difference:ready(10)},{...item('b'),difference:ready(20)},item('outside','other')]);
+  const row=page.locator('.file').filter({has:page.locator('button[title="screens/alpha/a.png"]')}),main=row.locator(':scope > button');
+  await main.click();await page.locator('header').hover();
+  assert.equal((await rowGeometry(row)).metricVisible,true,'Mouse selection must not leave metrics hidden');
+  await main.press('Tab');
+  assert.equal(await row.getByRole('button',{name:'Stage images',exact:true}).evaluate(el=>el===document.activeElement && el.matches(':focus-visible')),true);
+  assert.equal((await rowGeometry(row)).actionsVisible,true);
+  await Promise.all([page.waitForResponse(r=>new URL(r.url()).pathname==='/api/stage'),page.keyboard.press('Enter')]);
+  assert.deepEqual(actions[0].revisions,{a:'a-v1'});
+  await page.keyboard.press('Tab');await page.keyboard.press('Enter');
+  assert.equal(await page.locator('#revert-dialog').isVisible(),true);
+  await page.locator('#cancel-revert').click();
+  const folder=page.locator('summary[title="screens/alpha"]');
+  await page.locator('header').hover();
+  const idle=await rowGeometry(folder);
+  await folder.hover();
+  const hovered=await rowGeometry(folder);
+  assert.deepEqual(hovered.name,idle.name);assert.deepEqual(hovered.row,idle.row);
+  assert.equal(hovered.actionsVisible,true);assert.equal(hovered.metricVisible,false);
+  await Promise.all([page.waitForResponse(r=>new URL(r.url()).pathname==='/api/stage'),folder.getByRole('button',{name:'Stage images',exact:true}).click()]);
+  assert.deepEqual(actions[1].revisions,{a:'a-v1',b:'b-v1'});
+  assert.equal(await folder.locator('..').getAttribute('open'),'');
+  await page.locator('header').hover();
+  const group=page.locator('.group-title'),groupBox=await group.boundingBox();
+  await group.hover();
+  assert.deepEqual(await group.boundingBox(),groupBox);
+  await Promise.all([page.waitForResponse(r=>new URL(r.url()).pathname==='/api/stage'),group.getByRole('button',{name:'Stage images',exact:true}).click()]);
+  assert.deepEqual(actions[2].revisions,{a:'a-v1',b:'b-v1',outside:'outside-v1'});
+  await refresh(data=>{data.changes[0].staged=true;});
+  const staged=page.locator('.file').filter({has:page.locator('button[title="screens/alpha/a.png"]')});
+  await staged.hover();
+  assert.equal(await staged.getByRole('button',{name:'Unstage images',exact:true}).isVisible(),true);
+  assert.equal(await staged.getByRole('button',{name:'Revert images',exact:true}).count(),0);
+});
+
+test('devices without hover show actions alongside readable metrics and support touch', async t => {
+  const {page,actions}=await viewer(t,[{...item('phone'),difference:ready(100)}],undefined,undefined,{hasTouch:true,isMobile:true});
+  assert.equal(await page.evaluate(()=>matchMedia('(hover:none)').matches),true);
+  const row=page.locator('.file'),geometry=await rowGeometry(row);
+  assert.equal(geometry.actionsVisible,true);assert.equal(geometry.metricVisible,true);
+  assert.ok(geometry.actions.x>=geometry.metric.x+geometry.metric.width,'Touch actions do not cover metrics');
+  await Promise.all([page.waitForResponse(r=>new URL(r.url()).pathname==='/api/stage'),row.getByRole('button',{name:'Stage images',exact:true}).tap()]);
+  assert.deepEqual(actions[0].revisions,{phone:'phone-v1'});
+  assert.equal(await page.locator('#files').evaluate(el=>el.scrollWidth<=el.clientWidth),true);
+});
 
 test('metric and failure-status polls preserve file menu, focus, selection and tree', async t => {
   const v=await viewer(t), {page}=v;

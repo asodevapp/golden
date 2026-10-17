@@ -33,13 +33,13 @@ input[type=search] { width:100%; min-width:0; height:30px; color:inherit; backgr
 .file-count button { max-width:100%; padding:1px 2px; font-size:10px; color:inherit; background:transparent; border-color:transparent; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .file-count button[aria-pressed=true] { color:var(--accent); border-color:#397f69; background:#213d3b; } .file-count button[aria-pressed=true] strong { color:inherit; }
 #show-failures { color:#f0a8cc; } #show-failures[aria-pressed=true] { border-color:#87516d; background:#392a35; }
 .status-filter { width:100%; min-width:0; height:28px; padding:3px 6px; font-size:11px; } .failure-summary { color:var(--muted); font-size:11px; padding:2px 1px; }
-#files { flex:1; overflow:auto; padding:6px 8px 16px; } .group-title { margin:14px 8px 6px; display:flex; justify-content:space-between; color:var(--muted); font-size:11px; font-weight:650; letter-spacing:.08em; text-transform:uppercase; }
-.folder { margin:4px 0; } .folder summary { display:flex; align-items:center; gap:6px; padding:7px 5px; cursor:pointer; color:#bdcbd7; font-size:12px; list-style:none; }
+#files { flex:1; overflow:auto; padding:6px 8px 16px; } .group-title { position:relative; min-height:28px; margin:14px 8px 6px; display:flex; align-items:center; justify-content:space-between; color:var(--muted); font-size:11px; font-weight:650; letter-spacing:.08em; text-transform:uppercase; }
+.folder { margin:4px 0; } .folder summary { position:relative; --action-inset:5px; display:flex; align-items:center; gap:6px; padding:7px 5px; cursor:pointer; color:#bdcbd7; font-size:12px; list-style:none; }
 .folder summary::-webkit-details-marker { display:none; } .folder summary::before { content:'▸'; width:10px; flex-shrink:0; color:var(--muted); } .folder[open]>summary::before { content:'▾'; }
 .folder-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .folder-count { color:var(--muted); font-size:10px; }
 .difference-value { min-width:48px; flex-shrink:0; color:#9fd9d1; font:600 10px ui-monospace,monospace; text-align:right; white-space:nowrap; } .difference-value.pending,.difference-value.unavailable { color:var(--muted); }
-.folder input { accent-color:var(--accent); } .folder-children { margin-left:12px; padding-left:6px; border-left:1px solid var(--line); } .folder-children .file { padding-right:2px; }
-.file { display:flex; align-items:center; gap:8px; padding:3px 7px; border-radius:6px; margin:2px 0; } .file.active { background:#283b41; } .file:hover { background:#242f38; }
+.folder input { accent-color:var(--accent); } .folder-children { margin-left:12px; padding-left:6px; border-left:1px solid var(--line); } .folder-children .file { --action-inset:2px; padding-right:2px; }
+.file { position:relative; --action-inset:7px; --row-background:var(--panel); display:flex; align-items:center; gap:8px; padding:3px 7px; border-radius:6px; margin:2px 0; background:var(--row-background); } .file.active { --row-background:#283b41; } .file:hover { --row-background:#242f38; }
 .file input { accent-color:var(--accent); flex-shrink:0; } .file button { flex:1; min-width:0; background:none; border:0; text-align:left; padding:7px 0; display:flex; gap:9px; align-items:center; }
 .file-name { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; } .file-dir { display:block; color:var(--muted); font-size:10px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .file-text { min-width:0; flex:1; } .badge { font:700 11px ui-monospace,monospace; color:#edc984; border:1px solid #64563b; border-radius:4px; width:22px; text-align:center; padding:2px; }
@@ -52,9 +52,14 @@ input[type=search] { width:100%; min-width:0; height:30px; color:inherit; backgr
 .selection #stage-deleted { grid-column:1/-1; }
 .selection .icon-button { padding:4px; font-size:17px; } .context-target { outline:1px solid var(--accent); outline-offset:-1px; border-radius:6px; }
 .failure-selection { flex-shrink:0; border-top:1px solid var(--line); padding:10px; } .failure-selection button { width:100%; font-size:12px; }
-.failure-selection { display:grid; gap:6px; } .row-actions { display:flex; gap:2px; flex-shrink:0; opacity:0; pointer-events:none; }
-.file:hover .row-actions,.file:focus-within .row-actions,summary:hover .row-actions,summary:focus-within .row-actions,.group-title:hover .row-actions,.group-title:focus-within .row-actions { opacity:1; pointer-events:auto; }
-.row-actions button,.file .row-actions button { flex:none; display:block; width:24px; padding:2px; text-align:center; font-size:16px; }
+.failure-selection { display:grid; gap:6px; }
+/* Share the metric slot instead of reserving an invisible action column. */
+.row-actions { position:absolute; right:var(--action-inset,0px); top:50%; transform:translateY(-50%); z-index:1; display:flex; justify-content:flex-end; gap:2px; min-width:50px; flex-shrink:0; background:var(--row-background,var(--panel)); box-shadow:-5px 0 6px var(--row-background,var(--panel)); border-radius:4px; opacity:0; pointer-events:none; }
+:is(.file,summary,.group-title):is(:hover,:has(:focus-visible))>.row-actions { opacity:1; pointer-events:auto; }
+.file:is(:hover,:has(:focus-visible))>button>.difference-value,summary:is(:hover,:has(:focus-visible))>.difference-value { opacity:0; }
+.row-actions button,.file .row-actions button { flex:none; display:block; width:24px; height:28px; padding:2px; border:1px solid transparent; border-radius:4px; background:transparent; text-align:center; font-size:16px; line-height:1; }
+.row-actions button:hover:not(:disabled) { background:#30434a; border-color:#526573; } .row-actions button:focus-visible { outline-offset:-2px; }
+@media(hover:none) { .row-actions { position:static; transform:none; min-width:0; opacity:1; pointer-events:auto; box-shadow:none; background:transparent; } .file:is(:hover,:has(:focus-visible))>button>.difference-value,summary:is(:hover,:has(:focus-visible))>.difference-value { opacity:1; } }
 #action-progress { flex-shrink:0; padding:0 6px; color:var(--accent); font-size:12px; line-height:18px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-variant-numeric:tabular-nums; }
 .danger { color:#ffc2c2; border-color:#744747; background:#482a2e; } button.danger:hover:not(:disabled) { border-color:#e78383; }
 .context-menu { position:fixed; z-index:10; width:250px; max-width:calc(100vw - 16px); max-height:calc(100vh - 16px); overflow:auto; padding:6px; border:1px solid #46525f; border-radius:10px; background:#20272f; box-shadow:0 12px 36px #0008; }
