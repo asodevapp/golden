@@ -53,6 +53,9 @@ input[type=search] { width:100%; min-width:0; height:30px; color:inherit; backgr
 .selection .icon-button { padding:4px; font-size:17px; } .context-target { outline:1px solid var(--accent); outline-offset:-1px; border-radius:6px; }
 .failure-selection { flex-shrink:0; border-top:1px solid var(--line); padding:10px; } .failure-selection button { width:100%; font-size:12px; }
 .failure-selection { display:grid; gap:6px; }
+#delete-failures { height:52px; display:grid; align-content:center; gap:2px; }
+#delete-failures span,#delete-failures small { display:block; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#delete-failures small { font-size:10px; opacity:.8; }
 /* Share the metric slot instead of reserving an invisible action column. */
 .row-actions { position:absolute; right:var(--action-inset,0px); top:50%; transform:translateY(-50%); z-index:1; display:flex; justify-content:flex-end; gap:2px; min-width:50px; flex-shrink:0; background:var(--row-background,var(--panel)); box-shadow:-5px 0 6px var(--row-background,var(--panel)); border-radius:4px; opacity:0; pointer-events:none; }
 :is(.file,summary,.group-title):is(:hover,:has(:focus-visible))>.row-actions { opacity:1; pointer-events:auto; }
@@ -138,7 +141,7 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
   </div>
   <div id="files"></div><div id="warnings" hidden></div>
   <div id="git-selection" class="selection"><button id="stage-deleted" class="primary" title="Stage all non-ignored deleted images in this review, including files hidden by search or filters" hidden>Stage all deletions (0)</button><button id="stage-selected" disabled>Stage (0)</button><button id="unstage-selected" disabled>Unstage (0)</button><button id="revert-selected" class="danger" disabled>Revert (0)</button><button id="clear-selected" class="icon-button" aria-label="Clear selection" title="Clear selection" disabled>×</button><button id="selection-actions" class="icon-button" aria-label="Selection actions" title="Selection actions" aria-haspopup="menu" aria-expanded="false" aria-controls="action-menu" disabled>⋯</button></div>
-  <div id="failure-selection" class="failure-selection" hidden><button id="delete-selected-failures" class="danger" disabled>Delete selected failures</button><button id="delete-failures" class="danger" disabled>Delete all failure images</button></div>
+  <div id="failure-selection" class="failure-selection" hidden><button id="delete-selected-failures" class="danger" disabled>Delete selected failures</button><button id="delete-failures" class="danger" disabled><span id="delete-failures-label">Delete all failure images</span><small id="delete-failures-files">0 image files</small></button></div>
 </aside>
 <div id="sidebar-resize" class="sidebar-resize" role="separator" aria-label="Resize image tree" aria-orientation="vertical" aria-controls="sidebar" tabindex="0" title="Drag to resize · ←/→ adjust width · double-click to reset"></div>
 <section class="review" aria-label="Image comparison">
@@ -209,6 +212,7 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
   let activeId = null, scope = 'all', selected = new Map();
   let fileLayout = 'tree', showIgnored = false, selectionControls = [], collapsedFolders = new Set();
   let itemsById = new Map(), treeRenderKey = null;
+  let visibleCache = null, activeTreeRow = null, treeGeneration = 0, actionsGeneration = -1, actionsTestActive = null;
   const treeNodes = new Map(), differenceDependents = new Map();
   let menuState = null, pendingRevert = [];
   let pendingCleanup = null, cleanupConfirmation = null;
@@ -222,7 +226,7 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
   const artifactFlags = {before:'hasBefore',after:'hasAfter',isolatedDiff:'hasIsolatedDiff',maskedDiff:'hasMaskedDiff'};
   const artifactLabels = {before:'Expected',after:'Actual',isolatedDiff:'Isolated diff',maskedDiff:'Masked diff'};
   const reviewItems = () => scope === 'failures' ? failures : changes;
-  const current = () => reviewItems().find(c => c.id === activeId);
+  const current = () => { const item=itemsById.get(activeId); return item && !!item.failure===(scope==='failures') ? item : null; };
   const isNewImage = item => !!item && !item.failure && !item.hasBefore && item.hasAfter;
   const changeKind = item => item.failure ? 'failure' : isNewImage(item) ? 'added' : item.hasBefore && !item.hasAfter ? 'deleted' : 'modified';
   const unstagedDeletions = () => changes.filter(c => !c.staged && !c.ignored && changeKind(c)==='deleted');
@@ -241,11 +245,16 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
     if (!item?.failure) return 'compare';
     return [failureView,'compare',...Object.keys(artifactFlags)].find(view=>availableFailureView(item,view)) || 'compare';
   }
-  const visible = () => reviewItems().filter(c =>
-    (!c.ignored || showIgnored) &&
-    (c.failure || scope === 'all' || (scope === 'staged') === c.staged) &&
-    (c.failure ? $('failure-filter').value==='all' || failureResult(c)===$('failure-filter').value : $('change-filter').value==='all' || changeKind(c)===$('change-filter').value) &&
-    c.path.toLocaleLowerCase().includes($('search').value.trim().toLocaleLowerCase()));
+  function visible() {
+    const source=reviewItems(), search=$('search').value.trim().toLocaleLowerCase();
+    const filter=$(scope==='failures' ? 'failure-filter' : 'change-filter').value;
+    if(visibleCache && visibleCache.source===source && visibleCache.scope===scope && visibleCache.showIgnored===showIgnored && visibleCache.search===search && visibleCache.filter===filter) return visibleCache.items;
+    const items=source.filter(c=>(!c.ignored || showIgnored) &&
+      (c.failure || scope==='all' || (scope==='staged')===c.staged) &&
+      (filter==='all' || (c.failure ? failureResult(c) : changeKind(c))===filter) &&
+      (!search || c.path.toLocaleLowerCase().includes(search)));
+    visibleCache={source,scope,showIgnored,search,filter,items}; return items;
+  }
 
   function message(text, error = false) {
     $('message').textContent = text; $('message').classList.toggle('error', error); $('message').hidden = !text;
@@ -664,9 +673,16 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
     $('revert-file').textContent = failureMode ? 'Delete artifacts…' : 'Revert changes';
     $('delete-selected-failures').disabled = !values.some(c=>c.failure) || testActive();
     $('delete-selected-failures').textContent = 'Delete selected failures ('+values.filter(c=>c.failure).length+')';
-    document.querySelectorAll('.row-actions').forEach(actions=>actions.update());
-    $('delete-failures').textContent = 'Delete all failure images (' + failureSummary.fileCount + ')';
-    $('delete-failures').title = testActive() ? 'Stop the running golden tests before cleanup' : $('delete-failures').textContent;
+    const running=testActive();
+    if(actionsGeneration!==treeGeneration || actionsTestActive!==running) {
+      document.querySelectorAll('.row-actions').forEach(actions=>actions.update());
+      actionsGeneration=treeGeneration; actionsTestActive=running;
+    }
+    const cleanupLabel=failureSummary.caseCount ? 'Delete all failures ('+failureSummary.caseCount+')' : 'Delete all failure images';
+    const cleanupFiles=failureSummary.fileCount+' image '+(failureSummary.fileCount===1 ? 'file' : 'files');
+    if($('delete-failures-label').textContent!==cleanupLabel) $('delete-failures-label').textContent=cleanupLabel;
+    if($('delete-failures-files').textContent!==cleanupFiles) $('delete-failures-files').textContent=cleanupFiles;
+    $('delete-failures').title = testActive() ? 'Stop the running golden tests before cleanup' : cleanupLabel+' · '+cleanupFiles+'. Includes hidden and ungrouped images.';
     $('delete-failures').disabled = !failureSummary.fileCount || failureSummary.scanning || testActive();
     $('confirm-delete-failures').disabled = !pendingCleanup || testActive();
 
@@ -949,22 +965,23 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
   }
   function renderList() {
     const items = visible(), available = changes.filter(c=>!c.ignored || showIgnored);
-    const counts = [items.length,available.filter(c=>!c.staged).length,available.filter(c=>c.staged).length,failures.length];
+    const counts = [items.length,available.filter(c=>!c.staged).length,available.filter(c=>c.staged).length,failures.filter(c=>!c.ignored || showIgnored).length];
     for(const [id,value] of [['shown-count',counts[0]],['unstaged-count',counts[1]],['staged-count',counts[2]],['failure-count',counts[3]]]) {
       if($(id).textContent!==String(value)) $(id).textContent=String(value);
     }
     const countLabel=scope==='failures'
-      ? 'Showing '+counts[0]+' of '+failures.length+' generated failure comparisons from '+failureSummary.fileCount+' image files.'
+      ? 'Showing '+counts[0]+' of '+counts[3]+' generated failure comparisons from '+failureSummary.fileCount+' image files.'
       : 'Showing '+counts[0]+' of '+available.length+' changes: '+counts[1]+' unstaged and '+counts[2]+' staged. '+counts[3]+' failure comparisons are available.';
     if($('file-count').getAttribute('aria-label')!==countLabel) $('file-count').setAttribute('aria-label',countLabel);
     const ignoredCount = new Set(changes.filter(c=>c.ignored).map(c=>c.path)).size;
     // Revisions and metrics are data, not structure. Hidden failure scans and
     // completed pixel calculations must never rebuild the visible tree.
     const key=JSON.stringify([fileLayout,scope,!!$('search').value.trim(),showIgnored,
-      items.map(c=>[c.id,c.path,c.status,c.ignored,c.hasBefore,c.hasAfter,c.artifactCount]),
+      items.map(c=>[c.id,c.path,c.staged,c.status,c.ignored,c.hasBefore,c.hasAfter,c.artifactCount]),
       !items.length && [failureSummary.scanning,failureSummary.fileCount,changes.length,failures.length,ignoredCount]]);
     const rebuilt=key!==treeRenderKey;
     if(rebuilt) {
+      treeGeneration++;
       const top=$('files').scrollTop, left=$('files').scrollLeft, focus=document.activeElement;
       treeRenderKey=key; selectionControls=[]; differenceDependents.clear();
       for(const record of treeNodes.values()) record.used=false;
@@ -997,7 +1014,8 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
       $('files').scrollTop=top; $('files').scrollLeft=left;
       if(menuState && !menuState.origin.isConnected) closeMenu(true);
     }
-    for(const [key,record] of treeNodes) if(key.startsWith('file:')) record.element.classList.toggle('active',key==='file:'+activeId);
+    const nextActive=treeNodes.get('file:'+activeId)?.element || null;
+    if(activeTreeRow!==nextActive) {activeTreeRow?.classList.remove('active');nextActive?.classList.add('active');activeTreeRow=nextActive;}
     updateViewOptions(); updateButtons(); return rebuilt;
   }
   function applyData(data) {
@@ -1012,7 +1030,8 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
     const nextItems=new Map([...changes,...failures].map(item=>[item.id,item]));
     const changedDifferences=[];
     for(const [id,item] of nextItems) {
-      if(JSON.stringify(itemsById.get(id)?.difference)!==JSON.stringify(item.difference)) changedDifferences.push({id,before:itemsById.get(id)?.difference,after:item.difference});
+      const previous=itemsById.get(id)?.difference, next=item.difference;
+      if(previous?.status!==next?.status || previous?.changedPixels!==next?.changedPixels || previous?.totalPixels!==next?.totalPixels || previous?.error!==next?.error) changedDifferences.push({id,before:previous,after:next});
     }
     itemsById=nextItems;
     for (const [id, item] of selected) {
@@ -1063,6 +1082,7 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
   async function loadCurrent() {
     const item = current(); if (!item) return clearImage();
     const artifact=effectiveFailureView(item);
+    if(item.id===loadedImageId && item.revision===loadedRevision && artifact===loadedFailureView) return;
     const switchingImage=item.id!==loadedImageId;
     const anchor=switchingImage ? null : captureAnchor() || loadingAnchor;
     const previousFitKey=changesFitKey;

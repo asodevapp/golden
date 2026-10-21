@@ -69,6 +69,62 @@ void main() {
     expect(snapshot.changes.single.path, 'test/screens/golden/login.png');
   });
 
+  test('unchanged scans reuse hashes and mutations verify only selected bytes',
+      () async {
+    await fixture.write('selected.png', [1]);
+    await fixture.write('outside.png', [2]);
+    final monitor = _FileReadMonitor();
+    await IOOverrides.runWithIOOverrides(() async {
+      final snapshot = await repository.scan();
+      expect(monitor.reads, hasLength(2));
+      monitor.reads.clear();
+      await repository.scan();
+      expect(monitor.reads, isEmpty);
+      await repository.scan(verifyWorkingBytes: true);
+      expect(monitor.reads, hasLength(2));
+      monitor.reads.clear();
+
+      final selected = snapshot.changes
+          .singleWhere((change) => change.path == 'selected.png');
+      await repository
+          .setStaged({selected.id: selected.revision}, staged: true);
+      expect(monitor.reads.map(p.basename), ['selected.png']);
+      monitor.reads.clear();
+
+      final staged = (await repository.scan())
+          .changes
+          .singleWhere((change) => change.staged);
+      await repository.setStaged({staged.id: staged.revision}, staged: false);
+      expect(monitor.reads, isEmpty);
+    }, monitor);
+    expect(await fixture.file('selected.png').readAsBytes(), [1]);
+    expect(await fixture.file('outside.png').readAsBytes(), [2]);
+  });
+
+  test('selected bytes stay guarded even when cached metadata is unchanged',
+      () async {
+    await fixture.write('selected.png', [1]);
+    await fixture.write('outside.png', [2]);
+    final selected = (await repository.scan())
+        .changes
+        .singleWhere((change) => change.path == 'selected.png');
+    final monitor = _FileReadMonitor();
+    monitor.fixedStats[p.join(repository.directory.path, 'selected.png')] =
+        await fixture.file('selected.png').stat();
+    await fixture.write('selected.png', [3]);
+
+    await IOOverrides.runWithIOOverrides(() async {
+      await expectLater(
+        repository.setStaged({selected.id: selected.revision}, staged: true),
+        throwsA(isA<GitReviewException>()
+            .having((error) => error.conflict, 'conflict', isTrue)),
+      );
+      expect(monitor.reads.map(p.basename), ['selected.png']);
+    }, monitor);
+    expect((await fixture.git(['ls-files', '--stage'])).stdout, isEmpty);
+    expect(await fixture.file('selected.png').readAsBytes(), [3]);
+  });
+
   test(
       'stage and unstage touch only literal selected paths, preserving other staged work',
       () async {
@@ -249,6 +305,44 @@ void main() {
     }
   });
 
+  test('opposite index and working statuses remain separate through mutations',
+      () async {
+    const restored = 'deleted-then-restored.png';
+    const deleted = 'added-then-deleted.png';
+    await fixture.write(restored, [1]);
+    await fixture.commitAll();
+    await fixture.file(restored).delete();
+    await fixture.git(['add', '--', restored]);
+    await fixture.write(restored, [2]);
+    await fixture.write(deleted, [3]);
+    await fixture.git(['add', '--', deleted]);
+    await fixture.file(deleted).delete();
+
+    final changes = (await repository.scan()).changes;
+    expect(
+        changes
+            .map((c) => [c.path, c.staged, c.status, c.hasBefore, c.hasAfter]),
+        [
+          [deleted, false, 'D', true, false],
+          [restored, false, '?', false, true],
+          [deleted, true, 'A', false, true],
+          [restored, true, 'D', true, false],
+        ]);
+    expect(changes.map((c) => c.id).toSet(), hasLength(4));
+    final workingDeletion = changes.first;
+    await repository.setStaged({workingDeletion.id: workingDeletion.revision},
+        staged: true);
+    final indexDeletion = changes.last;
+    await repository
+        .setStaged({indexDeletion.id: indexDeletion.revision}, staged: false);
+    final remaining = (await repository.scan()).changes.single;
+    expect(remaining.path, restored);
+    expect(remaining.status, 'M');
+    expect(remaining.staged, isFalse);
+    expect(await repository.readImage(remaining, before: true), [1]);
+    expect(await repository.readImage(remaining, before: false), [2]);
+  });
+
   test(
       'unstaging on an unborn branch preserves working files and other index entries',
       () async {
@@ -351,4 +445,42 @@ void main() {
     expect(snapshot.changes, isEmpty);
     expect(snapshot.warnings.single, contains('Resolve the Git conflict'));
   });
+}
+
+final class _FileReadMonitor extends IOOverrides {
+  final reads = <String>[];
+  final fixedStats = <String, FileStat>{};
+
+  @override
+  File createFile(String path) {
+    final file = super.createFile(path);
+    return path.endsWith('.png') ? _ObservedFile(file, this) : file;
+  }
+}
+
+final class _ObservedFile implements File {
+  _ObservedFile(this.file, this.monitor);
+  final File file;
+  final _FileReadMonitor monitor;
+
+  @override
+  String get path => file.path;
+  @override
+  Future<FileStat> stat() async =>
+      monitor.fixedStats[path] ?? await file.stat();
+  @override
+  Future<String> resolveSymbolicLinks() => file.resolveSymbolicLinks();
+  @override
+  Future<int> length() => file.length();
+  @override
+  Future<RandomAccessFile> open({FileMode mode = FileMode.read}) =>
+      file.open(mode: mode);
+  @override
+  Stream<List<int>> openRead([int? start, int? end]) {
+    monitor.reads.add(path);
+    return file.openRead(start, end);
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

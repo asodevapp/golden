@@ -9,6 +9,9 @@ const reviewMaxImageBytes = 32 * 1024 * 1024;
 const reviewIgnoreFileName = '.golden_ignore';
 const _maxIgnoreBytes = 1024 * 1024;
 
+String _changeId(String path, {required bool staged}) =>
+    base64Url.encode(utf8.encode('${staged ? 'index' : 'work'}\u0000$path'));
+
 typedef GitLockUsageProbe = Future<bool?> Function(String path);
 
 /// Checks the path quoted by Git using the platform's path semantics.
@@ -51,8 +54,7 @@ final class GitImageChange {
   final String? workingHash;
   final bool ignored;
 
-  late final String id =
-      base64Url.encode(utf8.encode('${staged ? 'index' : 'work'}\u0000$path'));
+  late final String id = _changeId(path, staged: staged);
   late final String revision = sha256
       .convert(utf8.encode(
         '$id\u0000$status\u0000$beforeBlob\u0000$afterBlob\u0000$workingHash',
@@ -129,10 +131,17 @@ final class GitImageRepository {
     );
   }
 
-  Future<GitImageSnapshot> scan({bool verifyWorkingBytes = false}) async {
+  Future<GitImageSnapshot> scan({bool verifyWorkingBytes = false}) =>
+      _scan(verifyWorkingBytes: verifyWorkingBytes);
+
+  Future<GitImageSnapshot> _scan({
+    bool verifyWorkingBytes = false,
+    Set<String> verifyWorkingIds = const {},
+  }) async {
     final ignored = _ignorePaths(await _readIgnoreFile());
     final changes = <GitImageChange>[];
     final warnings = <String>[];
+    final working = <({String file, String status, String? beforeBlob})>[];
     final conflicts = <String>{};
     final unmerged = await _text(['ls-files', '--unmerged', '-z', '--', input]);
     for (final record in unmerged.split('\u0000').where((v) => v.isNotEmpty)) {
@@ -172,11 +181,9 @@ final class GitImageRepository {
         }
         final before = _blob(fields[2]);
         final after = staged ? _blob(fields[3]) : null;
-        String? workingHash;
         if (!staged && fields[4] != 'D') {
-          workingHash = await _hashWorkingFile(file, warnings,
-              verify: verifyWorkingBytes);
-          if (workingHash == null) continue;
+          working.add((file: file, status: fields[4], beforeBlob: before));
+          continue;
         }
         changes.add(GitImageChange(
           path: file,
@@ -184,7 +191,6 @@ final class GitImageRepository {
           status: fields[4],
           beforeBlob: before,
           afterBlob: after,
-          workingHash: workingHash,
           ignored: ignored.contains(file),
         ));
       }
@@ -192,18 +198,39 @@ final class GitImageRepository {
     final untracked = await _text(
         ['ls-files', '--others', '--exclude-standard', '-z', '--', input]);
     for (final file in untracked.split('\u0000').where(_isReviewImage)) {
-      final hash =
-          await _hashWorkingFile(file, warnings, verify: verifyWorkingBytes);
-      if (hash == null) continue;
-      changes.add(GitImageChange(
-        path: file,
-        staged: false,
-        status: '?',
-        beforeBlob: null,
-        afterBlob: null,
-        workingHash: hash,
-        ignored: ignored.contains(file),
-      ));
+      working.add((file: file, status: '?', beforeBlob: null));
+    }
+    final results = List<GitImageChange?>.filled(working.length, null);
+    final fileWarnings = List.generate(working.length, (_) => <String>[]);
+    var next = 0;
+    Future<void> hashFiles() async {
+      while (next < working.length) {
+        final index = next++;
+        final candidate = working[index];
+        final hash = await _hashWorkingFile(candidate.file, fileWarnings[index],
+            verify: verifyWorkingBytes ||
+                (verifyWorkingIds.isNotEmpty &&
+                    verifyWorkingIds
+                        .contains(_changeId(candidate.file, staged: false))));
+        if (hash == null) continue;
+        results[index] = GitImageChange(
+          path: candidate.file,
+          staged: false,
+          status: candidate.status,
+          beforeBlob: candidate.beforeBlob,
+          afterBlob: null,
+          workingHash: hash,
+          ignored: ignored.contains(candidate.file),
+        );
+      }
+    }
+
+    // Bound concurrent filesystem reads while retaining deterministic output.
+    await Future.wait(List.generate(
+        working.length < 8 ? working.length : 8, (_) => hashFiles()));
+    changes.addAll(results.whereType<GitImageChange>());
+    for (final messages in fileWarnings) {
+      warnings.addAll(messages);
     }
     changes.sort((a, b) {
       if (a.staged != b.staged) return a.staged ? 1 : -1;
@@ -254,7 +281,7 @@ final class GitImageRepository {
     if (revisions.isEmpty || revisions.length > 500) {
       throw const GitReviewException('Select between 1 and 500 images.');
     }
-    final snapshot = await scan(verifyWorkingBytes: true);
+    final snapshot = await _scan(verifyWorkingIds: revisions.keys.toSet());
     final current = {for (final change in snapshot.changes) change.id: change};
     final paths = <String>[];
     for (final entry in revisions.entries) {
@@ -296,7 +323,7 @@ final class GitImageRepository {
     if (revisions.isEmpty || revisions.length > 500) {
       throw const GitReviewException('Select between 1 and 500 images.');
     }
-    final snapshot = await scan(verifyWorkingBytes: true);
+    final snapshot = await _scan(verifyWorkingIds: revisions.keys.toSet());
     final current = {for (final change in snapshot.changes) change.id: change};
     final trackedPaths = <String>{};
     final untracked = <GitImageChange>[];
@@ -445,7 +472,7 @@ final class GitImageRepository {
     if (revisions.isEmpty || revisions.length > 500) {
       throw const GitReviewException('Select between 1 and 500 images.');
     }
-    final snapshot = await scan(verifyWorkingBytes: true);
+    final snapshot = await _scan(verifyWorkingIds: revisions.keys.toSet());
     final current = {for (final change in snapshot.changes) change.id: change};
     final paths = <String>{};
     for (final entry in revisions.entries) {

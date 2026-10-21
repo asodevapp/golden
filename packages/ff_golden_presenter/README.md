@@ -86,7 +86,7 @@ The equivalent manual dependency is:
 
 ```yaml
 dev_dependencies:
-  ff_golden_presenter: ^1.1.17
+  ff_golden_presenter: ^1.1.18
 ```
 
 For an unreleased repository revision, use the package Git source and
@@ -164,11 +164,21 @@ background isolate is still calculating; an em dash means an image could not be
 decoded within the preview limits. The browser only receives the resulting
 counts and percentages.
 
+**Shown** counts the current search and filters. The other counters show totals
+for their Git/failure groups independently of search and type/result filters;
+all three exclude ignored comparisons unless **Show ignored** is enabled.
+The failure summary and **Delete all failures** still include all generated
+artifacts, including ignored or ungrouped files.
+
 New file names and status badges are green (**U** for untracked, **A** for
 added); deleted files are red with a struck-through name (**D**). Modified
 files use amber (**M**). Hover a status badge for its meaning. The file-type
 filter narrows the current Git group to new, modified, or deleted images and
 combines with search. These filters remain selected during live refresh.
+Checkbox selections are retained when search or Git group/type filters hide
+them. **Stage / Unstage / Revert selected** use their displayed selection counts,
+including selected Git comparisons outside the visible filter. Failure selections
+are handled separately from Git selections.
 
 Live refresh updates percentages in place and keeps open menus, folder state,
 selection, focus, and sidebar scroll position. Adding or removing files reuses
@@ -178,6 +188,12 @@ The sequential calculation queues share results by comparison identity and
 retain up to 256 inactive results each for reuse during a review session.
 Changing generated failure masks alone does not recalculate expected/actual
 percentages.
+
+Unchanged polls do not rewrite tree controls or reload the selected image.
+Working-file hashes are reused while size and timestamps match, with at most
+eight working files processed concurrently per scan. Before Git actions, selected
+working files are rehashed even if their metadata is unchanged; unrelated files
+keep using their cached hashes.
 
 The **Failures** filter scans directories named exactly `failures`, independently
 of Git and `.gitignore`. Flutter's `*_masterImage.png`, `*_testImage.png`,
@@ -200,8 +216,13 @@ Delete and Ignore buttons. A file button acts on that comparison; folder/group
 buttons act on their visible comparisons. Check several rows and use
 **Delete selected failures** to clean their artifacts together.
 
-**Delete all failure images (N)** includes images hidden by search, result
-filters, or `.golden_ignore`, and images with unrecognized artifact names.
+**Delete all failures (N)** counts comparisons, like the failures counter. Its
+second line shows the number of image files to delete: four complete failures
+normally contain 16 files (expected, actual, isolated diff, and masked diff).
+Incomplete failures may contain fewer files. Cleanup includes images hidden by
+search, result filters, or `.golden_ignore`, and images with unrecognized artifact
+names. If there are only ungrouped images, the button reads **Delete all failure
+images** and shows their file count.
 Before confirmation, cleanup captures an exact file list, byte count, and content
 fingerprints. The dialog keeps this selection fixed during live updates. Its
 expandable file list scrolls independently, keeping Cancel and Delete visible

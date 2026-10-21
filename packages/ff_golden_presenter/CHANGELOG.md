@@ -1,3 +1,20 @@
+## 1.1.18
+
+- Reduced live refresh work by caching filtered comparisons, updating tree
+  actions only when needed, and reusing the selected image without resetting
+  zoom or pan. Unchanged polls preserve menus, focus, and selection.
+- Reused working-file hashes and bounded concurrent file reads to eight per
+  scan. Git actions reverify selected files without rehashing every image;
+  stale selected content remains guarded even when file metadata is unchanged.
+- Made failure counters respect **Show ignored** consistently with Git groups
+  and documented how filters and hidden checkbox selections affect actions.
+- Clarified failure cleanup counts: **Delete all failures (N)** counts
+  comparisons, with the number of image files on a separate line. Incomplete
+  and ungrouped artifacts remain eligible for cleanup, and buttons keep their
+  position as counts change.
+- Added Git and browser regressions for large unchanged polls, cached hashes,
+  opposite index/worktree statuses, filters, selection scopes, and cleanup counts.
+
 ## 1.1.17
 
 - Freed space for file and folder names in the diff tree and list by showing

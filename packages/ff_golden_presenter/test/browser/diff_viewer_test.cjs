@@ -188,6 +188,22 @@ test('metric and failure-status polls preserve file menu, focus, selection and t
   assert.equal(await page.evaluate(()=>metricChanges.length),0);
 });
 
+test('unchanged large polls do not rewrite tree attributes or action controls', async t => {
+  const {page,refresh}=await viewer(t,Array.from({length:1500},(_,i)=>({...item('image-'+i,'screens/group-'+Math.floor(i/50)),difference:ready(i%100)})));
+  await page.locator('.file > button').first().click({button:'right'});
+  await rememberUI(page);
+  await page.evaluate(()=>{
+    window.unchangedMutations=0;
+    new MutationObserver(records=>unchangedMutations+=records.length).observe(document.getElementById('files'),{subtree:true,attributes:true,childList:true,characterData:true});
+  });
+  await refresh();
+  await assertUI(page);
+  assert.equal(await page.evaluate(()=>unchangedMutations),0);
+  await refresh(data=>{data.failures.scanning=true;data.failures.fileCount=4;});
+  await assertUI(page);
+  assert.equal(await page.evaluate(()=>unchangedMutations),0);
+});
+
 test('folder menu and collapsed state survive unrelated file insertion', async t => {
   const {page,refresh,actions}=await viewer(t);
   await page.locator('summary[title="screens/beta"]').click();
@@ -723,6 +739,20 @@ test('new images enter Fit from manual zoom, while refreshing the same new image
   }
 });
 
+test('choosing the loaded comparison reuses its pixels and preserves manual framing', async t => {
+  const v=await zoomFixture(t,[{id:'a'}]),{page,refresh}=v;
+  await page.locator('#zoom-actual').click();
+  await page.locator('#before-viewport').evaluate(el=>{el.scrollLeft=180;el.scrollTop=120;el.dispatchEvent(new Event('scroll'));});
+  const position=await panPosition(page),reads=v.imageRequests.length;
+  await page.locator('.file > button').first().click();
+  assert.equal(v.imageRequests.length,reads);
+  assert.equal(await page.locator('#zoom-percent').inputValue(),'100');
+  assert.deepEqual(await panPosition(page),position);
+  await refresh(data=>data.changes[0].revision+='-updated');
+  await page.waitForFunction(()=>!document.getElementById('zoom-in').disabled);
+  assert.equal(v.imageRequests.length,reads+2);
+});
+
 test('explicit zoom controls leave Changes mode', async t => {
   const bounds=[400,300,40,50];
   const {page}=await zoomFixture(t,[{id:'a',bounds},{id:'b',bounds:[600,500,170,90]}]);
@@ -1000,6 +1030,71 @@ test('sidebar count filters preserve search, Git type and failure result filters
   assert.deepEqual(await page.locator('.file-name').allTextContents(),['match-failure.png']);
 });
 
+test('failure counters follow Show ignored consistently and stay independent of search and result filters', async t => {
+  const {page,refresh}=await viewer(t);
+  await refresh(data=>setFailures(data,[failure('included'),failure('ignored',{ignored:true})]));
+  assert.equal(await page.locator('#failure-count').textContent(),'1');
+  await page.locator('#show-failures').click();
+  assert.deepEqual(await page.locator('.file-name').allTextContents(),['included.png']);
+  await page.locator('#file-view-options').click();await page.locator('#show-ignored').click();
+  assert.equal(await page.locator('#failure-count').textContent(),'2');
+  await page.locator('#failure-filter').selectOption('unchanged');
+  assert.equal(await page.locator('#shown-count').textContent(),'0');
+  assert.equal(await page.locator('#failure-count').textContent(),'2');
+  await page.locator('#failure-filter').selectOption('all');
+  await page.locator('#search').fill('included');
+  assert.equal(await page.locator('#shown-count').textContent(),'1');
+  assert.equal(await page.locator('#failure-count').textContent(),'2');
+  await page.locator('#ignored-active').click();
+  assert.equal(await page.locator('#failure-count').textContent(),'1');
+  assert.match(await page.locator('#failure-summary').textContent(),/2 comparisons · 8 images/);
+  assert.equal(await page.locator('#delete-failures-label').textContent(),'Delete all failures (2)');
+  assert.equal(await page.locator('#delete-failures-files').textContent(),'8 image files');
+});
+
+test('selection actions retain their counted Git scope across filters and stay separate from failures', async t => {
+  const {page,refresh,actions}=await viewer(t,[item('chosen'),item('outside'),{...item('index'),staged:true}]);
+  await refresh(data=>setFailures(data,[failure('artifact')]));
+  await page.locator('.file input[aria-label="Select screens/alpha/chosen.png unstaged"]').check();
+  await page.locator('#file-scope').selectOption('staged');
+  await page.locator('.file input').check();
+  await page.locator('#search').fill('no-match');
+  assert.equal(await page.locator('.file').count(),0);
+  assert.equal(await page.locator('#stage-selected').textContent(),'Stage (1)');
+  assert.equal(await page.locator('#unstage-selected').textContent(),'Unstage (1)');
+  await Promise.all([page.waitForResponse(r=>new URL(r.url()).pathname==='/api/stage'),page.locator('#stage-selected').click()]);
+  assert.deepEqual(actions[0].revisions,{chosen:'chosen-v1'});
+  await page.locator('#search').fill('');
+  await page.locator('#file-scope').selectOption('failures');
+  assert.equal(await page.locator('#delete-selected-failures').textContent(),'Delete selected failures (0)');
+  await page.locator('.file input').check();
+  assert.equal(await page.locator('#delete-selected-failures').textContent(),'Delete selected failures (1)');
+  await page.locator('#file-scope').selectOption('all');
+  assert.equal(await page.locator('#stage-selected').textContent(),'Stage (0)');
+  assert.equal(await page.locator('#unstage-selected').textContent(),'Unstage (1)');
+});
+
+test('Git type and group filters use the reviewed side when a path has opposite index and worktree statuses', async t => {
+  const {page}=await viewer(t,[
+    {...item('work-deleted'),path:'screens/added-then-deleted.png',status:'D',hasAfter:false},
+    {...item('index-added'),path:'screens/added-then-deleted.png',status:'A',staged:true,hasBefore:false},
+    {...item('work-new'),path:'screens/deleted-then-restored.png',status:'?',hasBefore:false},
+    {...item('index-deleted'),path:'screens/deleted-then-restored.png',status:'D',staged:true,hasAfter:false},
+  ]);
+  assert.equal(await page.locator('#unstaged-count').textContent(),'2');
+  assert.equal(await page.locator('#staged-count').textContent(),'2');
+  for(const [filter,scope,badge] of [['added','unstaged','U'],['added','staged','A'],['deleted','unstaged','D'],['deleted','staged','D']]) {
+    await page.locator('#change-filter').selectOption(filter);
+    await page.locator('#file-scope').selectOption(scope);
+    assert.deepEqual(await page.locator('.file .badge').allTextContents(),[badge]);
+    assert.equal(await page.locator('.file').getAttribute('data-change'),filter);
+  }
+  await page.locator('#change-filter').selectOption('all');
+  await page.locator('#file-scope').selectOption('all');
+  await page.locator('#search').fill('added-then-deleted');
+  assert.deepEqual((await page.locator('.file .badge').allTextContents()).sort(),['A','D']);
+});
+
 test('failure filters compose with search and update membership when metrics complete', async t => {
   const {page,refresh}=await viewer(t);
   await refresh(data=>setFailures(data,[
@@ -1096,6 +1191,37 @@ test('Delete all explicitly includes filtered and ungrouped failure images and k
   await page.locator('#search').fill('');
   await page.locator('#show-failures').click();
   assert.equal(await page.locator('.file').count(),3);
+});
+
+test('failure cleanup distinguishes comparison counts from artifact files without moving its buttons', async t => {
+  const {page,refresh,deletions}=await viewer(t);
+  await refresh(data=>setFailures(data,[failure('phone'),failure('desktop-dark'),failure('desktop-light'),failure('tablet')]));
+  await page.locator('#show-failures').click();
+  assert.equal(await page.locator('#failure-count').textContent(),'4');
+  assert.equal(await page.locator('#delete-failures-label').textContent(),'Delete all failures (4)');
+  assert.equal(await page.locator('#delete-failures-files').textContent(),'16 image files');
+  for(const width of [1280,800]) {
+    await page.setViewportSize({width,height:650});
+    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+    const buttons=()=>page.locator('#failure-selection button').evaluateAll(items=>items.map(el=>{const {x,y,width,height}=el.getBoundingClientRect();return {x,y,width,height};}));
+    const initial=await buttons();
+    await refresh(data=>{setFailures(data,[failure('incomplete',{hasBefore:false,artifactCount:3})]);});
+    assert.equal(await page.locator('#delete-failures-label').textContent(),'Delete all failures (1)');
+    assert.equal(await page.locator('#delete-failures-files').textContent(),'3 image files');
+    assert.deepEqual(await buttons(),initial);
+    await refresh(data=>{setFailures(data,[]);data.failures.fileCount=1;});
+    assert.equal(await page.locator('#delete-failures-label').textContent(),'Delete all failure images');
+    assert.equal(await page.locator('#delete-failures-files').textContent(),'1 image file');
+    assert.deepEqual(await buttons(),initial);
+    assert.equal(await page.locator('#delete-failures').isEnabled(),true);
+  }
+  await refresh(data=>setFailures(data,[failure('phone'),failure('desktop-dark'),failure('desktop-light'),failure('tablet')]));
+  await page.locator('#delete-failures').click();
+  await page.locator('#delete-failures-dialog').waitFor({state:'visible'});
+  assert.match(await page.locator('#delete-failures-summary').textContent(),/Delete 16 generated image files/);
+  await page.locator('#cancel-delete-failures').click();
+  await page.locator('#action-progress').waitFor({state:'hidden'});
+  assert.deepEqual(deletions,[]);
 });
 
 test('failure cleanup responds immediately to running test status', async t => {
