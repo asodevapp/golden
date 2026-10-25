@@ -85,7 +85,10 @@ input[type=search] { width:100%; min-width:0; height:30px; color:inherit; backgr
 .panels { height:100%; display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--line); } .pane { display:flex; flex-direction:column; min-width:0; min-height:0; background:var(--bg); }
 .panels.single-image { grid-template-columns:minmax(0,1fr); }
 .pane-source { display:flex; align-items:center; gap:8px; } .new-image-badge { padding:1px 7px; border:1px solid #397f69; border-radius:4px; background:#213d3b; color:#a5f4d4; font-size:10px; font-weight:650; }
-.pane-label { padding:9px 12px; color:var(--muted); font-size:11px; background:var(--panel); display:flex; justify-content:space-between; }
+.pane-label { padding:9px 12px; color:var(--muted); font-size:11px; background:var(--panel); display:flex; justify-content:space-between; gap:8px; }
+.pane-label .pane-source { min-width:0; } #before-label,#after-label,#combined-label { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pane-size { display:flex; gap:8px; flex-shrink:0; white-space:nowrap; font-variant-numeric:tabular-nums; } .image-bytes { color:#dce5ee; } .new-image-badge { flex-shrink:0; }
+.file-size-change { font-weight:600; } .file-size-change[data-direction=increase] { color:#edc984; } .file-size-change[data-direction=decrease] { color:#a5f4d4; }
 .viewport { flex:1; min-height:0; overflow:auto; padding:16px; overscroll-behavior:contain; } .viewport canvas { display:block; max-width:none; margin-inline:auto; box-shadow:0 0 0 1px #39414b; background-color:#20262c; background-image:conic-gradient(#2b333c 25%, transparent 0 50%, #2b333c 0 75%, transparent 0); background-size:16px 16px; cursor:grab; touch-action:none; user-select:none; }
 .image-surface { margin-inline:auto; } .image-surface canvas { margin:0; }
 .panels.near-divider #before-viewport { padding-right:0; } .panels.near-divider #after-viewport { padding-left:0; }
@@ -163,10 +166,10 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
   <div id="viewer">
     <div id="empty"><strong>No image selected</strong><span>Changes appear here automatically.</span></div>
     <div id="side" class="panels" hidden>
-      <div class="pane" id="before-pane"><div class="pane-label"><span id="before-label">Before</span><span id="before-size"></span></div><div class="viewport" id="before-viewport"><div class="image-surface"><canvas id="before-canvas"></canvas></div></div></div>
-      <div class="pane" id="after-pane"><div class="pane-label"><span class="pane-source"><span id="after-label">After</span><span id="new-image-badge" class="new-image-badge" hidden>new</span></span><span id="after-size"></span></div><div class="viewport" id="after-viewport"><div class="image-surface"><canvas id="after-canvas"></canvas></div></div></div>
+      <div class="pane" id="before-pane"><div class="pane-label"><span id="before-label">Before</span><span class="pane-size"><span id="before-size" title="Original dimensions in pixels"></span><span id="before-file-size" class="image-bytes"></span></span></div><div class="viewport" id="before-viewport"><div class="image-surface"><canvas id="before-canvas"></canvas></div></div></div>
+      <div class="pane" id="after-pane"><div class="pane-label"><span class="pane-source"><span id="after-label">After</span><span id="new-image-badge" class="new-image-badge" hidden>new</span></span><span class="pane-size"><span id="after-size" title="Original dimensions in pixels"></span><span id="after-file-size" class="image-bytes"></span><span id="after-file-size-change" class="file-size-change" hidden></span></span></div><div class="viewport" id="after-viewport"><div class="image-surface"><canvas id="after-canvas"></canvas></div></div></div>
     </div>
-    <div id="combined" hidden><div class="pane-label"><span id="combined-label">Before / After</span><span>Top-left aligned · original pixels</span></div><div class="viewport" id="combined-viewport"><div class="image-surface"><canvas id="combined-canvas"></canvas></div></div></div>
+    <div id="combined" hidden><div class="pane-label"><span id="combined-label">Before / After</span><span id="combined-file-sizes" class="pane-size" title="Image file sizes · Top-left aligned · original pixels"></span></div><div class="viewport" id="combined-viewport"><div class="image-surface"><canvas id="combined-canvas"></canvas></div></div></div>
   </div>
 </section>
 </main>
@@ -219,6 +222,7 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
   const actionQueue = [], actionTasks = new Map();
   const pendingMutations = new Set();
   let before = null, after = null, loadedRevision = null, loadingRevision = null, loadSequence = 0, loadedImageId = null, loadingAnchor = null;
+  const imageFileBytes = new WeakMap();
   let polling = false, mutating = false, diffImage = null, diffMask = null, diffBounds = null, diffSummary = '', diffAttempted = false;
   let zoomMode = 'fit', manualScale = 1, renderedScale = 1, renderedMode = 'side', paintKey = null, changesFitKey = null;
   let failureView = 'compare', loadedFailureView = 'compare';
@@ -1076,6 +1080,7 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
     const url = URL.createObjectURL(blob);
     try {
       const image = new Image(); image.src = url; await image.decode();
+      imageFileBytes.set(image,blob.size);
       return image;
     } finally { URL.revokeObjectURL(url); }
   }
@@ -1104,6 +1109,16 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
       $('before-label').textContent = item.failure ? 'Expected' : item.staged ? 'HEAD' : 'Index';
       $('after-label').textContent = item.failure ? artifactLabels[artifact] || 'Actual' : item.staged ? 'Index' : 'Working tree';
       $('before-size').textContent = dimensions(before); $('after-size').textContent = dimensions(after);
+      for(const [side,image] of [['before',before],['after',after]]) {
+        const size=$(side+'-file-size'); size.hidden=!image;
+        size.textContent=image ? formatBytes(imageFileBytes.get(image)) : '';
+        size.title=image ? 'Image file size: '+imageFileBytes.get(image).toLocaleString()+' bytes' : '';
+      }
+      const sizeChange=imageFileSizeChange(), indicator=$('after-file-size-change');
+      indicator.hidden=!sizeChange;
+      indicator.textContent=sizeChange ? '('+sizeChange.text+')' : '';
+      indicator.dataset.direction=sizeChange?.bytes>0 ? 'increase' : sizeChange?.bytes<0 ? 'decrease' : '';
+      indicator.title=sizeChange ? 'File size change compared with '+$('before-label').textContent+': '+(sizeChange.bytes>0 ? '+' : sizeChange.bytes<0 ? '−' : '')+Math.abs(sizeChange.bytes).toLocaleString()+' bytes ('+sizeChange.text+').' : '';
       $('empty').hidden = true; render(); updateButtons();
       if(fitNewImage) for(const viewport of viewports()) {viewport.scrollLeft=0;viewport.scrollTop=0;}
       else if(!switchingImage && (zoomMode!=='changes' || changesFitKey===previousFitKey)) restoreAnchor(anchor);
@@ -1116,6 +1131,13 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
     }
   }
   function dimensions(image) { return image ? image.naturalWidth + ' × ' + image.naturalHeight : 'Not present'; }
+  function imageFileSizeChange() {
+    if(!before || !after) return null;
+    const previous=imageFileBytes.get(before), bytes=imageFileBytes.get(after)-previous;
+    if(!(previous>0) || !Number.isFinite(bytes)) return null;
+    const percent=Math.abs(bytes/previous*100);
+    return {bytes,text:bytes===0 ? '0%' : (bytes>0 ? '+' : '−')+(percent<.1 ? '<0.1' : percent.toFixed(1))+'%'};
+  }
   async function copyImage(makeCanvas) {
     try {
       if(!navigator.clipboard?.write || typeof ClipboardItem==='undefined') throw new Error('Image copying is unavailable in this browser.');
@@ -1285,6 +1307,9 @@ footer { flex-shrink:0; padding:8px 20px; border-top:1px solid var(--line); colo
     changesFitKey=fitKey;
     const failure=!!current()?.failure;
     $('combined-label').textContent = mode === 'diff' ? 'Changed pixels in pink' : mode === 'split' ? (failure ? 'Expected ← | → Actual' : 'Before ← | → After') : (failure ? 'Actual over Expected' : 'After over Before');
+    const sizeChange=imageFileSizeChange();
+    const fileSizes=$('before-label').textContent+': '+(before ? formatBytes(imageFileBytes.get(before)) : 'Not present')+' → '+$('after-label').textContent+': '+(after ? formatBytes(imageFileBytes.get(after)) : 'Not present')+(sizeChange ? ' ('+sizeChange.text+')' : '');
+    if($('combined-file-sizes').textContent!==fileSizes) $('combined-file-sizes').textContent=fileSizes;
     $('metrics').textContent = single ? dimensions(after) : dimensions(before) + ' → ' + dimensions(after) + (before && after && (before.naturalWidth!==after.naturalWidth || before.naturalHeight!==after.naturalHeight) ? ' · Dimensions changed' : '') + (mode === 'diff' || highlight ? diffSummary : '');
   }
   function confirmRevert(items) {

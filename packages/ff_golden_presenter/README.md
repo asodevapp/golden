@@ -86,7 +86,7 @@ The equivalent manual dependency is:
 
 ```yaml
 dev_dependencies:
-  ff_golden_presenter: ^1.1.18
+  ff_golden_presenter: ^1.1.19
 ```
 
 For an unreleased repository revision, use the package Git source and
@@ -245,6 +245,14 @@ Select a file and switch between side-by-side, swipe, overlay, and pixel-diff
 views. In side-by-side, enable **Highlight changes** to overlay changed pixels on
 the new version only, keeping the old version unchanged; the intensity slider
 controls the highlight opacity.
+
+Each image header shows its original pixel dimensions and file size. The
+comparison header also includes both file sizes in Swipe, Overlay, and Pixel
+diff. Sizes come from the loaded source files, so zoom and highlighting do not
+change them; failure previews show the size of the selected artifact.
+When both images are present, the right-hand file size includes its signed
+percentage change relative to the left. Growth is amber, reduction is green,
+and equal file sizes show **0%**.
 
 Enable **Near divider** in Side by side to place mobile screenshots next to the
 central divider instead of centering each in its own pane. The setting uses each

@@ -1,3 +1,14 @@
+## 1.1.19
+
+- Show original pixel dimensions and image file sizes in comparison headers,
+  including combined views and failure artifacts. Hover a file size to see its
+  exact byte count.
+- Show the right-hand file's percentage size change relative to the left:
+  amber for growth, green for reduction, and **0%** for equal sizes. Hide the
+  percentage when one source is absent, including new images and single artifacts.
+- Reuse the loaded source bytes without additional requests or filesystem scans;
+  zoom and difference highlighting preserve the displayed file sizes.
+
 ## 1.1.18
 
 - Reduced live refresh work by caching filtered comparisons, updating tree
